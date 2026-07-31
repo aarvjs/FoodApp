@@ -1,0 +1,95 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Authentication & Role Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+        (exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+         request.auth.token.role == 'admin');
+    }
+
+    function isManager() {
+      return isAuthenticated() && 
+        exists(/databases/$(database)/documents/managers/$(request.auth.uid));
+    }
+
+    function getManagerData() {
+      return get(/databases/$(database)/documents/managers/$(request.auth.uid)).data;
+    }
+
+    // Admins Collection: Managed by Super Admins
+    match /admins/{adminId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Managers Collection: Created & Managed by Super Admin
+    match /managers/{managerId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin() || (isAuthenticated() && request.auth.uid == managerId);
+    }
+
+    // Restaurants Collection: Managed by Super Admin
+    match /restaurants/{restaurantId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Branches Collection: Managed by Super Admin
+    match /branches/{branchId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Categories Collection
+    match /categories/{categoryId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin() || isManager();
+    }
+
+    // Menu Items Collection
+    match /menuItems/{menuItemId} {
+      allow read: if isAuthenticated();
+      allow create: if isAdmin() || isManager();
+      allow update, delete: if isAdmin() || isManager();
+    }
+
+    // Tables Collection
+    match /tables/{tableId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin() || isManager();
+    }
+
+    // Table Bookings Collection
+    match /tableBookings/{bookingId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin() || isManager();
+    }
+
+    // Banners Collection
+    match /banners/{bannerId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin() || isManager();
+    }
+
+    // Offers Collection
+    match /offers/{offerId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin() || isManager();
+    }
+
+    // Orders Collection: Access scoped by role & branch
+    match /orders/{orderId} {
+      allow read, create, update, delete: if isAuthenticated();
+    }
+
+    // Customers Collection
+    match /customers/{customerId} {
+      allow read, write: if isAuthenticated();
+    }
+  }
+}

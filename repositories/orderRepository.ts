@@ -1,0 +1,195 @@
+import { db } from "@/firebase/config";
+import { 
+  collection, 
+  getDocs, 
+  getDoc,
+  doc, 
+  setDoc, 
+  updateDoc, 
+  deleteDoc, 
+  onSnapshot, 
+  query, 
+  where, 
+  orderBy 
+} from "firebase/firestore";
+import { OrderModel, OrderStatusType } from "@/models/order";
+
+const COLLECTION_NAME = "orders";
+
+export const orderRepository = {
+  async getByBranch(branchId: string): Promise<OrderModel[]> {
+    if (!branchId) return [];
+    try {
+      const q = query(
+        collection(db, COLLECTION_NAME), 
+        where("branchId", "==", branchId)
+      );
+      const snap = await getDocs(q);
+      return snap.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() } as OrderModel));
+    } catch (e) {
+      console.warn("orderRepository.getByBranch error:", e);
+      return [];
+    }
+  },
+
+  subscribeByBranch(branchId: string, callback: (orders: OrderModel[]) => void, onError?: (err: any) => void) {
+    if (!branchId) {
+      callback([]);
+      return () => {};
+    }
+    const q = query(
+      collection(db, COLLECTION_NAME), 
+      where("branchId", "==", branchId)
+    );
+    return onSnapshot(
+      q,
+      (snap) => {
+        const items = snap.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() } as OrderModel));
+        callback(items);
+      },
+      (err) => {
+        console.warn("orderRepository.subscribeByBranch notice:", err.message);
+        if (onError) onError(err);
+      }
+    );
+  },
+
+  async getByRestaurant(restaurantId: string): Promise<OrderModel[]> {
+    if (!restaurantId) return [];
+    try {
+      const q1 = query(
+        collection(db, COLLECTION_NAME),
+        where("restaurantId", "==", restaurantId)
+      );
+      const snap1 = await getDocs(q1);
+      const orders1 = snap1.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() } as OrderModel));
+
+      const q2 = query(
+        collection(db, COLLECTION_NAME),
+        where("branchId", "==", restaurantId)
+      );
+      const snap2 = await getDocs(q2);
+      const orders2 = snap2.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() } as OrderModel));
+
+      const map = new Map<string, OrderModel>();
+      orders1.forEach((o) => map.set(o.id, o));
+      orders2.forEach((o) => map.set(o.id, o));
+
+      const merged = Array.from(map.values());
+      merged.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+      return merged;
+    } catch (e) {
+      console.warn("orderRepository.getByRestaurant error:", e);
+      return [];
+    }
+  },
+
+  async create(data: Partial<OrderModel>): Promise<OrderModel> {
+    if (!data.branchId || !data.restaurantId) {
+      throw new Error("orderRepository.create: branchId and restaurantId are mandatory.");
+    }
+
+    const docRef = doc(collection(db, COLLECTION_NAME));
+    const now = new Date().toISOString();
+    const orderNum = "ORD-" + Math.floor(100000 + Math.random() * 900000);
+
+    const subtotal = data.subtotal || data.items?.reduce((sum, item) => sum + item.price * item.quantity, 0) || 0;
+    const tax = data.tax ?? Math.round(subtotal * 0.05);
+    const deliveryFee = data.deliveryFee ?? 40;
+    const totalAmount = data.totalAmount ?? (subtotal + tax + deliveryFee);
+
+    const newOrder: OrderModel = {
+      id: docRef.id,
+      orderNumber: data.orderNumber || orderNum,
+      restaurantId: data.restaurantId,
+      branchId: data.branchId, // STRICT MANDATORY OWNERSHIP
+      branchName: data.branchName || "Branch",
+      customerName: data.customerName || "Customer",
+      customerPhone: data.customerPhone || "+91 9876543210",
+      customerAddress: data.customerAddress || "",
+      items: data.items || [],
+      subtotal,
+      tax,
+      deliveryFee,
+      totalAmount,
+      paymentStatus: data.paymentStatus || "PAID",
+      paymentMethod: data.paymentMethod || "UPI",
+      orderType: data.orderType || "DELIVERY",
+      status: data.status || "PENDING",
+      estimatedPrepMinutes: data.estimatedPrepMinutes || 20,
+      createdAt: now,
+      updatedAt: now
+    };
+
+    await setDoc(docRef, newOrder);
+    return newOrder;
+  },
+
+  async updateStatus(
+    id: string, 
+    status: OrderStatusType, 
+    estimatedPrepMinutes?: number, 
+    rejectionReason?: string
+  ): Promise<void> {
+    const docRef = doc(db, COLLECTION_NAME, id);
+    let payload: any = {
+      status,
+      updatedAt: new Date().toISOString()
+    };
+
+    if (estimatedPrepMinutes !== undefined) payload.estimatedPrepMinutes = estimatedPrepMinutes;
+    if (rejectionReason !== undefined) payload.rejectionReason = rejectionReason;
+
+    await updateDoc(docRef, payload);
+
+    try {
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        const orderData = snap.data();
+        const customerId = orderData.customerId || orderData.userId;
+        const orderNum = orderData.orderNumber || id;
+        if (customerId) {
+          let title = `Order Status Updated`;
+          let body = `Your order #${orderNum} status is now ${status.replace(/_/g, ' ')}.`;
+
+          if (status === 'ACCEPTED') {
+            title = 'Order Accepted! 🍳';
+            body = `Your order #${orderNum} has been accepted. Estimated prep time: ${estimatedPrepMinutes || 20} mins.`;
+          } else if (status === 'PREPARING') {
+            title = 'Kitchen Preparing Your Order 👨‍🍳';
+            body = `The chef is now preparing your meal for order #${orderNum}.`;
+          } else if (status === 'READY') {
+            title = 'Order Ready! 📦';
+            body = `Your order #${orderNum} is ready and waiting for pickup/dispatch.`;
+          } else if (status === 'OUT_FOR_DELIVERY') {
+            title = 'Out for Delivery! 🛵';
+            body = `Your order #${orderNum} is on the way. Our rider will reach you soon!`;
+          } else if (status === 'DELIVERED') {
+            title = 'Order Delivered! 🎉';
+            body = `Your order #${orderNum} has been delivered. Bon appétit!`;
+          } else if (status === 'REJECTED') {
+            title = 'Order Rejected ❌';
+            body = `Order #${orderNum} was rejected. Reason: ${rejectionReason || 'Kitchen busy'}`;
+          } else if (status === 'CANCELLED') {
+            title = 'Order Cancelled ⚠️';
+            body = `Order #${orderNum} has been cancelled.`;
+          }
+
+          const notifRef = doc(collection(db, "notifications"));
+          await setDoc(notifRef, {
+            id: notifRef.id,
+            userId: customerId,
+            orderId: id,
+            title,
+            body,
+            type: 'delivery',
+            read: false,
+            createdAt: new Date().toISOString()
+          });
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to generate notification record:", e);
+    }
+  }
+};

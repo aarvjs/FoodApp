@@ -1,119 +1,212 @@
-export type UserRole =
-  | "SUPER_ADMIN"
-  | "OWNER"
-  | "BRANCH_MANAGER"
-  | "KITCHEN_STAFF"
-  | "DELIVERY_BOY"
-  | "CUSTOMER";
+export type UserRole = "admin" | "branchManager";
+
+export interface AddressLocation {
+  formattedAddress: string;
+  latitude: number;
+  longitude: number;
+  city: string;
+  state: string;
+  pincode: string;
+}
 
 export interface User {
   id: string;
   name: string;
   email: string;
   role: UserRole;
-  avatar: string;
+  avatar?: string;
   restaurantId?: string;
   branchId?: string;
+  assignedBranchId?: string;
+  assignedBranchName?: string;
   phone?: string;
 }
 
-export interface AdminUser {
-  id: string;
-  name: string;
-  email: string;
-  avatar: string;
-  role: "SUPER_ADMIN";
+export interface AdminUser extends User {
+  role: "admin";
 }
 
-export interface OwnerUser {
-  id: string;
-  name: string;
-  email: string;
-  restaurantId: string;
-  restaurantName: string;
-  avatar: string;
-  role: "OWNER";
-}
-
-export interface BranchManagerUser {
-  id: string;
-  name: string;
-  email: string;
-  password?: string;
+export interface BranchManagerUser extends User {
+  role: "branchManager";
   restaurantId: string;
   assignedBranchId: string;
   assignedBranchName: string;
-  avatar: string;
-  phone: string;
+  password?: string;
   status: "ACTIVE" | "INACTIVE";
-  role: "BRANCH_MANAGER";
 }
 
 export interface Restaurant {
   id: string;
+  restaurantId?: string;
   name: string;
-  slug: string;
+  restaurantName?: string;
+  description: string;
+  ownerName?: string;
   logo: string;
   banner: string;
-  ownerName: string;
-  ownerEmail: string;
+  coverImage?: string;
+  cuisineType: string[];
+  gstNumber: string;
   phone: string;
-  status: "ACTIVE" | "INACTIVE" | "PENDING";
-  totalBranches: number;
-  totalRevenue: number;
-  rating: number;
+  email: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  pincode?: string;
+  latitude?: number;
+  longitude?: number;
+  openingTime: string;
+  closingTime: string;
+  deliveryCharges: number;
+  minimumOrder: number;
+  hasTableService: boolean;
+  hasTakeaway: boolean;
+  hasDelivery: boolean;
+  hasDineIn: boolean;
+  status: "ACTIVE" | "INACTIVE";
+  totalBranches?: number;
+  totalRevenue?: number;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface Branch {
   id: string;
+  branchId?: string;
   restaurantId: string;
+  restaurantName: string;
   name: string;
-  city: string;
-  address: string;
-  managerName: string;
+  branchName?: string;
   phone: string;
-  status: "OPEN" | "CLOSED" | "BUSY";
-  kitchenStatus: "OPERATIONAL" | "HIGH_LOAD" | "OFFLINE";
+  email: string;
+  managerName: string;
+  managerEmail: string;
+  managerId: string;
+  generatedPassword?: string;
+  deliveryRadiusKm: number;
+  deliveryRadius?: number;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
   openingTime: string;
   closingTime: string;
-  deliveryRadiusKm: number;
-  todayOrdersCount: number;
-  todayRevenue: number;
+  status: "OPEN" | "CLOSED" | "BUSY";
+  location: AddressLocation;
+  todayOrdersCount?: number;
+  todayRevenue?: number;
+  createdAt: string;
 }
 
 export interface Category {
   id: string;
+  restaurantId: string;
+  branchId?: string;
   name: string;
+  categoryName?: string;
+  description?: string;
+  displayOrder?: number;
   slug: string;
   image: string;
   itemCount: number;
   status: "ACTIVE" | "INACTIVE";
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ProductCustomization {
+  id: string;
+  name: string;
+  price: number;
+  isAvailable: boolean;
 }
 
 export interface Product {
   id: string;
+  title?: string;
   restaurantId: string;
+  branchId?: string;
   branchIds: string[];
   name: string;
   description: string;
+  fullDescription?: string;
   category: string;
+  subCategory?: string;
   price: number;
+  discountPrice?: number;
   offerPrice?: number;
   image: string;
+  images?: string[];
   isAvailable: boolean;
+  available?: boolean;
   stock: number;
+  availableQuantity?: number;
+  stockStatus?: "IN_STOCK" | "OUT_OF_STOCK" | "LOW_STOCK";
   isVeg: boolean;
-  rating: number;
+  foodType?: "Veg" | "Non Veg" | "Egg";
+  veg?: string;
+  bestseller?: boolean;
+  recommended?: boolean;
+  featured?: boolean;
+  spicyLevel?: "Mild" | "Medium" | "Hot" | "Extra Spicy";
+  ingredients?: string[];
+  customTags?: string[];
+  customizations?: ProductCustomization[];
+  rating?: number;
   prepTimeMinutes: number;
+  status?: "ACTIVE" | "INACTIVE";
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface RestaurantTable {
+  id: string;
+  restaurantId?: string;
+  branchId: string;
+  tableNumber: string;
+  capacity: number;
+  section: string;
+  type?: "Indoor" | "Outdoor";
+  environment?: "AC" | "Non AC";
+  status: "AVAILABLE" | "BOOKED" | "OCCUPIED" | "RESERVED" | "MAINTENANCE";
+  qrCodeUrl?: string;
+  createdAt?: string;
+}
+
+export type TableBookingStatus =
+  | "PENDING"
+  | "ACCEPTED"
+  | "CONFIRMED"
+  | "REJECTED"
+  | "COMPLETED"
+  | "CANCELLED"
+  | "NO_SHOW";
+
+export interface TableBooking {
+  id: string;
+  restaurantId?: string;
+  branchId: string;
+  tableId: string;
+  tableNumber: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail?: string;
+  date: string;
+  time: string;
+  guests: number;
+  status: TableBookingStatus;
+  createdAt: string;
+  updatedAt?: string;
 }
 
 export type OrderStatus =
   | "PENDING"
+  | "ACCEPTED"
   | "PREPARING"
   | "READY"
   | "OUT_FOR_DELIVERY"
   | "DELIVERED"
+  | "REJECTED"
   | "CANCELLED";
 
 export type OrderType = "DELIVERY" | "TAKEAWAY" | "DINE_IN";
@@ -123,7 +216,7 @@ export interface OrderItem {
   productName: string;
   quantity: number;
   price: number;
-  image: string;
+  image?: string;
   customizations?: string[];
 }
 
@@ -145,38 +238,19 @@ export interface Order {
   paymentMethod: "UPI" | "CREDIT_CARD" | "CASH_ON_DELIVERY";
   orderType: OrderType;
   status: OrderStatus;
-  deliveryBoyId?: string;
-  deliveryBoyName?: string;
-  otp?: string;
+  estimatedPrepMinutes?: number;
+  rejectionReason?: string;
   createdAt: string;
-  estimatedPrepTimeMinutes: number;
-  startedPrepAt?: string;
+  updatedAt?: string;
 }
 
-export interface DeliveryBoy {
+export interface DeliveryChargeRule {
   id: string;
-  branchId: string;
-  branchName: string;
-  name: string;
-  phone: string;
-  avatar: string;
-  status: "AVAILABLE" | "ON_DELIVERY" | "OFFLINE";
-  rating: number;
-  totalDeliveries: number;
-  activeOrderId?: string;
-  currentLocation?: string;
-}
-
-export interface Staff {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  role: UserRole;
-  branchId: string;
-  branchName: string;
-  status: "ACTIVE" | "ON_LEAVE" | "INACTIVE";
-  joinedDate: string;
+  restaurantId: string;
+  minDistanceKm: number;
+  maxDistanceKm: number;
+  baseCharge: number;
+  perKmCharge: number;
 }
 
 export interface Coupon {
@@ -197,17 +271,36 @@ export interface Offer {
   title: string;
   description: string;
   banner: string;
-  type: "FESTIVAL" | "FREE_DELIVERY" | "FLAT_DISCOUNT" | "COMBO";
+  type?: "FESTIVAL" | "FREE_DELIVERY" | "FLAT_DISCOUNT" | "COMBO";
   discountPercentage?: number;
+  coupon?: string;
+  discount?: number;
+  minimumOrder?: number;
+  startDate?: string;
+  endDate?: string;
+  restaurantId?: string;
   branchId: string;
   status: "ACTIVE" | "DRAFT" | "EXPIRED";
 }
 
-export interface NotificationItem {
+export interface Customer {
   id: string;
+  name: string;
+  email: string;
+  phone: string;
+  totalOrders: number;
+  totalSpent: number;
+  lastOrderDate: string;
+  branchId?: string;
+}
+
+export interface AppNotification {
+  id: string;
+  userId?: string;
+  branchId?: string;
   title: string;
   message: string;
-  time: string;
+  type: "ORDER_UPDATE" | "TABLE_BOOKING" | "SYSTEM";
   read: boolean;
-  type: "ORDER" | "KITCHEN" | "DELIVERY" | "SYSTEM";
+  createdAt: string;
 }
