@@ -49,7 +49,7 @@ export const Modal: React.FC<ModalProps> = ({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -66,29 +66,29 @@ export const Modal: React.FC<ModalProps> = ({
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
             className={cn(
-              "relative w-full bg-white rounded-3xl shadow-2xl border border-stone-200/80 overflow-hidden z-10",
+              "relative w-full bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-stone-200/80 overflow-hidden z-10 my-auto max-w-[95vw]",
               widthClasses[maxWidth],
               className
             )}
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100 bg-[#FFFDF8]">
-              <div>
-                <h3 className="text-lg font-bold text-stone-900">{title}</h3>
+            <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-stone-100 bg-[#FFFDF8]">
+              <div className="min-w-0 pr-2">
+                <h3 className="text-base sm:text-lg font-bold text-stone-900 truncate">{title}</h3>
                 {subtitle && (
-                  <p className="text-xs text-stone-500 mt-0.5">{subtitle}</p>
+                  <p className="text-xs text-stone-500 mt-0.5 truncate">{subtitle}</p>
                 )}
               </div>
               <button
                 onClick={onClose}
-                className="w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-600 flex items-center justify-center transition-colors"
+                className="w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-600 flex items-center justify-center transition-colors shrink-0"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* Body */}
-            <div className="p-6 max-h-[80vh] overflow-y-auto">{children}</div>
+            <div className="p-4 sm:p-6 max-h-[75vh] sm:max-h-[80vh] overflow-y-auto custom-scrollbar">{children}</div>
           </motion.div>
         </div>
       )}

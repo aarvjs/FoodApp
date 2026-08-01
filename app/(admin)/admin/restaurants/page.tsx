@@ -161,15 +161,15 @@ export default function SuperAdminRestaurantsPage() {
                   ))}
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-xl text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-slate-50 rounded-xl text-xs">
                   <div>
                     <span className="block text-[10px] uppercase font-bold text-slate-400">GST Number</span>
-                    <span className="font-mono text-slate-800">{rest.gstNumber || "N/A"}</span>
+                    <span className="font-mono text-slate-800 break-all">{rest.gstNumber || "N/A"}</span>
                   </div>
                   <div>
                     <span className="block text-[10px] uppercase font-bold text-slate-400">Timings</span>
                     <span className="text-slate-800 flex items-center gap-1">
-                      <Clock className="w-3 h-3 text-slate-400" /> {rest.openingTime} - {rest.closingTime}
+                      <Clock className="w-3 h-3 text-slate-400 shrink-0" /> {rest.openingTime} - {rest.closingTime}
                     </span>
                   </div>
                   <div>
@@ -182,8 +182,8 @@ export default function SuperAdminRestaurantsPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-100">
-                  <div className="flex items-center gap-3 text-[11px] font-medium text-slate-600">
+                <div className="flex flex-wrap items-center justify-between gap-2 text-xs pt-1 border-t border-slate-100">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-[11px] font-medium text-slate-600">
                     <span className={rest.hasDelivery ? "text-emerald-700 font-bold" : "line-through text-slate-400"}>Delivery</span>
                     <span className={rest.hasTakeaway ? "text-emerald-700 font-bold" : "line-through text-slate-400"}>Takeaway</span>
                     <span className={rest.hasDineIn ? "text-emerald-700 font-bold" : "line-through text-slate-400"}>Dine In</span>
@@ -212,8 +212,8 @@ export default function SuperAdminRestaurantsPage() {
 
       {/* Modal for Create Restaurant */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 space-y-5 max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
+          <div className="bg-white rounded-2xl sm:rounded-3xl max-w-2xl w-full p-4 sm:p-6 space-y-4 sm:space-y-5 max-h-[90vh] overflow-y-auto shadow-2xl custom-scrollbar">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                 <Store className="w-5 h-5 text-emerald-600" /> Create New Restaurant Entity

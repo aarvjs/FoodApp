@@ -144,9 +144,9 @@ export default function BranchManagerOrdersPage() {
             const nextStatus = getNextStatus(ord.status);
             return (
               <div key={ord.id} className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm space-y-4">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
                   <div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="font-mono font-black text-slate-900 text-sm">{ord.orderNumber}</span>
                       <span className={`px-2.5 py-0.5 text-[10px] font-extrabold rounded-full uppercase ${
                         ord.status === "DELIVERED" ? "bg-emerald-100 text-emerald-800" :
@@ -168,7 +168,7 @@ export default function BranchManagerOrdersPage() {
 
                   {/* Actions for PENDING orders: Accept vs Reject */}
                   {ord.status === "PENDING" && (
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <button
                         onClick={() => {
                           setAcceptingOrderId(ord.id);

@@ -152,11 +152,11 @@ export default function SuperAdminBranchManagersPage() {
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                 <div className="p-2.5 bg-slate-50 rounded-xl">
                   <span className="block text-[10px] text-slate-400 uppercase font-bold">Assigned Branch</span>
                   <span className="font-bold text-slate-800 flex items-center gap-1 mt-0.5">
-                    <GitFork className="w-3.5 h-3.5 text-emerald-600" /> {m.assignedBranchName || "Branch"}
+                    <GitFork className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> {m.assignedBranchName || "Branch"}
                   </span>
                 </div>
                 <div className="p-2.5 bg-slate-50 rounded-xl">
@@ -165,17 +165,17 @@ export default function SuperAdminBranchManagersPage() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">
                 <button
                   onClick={() => handleResetPassword(m.email)}
-                  className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-lg font-semibold text-[11px] flex items-center gap-1.5 transition-colors"
+                  className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-lg font-semibold text-[11px] flex items-center gap-1.5 transition-colors shrink-0"
                 >
                   <Key className="w-3.5 h-3.5 text-amber-600" /> Reset Password
                 </button>
 
                 <button
                   onClick={() => handleToggleStatus(m.id, m.status || "ACTIVE")}
-                  className={`px-3 py-1.5 rounded-lg font-bold text-[11px] transition-colors ${
+                  className={`px-3 py-1.5 rounded-lg font-bold text-[11px] transition-colors shrink-0 ${
                     m.status === "ACTIVE"
                       ? "bg-rose-50 text-rose-700 hover:bg-rose-100"
                       : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
@@ -191,8 +191,8 @@ export default function SuperAdminBranchManagersPage() {
 
       {/* Modal for Creating Manager */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
+          <div className="bg-white rounded-2xl sm:rounded-3xl max-w-md w-full p-4 sm:p-6 space-y-4 shadow-2xl custom-scrollbar max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
                 <UserCheck className="w-5 h-5 text-emerald-600" /> Create Branch Manager

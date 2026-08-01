@@ -15,6 +15,11 @@ export interface BranchModel {
   closingTime: string;
   status: "OPEN" | "CLOSED" | "BUSY";
   location: AddressLocation;
+  formattedAddress?: string;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
+  locationSource?: "gps" | "search";
   todayOrdersCount?: number;
   todayRevenue?: number;
   createdAt: string;

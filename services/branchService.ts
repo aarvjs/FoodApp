@@ -64,6 +64,20 @@ export const branchService = {
   addBranch: async (data: Partial<Branch>): Promise<Branch> => {
     const docRef = doc(collection(db, COLLECTION_NAME));
     const now = new Date().toISOString();
+    const locSource = data.locationSource || data.location?.source || data.location?.locationSource || "search";
+    const lat = Number(data.latitude !== undefined ? data.latitude : (data.location?.latitude || 0));
+    const lng = Number(data.longitude !== undefined ? data.longitude : (data.location?.longitude || 0));
+    const addrStr = data.location?.address || data.location?.formattedAddress || data.address || "Main Street";
+
+    const locationObj = {
+      ...data.location,
+      address: addrStr,
+      formattedAddress: addrStr,
+      latitude: lat,
+      longitude: lng,
+      source: locSource,
+      locationSource: locSource
+    };
 
     const newBranch: Branch = {
       id: docRef.id,
@@ -82,29 +96,62 @@ export const branchService = {
       openingTime: data.openingTime || "09:00 AM",
       closingTime: data.closingTime || "11:00 PM",
       status: data.status || "OPEN",
-      address: data.address || data.location?.formattedAddress || "",
-      latitude: data.latitude || data.location?.latitude || 0,
-      longitude: data.longitude || data.location?.longitude || 0,
-      location: data.location || {
-        formattedAddress: data.address || "Main Street",
-        latitude: data.latitude || 0,
-        longitude: data.longitude || 0,
-        city: "City",
-        state: "State",
-        pincode: "100001"
-      },
+      address: addrStr,
+      latitude: lat,
+      longitude: lng,
+      locationSource: locSource,
+      location: locationObj as any,
       todayOrdersCount: 0,
       todayRevenue: 0,
-      createdAt: now
+      createdAt: now,
+      updatedAt: now
     } as any;
 
     await setDoc(docRef, newBranch);
+
+    if (locSource === "gps") {
+      console.log("[GPS] Saved to Firestore");
+    } else {
+      console.log("[Search] Saved to Firestore");
+    }
+
     return newBranch;
   },
 
   updateBranch: async (id: string, updated: Partial<Branch>): Promise<void> => {
     const docRef = doc(db, COLLECTION_NAME, id);
-    await updateDoc(docRef, { ...updated, updatedAt: new Date().toISOString() });
+    const now = new Date().toISOString();
+    const payload: any = { ...updated, updatedAt: now };
+    const locSource = updated.locationSource || updated.location?.source || updated.location?.locationSource;
+
+    if (updated.location) {
+      const addrStr = updated.location.address || updated.location.formattedAddress || "Branch Address";
+      const latVal = Number(updated.location.latitude);
+      const lngVal = Number(updated.location.longitude);
+
+      payload.address = addrStr;
+      payload.formattedAddress = addrStr;
+      payload.latitude = latVal;
+      payload.longitude = lngVal;
+      payload.locationSource = locSource || "search";
+      payload.location = {
+        ...updated.location,
+        address: addrStr,
+        formattedAddress: addrStr,
+        latitude: latVal,
+        longitude: lngVal,
+        source: locSource || "search",
+        locationSource: locSource || "search"
+      };
+    }
+
+    await updateDoc(docRef, payload);
+
+    if (locSource === "gps") {
+      console.log("[GPS] Saved to Firestore");
+    } else {
+      console.log("[Search] Saved to Firestore");
+    }
   },
 
   deleteBranch: async (id: string): Promise<void> => {

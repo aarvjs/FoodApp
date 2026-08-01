@@ -59,77 +59,89 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Metric Cards - Dynamic from Firestore */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
         {/* Total Orders */}
-        <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm space-y-2">
+        <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm space-y-2 h-full flex flex-col justify-between">
           <div className="flex items-center justify-between text-slate-500">
             <span className="text-[11px] font-bold uppercase tracking-wider">Total Orders</span>
-            <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
               <ShoppingBag className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-2xl font-black text-slate-900">{metrics.totalOrders}</p>
-          <p className="text-[10px] text-slate-400 font-semibold">Lifetime orders</p>
+          <div>
+            <p className="text-2xl font-black text-slate-900">{metrics.totalOrders}</p>
+            <p className="text-[10px] text-slate-400 font-semibold">Lifetime orders</p>
+          </div>
         </div>
 
         {/* Today's Orders */}
-        <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm space-y-2">
+        <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm space-y-2 h-full flex flex-col justify-between">
           <div className="flex items-center justify-between text-slate-500">
             <span className="text-[11px] font-bold uppercase tracking-wider">Today's Orders</span>
-            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
               <Clock className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-2xl font-black text-slate-900">{metrics.todayOrders}</p>
-          <p className="text-[10px] text-emerald-600 font-bold">Placed today</p>
+          <div>
+            <p className="text-2xl font-black text-slate-900">{metrics.todayOrders}</p>
+            <p className="text-[10px] text-emerald-600 font-bold">Placed today</p>
+          </div>
         </div>
 
         {/* Revenue */}
-        <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm space-y-2">
+        <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm space-y-2 h-full flex flex-col justify-between">
           <div className="flex items-center justify-between text-slate-500">
             <span className="text-[11px] font-bold uppercase tracking-wider">Total Revenue</span>
-            <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
               <IndianRupee className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-2xl font-black text-slate-900">₹{metrics.totalRevenue.toLocaleString()}</p>
-          <p className="text-[10px] text-amber-600 font-bold">Earned revenue</p>
+          <div>
+            <p className="text-2xl font-black text-slate-900 truncate">₹{metrics.totalRevenue.toLocaleString()}</p>
+            <p className="text-[10px] text-amber-600 font-bold">Earned revenue</p>
+          </div>
         </div>
 
         {/* Pending Orders */}
-        <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm space-y-2">
+        <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm space-y-2 h-full flex flex-col justify-between">
           <div className="flex items-center justify-between text-slate-500">
             <span className="text-[11px] font-bold uppercase tracking-wider">Pending Orders</span>
-            <div className="w-8 h-8 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center shrink-0">
               <AlertCircle className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-2xl font-black text-slate-900">{metrics.pendingOrders}</p>
-          <p className="text-[10px] text-orange-600 font-bold">In progress</p>
+          <div>
+            <p className="text-2xl font-black text-slate-900">{metrics.pendingOrders}</p>
+            <p className="text-[10px] text-orange-600 font-bold">In progress</p>
+          </div>
         </div>
 
         {/* Completed Orders */}
-        <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm space-y-2">
+        <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm space-y-2 h-full flex flex-col justify-between">
           <div className="flex items-center justify-between text-slate-500">
             <span className="text-[11px] font-bold uppercase tracking-wider">Completed</span>
-            <div className="w-8 h-8 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
               <CheckCircle2 className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-2xl font-black text-slate-900">{metrics.completedOrders}</p>
-          <p className="text-[10px] text-teal-600 font-bold">Delivered & Done</p>
+          <div>
+            <p className="text-2xl font-black text-slate-900">{metrics.completedOrders}</p>
+            <p className="text-[10px] text-teal-600 font-bold">Delivered & Done</p>
+          </div>
         </div>
 
         {/* Cancelled Orders */}
-        <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm space-y-2">
+        <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm space-y-2 h-full flex flex-col justify-between">
           <div className="flex items-center justify-between text-slate-500">
             <span className="text-[11px] font-bold uppercase tracking-wider">Cancelled</span>
-            <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
               <XCircle className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-2xl font-black text-slate-900">{metrics.cancelledOrders}</p>
-          <p className="text-[10px] text-rose-600 font-bold">Cancelled orders</p>
+          <div>
+            <p className="text-2xl font-black text-slate-900">{metrics.cancelledOrders}</p>
+            <p className="text-[10px] text-rose-600 font-bold">Cancelled orders</p>
+          </div>
         </div>
       </div>
 

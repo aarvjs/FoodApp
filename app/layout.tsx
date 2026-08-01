@@ -19,7 +19,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${jakartaSans.variable} h-full antialiased`}>
-      <body className="min-h-full bg-[#FFFDF8] text-stone-900 font-sans">
+      <body className="min-h-full bg-[#FFFDF8] text-stone-900 font-sans" suppressHydrationWarning>
         {children}
       </body>
     </html>

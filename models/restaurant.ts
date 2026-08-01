@@ -5,6 +5,16 @@ export interface AddressLocation {
   city: string;
   state: string;
   pincode: string;
+  country?: string;
+  district?: string;
+  subLocality?: string;
+  locality?: string;
+  village?: string;
+  address?: string;
+  street?: string;
+  postalCode?: string;
+  source?: "gps" | "search";
+  locationSource?: "gps" | "search";
 }
 
 export interface RestaurantModel {

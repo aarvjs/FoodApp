@@ -18,8 +18,8 @@ export default function BranchManagerCustomersPage() {
         <p className="text-xs text-slate-500">Customers who ordered from your branch location</p>
       </div>
 
-      <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
-        <table className="w-full text-left text-xs text-slate-700">
+      <div className="bg-white border border-slate-200/80 rounded-2xl overflow-x-auto custom-scrollbar shadow-sm">
+        <table className="w-full text-left text-xs text-slate-700 whitespace-nowrap min-w-[500px]">
           <thead className="bg-slate-50 text-slate-500 uppercase font-bold text-[10px] tracking-wider border-b border-slate-100">
             <tr>
               <th className="px-4 py-3">Customer Name</th>

@@ -53,29 +53,37 @@ export default function BranchManagerDashboardPage() {
       </div>
 
       {/* Metrics Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm space-y-1">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm space-y-1 h-full flex flex-col justify-between">
           <span className="block text-[10px] uppercase font-bold text-slate-400">Today's Revenue</span>
-          <p className="text-2xl font-black text-amber-600">₹{metrics.todayRevenue.toLocaleString()}</p>
-          <p className="text-[11px] text-slate-500">Live earnings today</p>
+          <div>
+            <p className="text-2xl font-black text-amber-600 truncate">₹{metrics.todayRevenue.toLocaleString()}</p>
+            <p className="text-[11px] text-slate-500">Live earnings today</p>
+          </div>
         </div>
 
-        <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm space-y-1">
+        <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm space-y-1 h-full flex flex-col justify-between">
           <span className="block text-[10px] uppercase font-bold text-slate-400">Weekly Revenue</span>
-          <p className="text-2xl font-black text-slate-900">₹{metrics.weeklyRevenue.toLocaleString()}</p>
-          <p className="text-[11px] text-slate-500">Past 7 days total</p>
+          <div>
+            <p className="text-2xl font-black text-slate-900 truncate">₹{metrics.weeklyRevenue.toLocaleString()}</p>
+            <p className="text-[11px] text-slate-500">Past 7 days total</p>
+          </div>
         </div>
 
-        <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm space-y-1">
+        <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm space-y-1 h-full flex flex-col justify-between">
           <span className="block text-[10px] uppercase font-bold text-slate-400">Monthly Revenue</span>
-          <p className="text-2xl font-black text-slate-900">₹{metrics.monthlyRevenue.toLocaleString()}</p>
-          <p className="text-[11px] text-slate-500">Past 30 days total</p>
+          <div>
+            <p className="text-2xl font-black text-slate-900 truncate">₹{metrics.monthlyRevenue.toLocaleString()}</p>
+            <p className="text-[11px] text-slate-500">Past 30 days total</p>
+          </div>
         </div>
 
-        <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm space-y-1">
+        <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm space-y-1 h-full flex flex-col justify-between">
           <span className="block text-[10px] uppercase font-bold text-slate-400">Total Branch Orders</span>
-          <p className="text-2xl font-black text-slate-900">{metrics.totalOrdersCount}</p>
-          <p className="text-[11px] text-emerald-600 font-bold">{metrics.completedOrdersCount} Delivered</p>
+          <div>
+            <p className="text-2xl font-black text-slate-900">{metrics.totalOrdersCount}</p>
+            <p className="text-[11px] text-emerald-600 font-bold">{metrics.completedOrdersCount} Delivered</p>
+          </div>
         </div>
       </div>
 

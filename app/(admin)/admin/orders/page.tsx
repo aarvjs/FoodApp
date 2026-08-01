@@ -32,11 +32,11 @@ export default function SuperAdminOrdersPage() {
         </div>
 
         {/* Filters */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <select
             value={filterBranch}
             onChange={(e) => setFilterBranch(e.target.value)}
-            className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 shadow-sm"
+            className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 shadow-sm max-w-full"
           >
             <option value="ALL">All Branches</option>
             {branches.map((b) => (
@@ -47,7 +47,7 @@ export default function SuperAdminOrdersPage() {
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 shadow-sm"
+            className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 shadow-sm max-w-full"
           >
             <option value="ALL">All Statuses</option>
             {statusSteps.map((s) => (
@@ -60,15 +60,15 @@ export default function SuperAdminOrdersPage() {
       {/* Orders List */}
       <div className="space-y-4">
         {filteredOrders.map((ord) => (
-          <div key={ord.id} className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow space-y-4">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+          <div key={ord.id} className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow space-y-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
               <div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="font-mono font-black text-slate-900 text-sm">{ord.orderNumber}</span>
                   <span className="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md font-medium">{ord.orderType}</span>
                   <span className="text-xs px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-md font-bold">{ord.branchName}</span>
                 </div>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs text-slate-500 mt-1">
                   Customer: <strong className="text-slate-800">{ord.customerName}</strong> ({ord.customerPhone})
                 </p>
               </div>

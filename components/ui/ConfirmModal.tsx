@@ -23,8 +23,8 @@ export function ConfirmModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl max-w-sm w-full p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
+      <div className="bg-white rounded-2xl sm:rounded-3xl max-w-sm w-full p-4 sm:p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-150">
         <div className="flex items-center gap-3 text-rose-600">
           <div className="w-10 h-10 rounded-2xl bg-rose-100 flex items-center justify-center shrink-0">
             <AlertTriangle className="w-5 h-5" />

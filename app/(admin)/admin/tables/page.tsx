@@ -167,8 +167,8 @@ export default function SuperAdminTablesPage() {
 
       {/* Bookings View */}
       {activeTab === "BOOKINGS" && (
-        <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm overflow-hidden">
-          <table className="w-full text-left text-xs text-slate-700">
+        <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm overflow-x-auto custom-scrollbar">
+          <table className="w-full text-left text-xs text-slate-700 whitespace-nowrap min-w-[700px]">
             <thead className="bg-slate-50 text-slate-500 uppercase font-bold text-[10px]">
               <tr>
                 <th className="px-4 py-3">Table #</th>

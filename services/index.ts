@@ -11,3 +11,5 @@ export * from "./storageService";
 export * from "./analyticsService";
 export * from "./tableService";
 export * from "./revenueService";
+export * from "./locationService";
+

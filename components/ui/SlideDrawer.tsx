@@ -42,24 +42,24 @@ export function SlideDrawer({
         onClick={onClose}
       />
 
-      <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
+      <div className="fixed inset-y-0 right-0 max-w-full flex pl-2 sm:pl-10">
         <div className={`w-screen ${maxWidth} bg-white shadow-2xl flex flex-col transform transition-transform animate-in slide-in-from-right duration-300`}>
           {/* Drawer Header */}
-          <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-            <div>
-              <h2 className="text-lg font-bold text-slate-900">{title}</h2>
-              {subtitle && <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>}
+          <div className="p-4 sm:p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+            <div className="min-w-0 pr-2">
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 truncate">{title}</h2>
+              {subtitle && <p className="text-xs text-slate-500 mt-0.5 truncate">{subtitle}</p>}
             </div>
             <button
               onClick={onClose}
-              className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+              className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors shrink-0"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
           {/* Drawer Body */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 custom-scrollbar">
             {children}
           </div>
         </div>

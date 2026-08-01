@@ -76,7 +76,10 @@ export default function SuperAdminBranchesPage() {
         openingTime: formData.openingTime,
         closingTime: formData.closingTime,
         status: formData.status,
-        location: formData.location
+        location: formData.location,
+        latitude: formData.location.latitude,
+        longitude: formData.location.longitude,
+        locationSource: formData.location.locationSource || "search"
       });
 
       // 2. Create Branch Manager User in Firebase Auth & Firestore
@@ -179,7 +182,7 @@ export default function SuperAdminBranchesPage() {
                   <MapPin className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                   <span>{b.location?.formattedAddress || b.address || "Location Address"}</span>
                 </div>
-                <div className="grid grid-cols-3 gap-2 pt-1 border-t border-slate-200/60 text-[11px] text-slate-600 font-mono">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 border-t border-slate-200/60 text-[11px] text-slate-600 font-mono">
                   <div>City: <strong className="text-slate-900 font-sans">{b.location?.city || "N/A"}</strong></div>
                   <div>State: <strong className="text-slate-900 font-sans">{b.location?.state || "N/A"}</strong></div>
                   <div>Pincode: <strong className="text-slate-900 font-sans">{b.location?.pincode || "N/A"}</strong></div>
@@ -188,9 +191,9 @@ export default function SuperAdminBranchesPage() {
 
               {/* Branch Manager Credentials */}
               <div className="p-3 bg-amber-50/80 border border-amber-200/60 rounded-xl space-y-2 text-xs">
-                <div className="flex items-center justify-between font-bold text-amber-900">
+                <div className="flex flex-wrap items-center justify-between gap-1 font-bold text-amber-900">
                   <span className="flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4 text-amber-600" /> Branch Manager Account
+                    <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0" /> Branch Manager Account
                   </span>
                   <span className="text-[10px] px-2 py-0.5 bg-amber-200/60 text-amber-900 rounded font-mono">
                     role: branchManager
@@ -208,14 +211,14 @@ export default function SuperAdminBranchesPage() {
                 </div>
 
                 {b.generatedPassword && (
-                  <div className="flex items-center justify-between pt-1 border-t border-amber-200/60 text-[11px]">
-                    <span className="text-slate-500 flex items-center gap-1">
-                      <Key className="w-3.5 h-3.5 text-amber-600" /> Password:
-                      <strong className="font-mono text-slate-900">{b.generatedPassword}</strong>
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-amber-200/60 text-[11px]">
+                    <span className="text-slate-500 flex items-center gap-1 min-w-0 truncate">
+                      <Key className="w-3.5 h-3.5 text-amber-600 shrink-0" /> Password:
+                      <strong className="font-mono text-slate-900 truncate">{b.generatedPassword}</strong>
                     </span>
                     <button
                       onClick={() => handleCopyPassword(b.generatedPassword!, b.id)}
-                      className="px-2 py-1 bg-amber-200/70 hover:bg-amber-300 text-amber-900 rounded font-bold text-[10px] flex items-center gap-1 transition-colors"
+                      className="px-2 py-1 bg-amber-200/70 hover:bg-amber-300 text-amber-900 rounded font-bold text-[10px] flex items-center gap-1 transition-colors shrink-0"
                     >
                       {copiedId === b.id ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
                       {copiedId === b.id ? "Copied" : "Copy"}
@@ -242,8 +245,8 @@ export default function SuperAdminBranchesPage() {
 
       {/* Modal for Add Branch */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 space-y-5 max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
+          <div className="bg-white rounded-2xl sm:rounded-3xl max-w-2xl w-full p-4 sm:p-6 space-y-4 sm:space-y-5 max-h-[90vh] overflow-y-auto shadow-2xl custom-scrollbar">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                 <GitFork className="w-5 h-5 text-emerald-600" /> Add New Branch & Location

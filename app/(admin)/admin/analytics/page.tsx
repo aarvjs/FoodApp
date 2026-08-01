@@ -18,21 +18,27 @@ export default function SuperAdminAnalyticsPage() {
         <p className="text-xs text-slate-500">System-wide performance indicators, customer retention & top items</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm space-y-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm space-y-2 h-full flex flex-col justify-between">
           <span className="text-xs font-bold text-slate-400 uppercase">Total Completed Orders</span>
-          <p className="text-2xl font-black text-slate-900">{orders.length}</p>
-          <span className="text-xs text-emerald-600 font-semibold">100% fulfill rate</span>
+          <div>
+            <p className="text-2xl font-black text-slate-900">{orders.length}</p>
+            <span className="text-xs text-emerald-600 font-semibold">100% fulfill rate</span>
+          </div>
         </div>
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm space-y-2">
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm space-y-2 h-full flex flex-col justify-between">
           <span className="text-xs font-bold text-slate-400 uppercase">Active Menu Items</span>
-          <p className="text-2xl font-black text-slate-900">{products.length}</p>
-          <span className="text-xs text-slate-500 font-medium">Across all categories</span>
+          <div>
+            <p className="text-2xl font-black text-slate-900">{products.length}</p>
+            <span className="text-xs text-slate-500 font-medium">Across all categories</span>
+          </div>
         </div>
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm space-y-2">
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm space-y-2 h-full flex flex-col justify-between">
           <span className="text-xs font-bold text-slate-400 uppercase">Registered Customers</span>
-          <p className="text-2xl font-black text-slate-900">{customers.length}</p>
-          <span className="text-xs text-emerald-600 font-semibold">+18% repeat orders</span>
+          <div>
+            <p className="text-2xl font-black text-slate-900">{customers.length}</p>
+            <span className="text-xs text-emerald-600 font-semibold">+18% repeat orders</span>
+          </div>
         </div>
       </div>
     </div>

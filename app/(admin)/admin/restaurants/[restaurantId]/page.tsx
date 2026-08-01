@@ -188,7 +188,7 @@ export default function RestaurantDetailsPage() {
           </div>
         </div>
 
-        <div className="p-6 pt-9 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="p-4 sm:p-6 pt-9 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-black text-slate-900">{restaurant.name}</h1>
             <p className="text-xs text-slate-500 mt-1 max-w-xl">{restaurant.description}</p>
@@ -207,7 +207,7 @@ export default function RestaurantDetailsPage() {
         </div>
 
         {/* Dynamic Navigation Tabs */}
-        <div className="flex items-center gap-1 overflow-x-auto border-t border-slate-100 px-6 py-2 custom-scrollbar">
+        <div className="flex items-center gap-1 overflow-x-auto border-t border-slate-100 px-3 sm:px-6 py-2 custom-scrollbar">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;

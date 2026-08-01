@@ -21,46 +21,54 @@ export default function SuperAdminRevenuePage() {
       </div>
 
       {/* Metric Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-5 bg-white border border-slate-200/80 rounded-2xl shadow-sm space-y-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="p-5 bg-white border border-slate-200/80 rounded-2xl shadow-sm space-y-2 h-full flex flex-col justify-between">
           <div className="flex items-center justify-between text-slate-400">
             <span className="text-xs font-bold uppercase">Today's Revenue</span>
-            <Calendar className="w-4 h-4 text-emerald-600" />
+            <Calendar className="w-4 h-4 text-emerald-600 shrink-0" />
           </div>
-          <h2 className="text-2xl font-black text-slate-900">₹{metrics.todayRevenue.toLocaleString()}</h2>
-          <p className="text-[11px] text-slate-500">Live earnings for today</p>
+          <div>
+            <h2 className="text-2xl font-black text-slate-900 truncate">₹{metrics.todayRevenue.toLocaleString()}</h2>
+            <p className="text-[11px] text-slate-500">Live earnings for today</p>
+          </div>
         </div>
 
-        <div className="p-5 bg-white border border-slate-200/80 rounded-2xl shadow-sm space-y-2">
+        <div className="p-5 bg-white border border-slate-200/80 rounded-2xl shadow-sm space-y-2 h-full flex flex-col justify-between">
           <div className="flex items-center justify-between text-slate-400">
             <span className="text-xs font-bold uppercase">Weekly Revenue</span>
-            <TrendingUp className="w-4 h-4 text-blue-600" />
+            <TrendingUp className="w-4 h-4 text-blue-600 shrink-0" />
           </div>
-          <h2 className="text-2xl font-black text-slate-900">₹{metrics.weeklyRevenue.toLocaleString()}</h2>
-          <p className="text-[11px] text-slate-500">Past 7 days accumulated</p>
+          <div>
+            <h2 className="text-2xl font-black text-slate-900 truncate">₹{metrics.weeklyRevenue.toLocaleString()}</h2>
+            <p className="text-[11px] text-slate-500">Past 7 days accumulated</p>
+          </div>
         </div>
 
-        <div className="p-5 bg-white border border-slate-200/80 rounded-2xl shadow-sm space-y-2">
+        <div className="p-5 bg-white border border-slate-200/80 rounded-2xl shadow-sm space-y-2 h-full flex flex-col justify-between">
           <div className="flex items-center justify-between text-slate-400">
             <span className="text-xs font-bold uppercase">Monthly Revenue</span>
-            <BarChart2 className="w-4 h-4 text-purple-600" />
+            <BarChart2 className="w-4 h-4 text-purple-600 shrink-0" />
           </div>
-          <h2 className="text-2xl font-black text-slate-900">₹{metrics.monthlyRevenue.toLocaleString()}</h2>
-          <p className="text-[11px] text-slate-500">Past 30 days total</p>
+          <div>
+            <h2 className="text-2xl font-black text-slate-900 truncate">₹{metrics.monthlyRevenue.toLocaleString()}</h2>
+            <p className="text-[11px] text-slate-500">Past 30 days total</p>
+          </div>
         </div>
 
-        <div className="p-5 bg-white border border-slate-200/80 rounded-2xl shadow-sm space-y-2">
+        <div className="p-5 bg-white border border-slate-200/80 rounded-2xl shadow-sm space-y-2 h-full flex flex-col justify-between">
           <div className="flex items-center justify-between text-slate-400">
             <span className="text-xs font-bold uppercase">Total Lifetime</span>
-            <IndianRupee className="w-4 h-4 text-emerald-600" />
+            <IndianRupee className="w-4 h-4 text-emerald-600 shrink-0" />
           </div>
-          <h2 className="text-2xl font-black text-emerald-600">₹{metrics.totalRevenue.toLocaleString()}</h2>
-          <p className="text-[11px] text-slate-500">All orders overall</p>
+          <div>
+            <h2 className="text-2xl font-black text-emerald-600 truncate">₹{metrics.totalRevenue.toLocaleString()}</h2>
+            <p className="text-[11px] text-slate-500">All orders overall</p>
+          </div>
         </div>
       </div>
 
       {/* Order Status Breakdown Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         <div className="p-4 bg-white border border-slate-200/80 rounded-2xl shadow-sm">
           <span className="text-[10px] font-bold text-slate-400 uppercase">Total Orders</span>
           <p className="text-xl font-bold text-slate-900 mt-1">{metrics.totalOrdersCount}</p>

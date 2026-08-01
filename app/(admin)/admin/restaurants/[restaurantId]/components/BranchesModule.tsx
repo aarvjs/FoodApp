@@ -1,13 +1,16 @@
 "use client";
 
-import React, { useState } from "react";
-import { GitBranch, Plus, Edit3, Trash2, Key, Loader2, Upload, MapPin, Store, CheckCircle2 } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { GitBranch, Plus, Edit3, Trash2, Key, Loader2, Upload, MapPin, Store, CheckCircle2, Search, Navigation } from "lucide-react";
 import { BranchModel } from "@/models/branch";
 import { branchRepository } from "@/repositories/branchRepository";
 import { SlideDrawer } from "@/components/ui/SlideDrawer";
 import { Toast } from "@/components/ui/Toast";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { storageService } from "@/services/storageService";
+import { locationService, LocationSuggestion, LocationComponents } from "@/services/locationService";
+import { AddressSearch } from "@/components/location/AddressSearch";
+import { AddressLocation } from "@/types";
 
 interface BranchesModuleProps {
   restaurantId: string;
@@ -27,6 +30,14 @@ export function BranchesModule({ restaurantId, restaurantName, branches, onRefre
 
   const [branchImageFile, setBranchImageFile] = useState<File | null>(null);
 
+  // Location search states
+  const [locationSearchQuery, setLocationSearchQuery] = useState("");
+  const [locationSuggestions, setLocationSuggestions] = useState<LocationSuggestion[]>([]);
+  const [isSearchingLocation, setIsSearchingLocation] = useState(false);
+  const [showSuggestionsDropdown, setShowSuggestionsDropdown] = useState(false);
+  const [selectedLocationComponents, setSelectedLocationComponents] = useState<LocationComponents | null>(null);
+  const locationDropdownRef = useRef<HTMLDivElement>(null);
+
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -34,6 +45,7 @@ export function BranchesModule({ restaurantId, restaurantName, branches, onRefre
     formattedAddress: "",
     latitude: 26.8467,
     longitude: 80.9462,
+    locationSource: "search" as "gps" | "search",
     deliveryRadiusKm: 5,
     openingTime: "09:00 AM",
     closingTime: "11:00 PM",
@@ -43,16 +55,48 @@ export function BranchesModule({ restaurantId, restaurantName, branches, onRefre
     password: ""
   });
 
+  // Debounced location search effect (450ms)
+  useEffect(() => {
+    if (!locationSearchQuery || locationSearchQuery.trim().length < 2) {
+      setLocationSuggestions([]);
+      setIsSearchingLocation(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearchingLocation(true);
+      const results = await locationService.searchLocations(locationSearchQuery);
+      setLocationSuggestions(results.slice(0, 10)); // Max 10 suggestions
+      setIsSearchingLocation(false);
+      setShowSuggestionsDropdown(true);
+    }, 450);
+
+    return () => clearTimeout(timer);
+  }, [locationSearchQuery]);
+
+  // Click outside listener for suggestions dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (locationDropdownRef.current && !locationDropdownRef.current.contains(event.target as Node)) {
+        setShowSuggestionsDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const handleOpenDrawer = (branch?: BranchModel) => {
     if (branch) {
       setEditingBranch(branch);
+      const initialAddress = branch.location?.formattedAddress || "";
       setFormData({
         name: branch.name || "",
         phone: branch.phone || "",
         email: branch.email || "",
-        formattedAddress: branch.location?.formattedAddress || "",
-        latitude: branch.location?.latitude || 26.8467,
-        longitude: branch.location?.longitude || 80.9462,
+        formattedAddress: initialAddress,
+        latitude: branch.location?.latitude || branch.latitude || 26.8467,
+        longitude: branch.location?.longitude || branch.longitude || 80.9462,
+        locationSource: branch.locationSource || branch.location?.locationSource || "search",
         deliveryRadiusKm: branch.deliveryRadiusKm || 5,
         openingTime: branch.openingTime || "09:00 AM",
         closingTime: branch.closingTime || "11:00 PM",
@@ -61,15 +105,28 @@ export function BranchesModule({ restaurantId, restaurantName, branches, onRefre
         managerEmail: branch.managerEmail || "",
         password: ""
       });
+      setLocationSearchQuery(initialAddress);
+      setSelectedLocationComponents({
+        country: branch.location?.country || "",
+        state: branch.location?.state || "Uttar Pradesh",
+        district: branch.location?.district || "",
+        city: branch.location?.city || "Kanpur",
+        subLocality: branch.location?.subLocality || "",
+        locality: branch.location?.locality || "",
+        village: branch.location?.village || "",
+        street: branch.location?.street || "",
+        postalCode: branch.location?.postalCode || branch.location?.pincode || "208001"
+      });
     } else {
       setEditingBranch(null);
       setFormData({
         name: "",
         phone: "+91 98765 43210",
         email: "branch@spicykingdom.com",
-        formattedAddress: "Swaroop Nagar, Kanpur",
-        latitude: 26.8467,
-        longitude: 80.9462,
+        formattedAddress: "Kidwai Nagar, Kanpur, Uttar Pradesh, India",
+        latitude: 26.4499,
+        longitude: 80.3318,
+        locationSource: "search",
         deliveryRadiusKm: 5,
         openingTime: "09:00 AM",
         closingTime: "11:00 PM",
@@ -78,9 +135,35 @@ export function BranchesModule({ restaurantId, restaurantName, branches, onRefre
         managerEmail: `manager${Date.now().toString().slice(-4)}@spicykingdom.com`,
         password: "ManagerPass#123"
       });
+      setLocationSearchQuery("Kidwai Nagar, Kanpur, Uttar Pradesh, India");
+      setSelectedLocationComponents({
+        country: "India",
+        state: "Uttar Pradesh",
+        district: "Kanpur Nagar",
+        city: "Kanpur",
+        subLocality: "Kidwai Nagar",
+        locality: "Kidwai Nagar",
+        village: "",
+        street: "",
+        postalCode: "208011"
+      });
     }
+    setLocationSuggestions([]);
+    setShowSuggestionsDropdown(false);
     setBranchImageFile(null);
     setIsDrawerOpen(true);
+  };
+
+  const handleSelectSuggestion = (suggestion: LocationSuggestion) => {
+    setFormData((prev) => ({
+      ...prev,
+      formattedAddress: suggestion.formattedAddress,
+      latitude: suggestion.latitude,
+      longitude: suggestion.longitude
+    }));
+    setLocationSearchQuery(suggestion.formattedAddress);
+    setSelectedLocationComponents(suggestion.locationComponents);
+    setShowSuggestionsDropdown(false);
   };
 
   const handleGeneratePassword = () => {
@@ -97,6 +180,23 @@ export function BranchesModule({ restaurantId, restaurantName, branches, onRefre
     setSubmitting(true);
 
     try {
+      const locationObj = {
+        formattedAddress: formData.formattedAddress,
+        latitude: Number(formData.latitude),
+        longitude: Number(formData.longitude),
+        locationSource: formData.locationSource || "search",
+        country: selectedLocationComponents?.country || "",
+        state: selectedLocationComponents?.state || (editingBranch?.location?.state || "Uttar Pradesh"),
+        district: selectedLocationComponents?.district || (editingBranch?.location?.district || ""),
+        city: selectedLocationComponents?.city || (editingBranch?.location?.city || "Kanpur"),
+        subLocality: selectedLocationComponents?.subLocality || (editingBranch?.location?.subLocality || ""),
+        locality: selectedLocationComponents?.locality || (editingBranch?.location?.locality || ""),
+        village: selectedLocationComponents?.village || (editingBranch?.location?.village || ""),
+        street: selectedLocationComponents?.street || (editingBranch?.location?.street || ""),
+        postalCode: selectedLocationComponents?.postalCode || (editingBranch?.location?.postalCode || "208001"),
+        pincode: selectedLocationComponents?.postalCode || (editingBranch?.location?.postalCode || "208001")
+      };
+
       const payload: Partial<BranchModel> = {
         restaurantId,
         restaurantName,
@@ -109,14 +209,10 @@ export function BranchesModule({ restaurantId, restaurantName, branches, onRefre
         openingTime: formData.openingTime,
         closingTime: formData.closingTime,
         status: formData.status,
-        location: {
-          formattedAddress: formData.formattedAddress,
-          latitude: Number(formData.latitude),
-          longitude: Number(formData.longitude),
-          city: "Kanpur",
-          state: "Uttar Pradesh",
-          pincode: "208002"
-        }
+        latitude: Number(formData.latitude),
+        longitude: Number(formData.longitude),
+        locationSource: formData.locationSource || "search",
+        location: locationObj as any
       };
 
       if (editingBranch) {
@@ -253,46 +349,50 @@ export function BranchesModule({ restaurantId, restaurantName, branches, onRefre
             </div>
           </div>
 
-          <div>
-            <label className="block font-bold text-slate-700 mb-1">Full Branch Address *</label>
-            <textarea
-              rows={2}
+          {/* Address Location Picker with GPS & Autocomplete */}
+          <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-3">
+            <AddressSearch
               required
-              value={formData.formattedAddress}
-              onChange={(e) => setFormData({ ...formData, formattedAddress: e.target.value })}
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl"
-              placeholder="Full street address..."
+              value={{
+                formattedAddress: formData.formattedAddress,
+                latitude: formData.latitude,
+                longitude: formData.longitude,
+                city: selectedLocationComponents?.city || "Kanpur",
+                state: selectedLocationComponents?.state || "Uttar Pradesh",
+                pincode: selectedLocationComponents?.postalCode || "208001",
+                locationSource: formData.locationSource
+              }}
+              onChange={(loc: AddressLocation) => {
+                setFormData((prev) => ({
+                  ...prev,
+                  formattedAddress: loc.formattedAddress,
+                  latitude: loc.latitude,
+                  longitude: loc.longitude,
+                  locationSource: loc.locationSource || "search"
+                }));
+                if (loc.city || loc.state || loc.pincode) {
+                  setSelectedLocationComponents((prev) => ({
+                    country: loc.country || prev?.country || "India",
+                    state: loc.state || prev?.state || "Uttar Pradesh",
+                    district: loc.district || prev?.district || "",
+                    city: loc.city || prev?.city || "Kanpur",
+                    subLocality: loc.subLocality || prev?.subLocality || "",
+                    locality: loc.locality || prev?.locality || "",
+                    village: loc.village || prev?.village || "",
+                    street: loc.street || prev?.street || "",
+                    postalCode: loc.pincode || loc.postalCode || prev?.postalCode || "208001"
+                  }));
+                }
+              }}
             />
-          </div>
 
-          <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Latitude</label>
-              <input
-                type="number"
-                step="any"
-                value={formData.latitude}
-                onChange={(e) => setFormData({ ...formData, latitude: Number(e.target.value) })}
-                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono"
-              />
-            </div>
-            <div>
-              <label className="block font-bold text-slate-700 mb-1">Longitude</label>
-              <input
-                type="number"
-                step="any"
-                value={formData.longitude}
-                onChange={(e) => setFormData({ ...formData, longitude: Number(e.target.value) })}
-                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono"
-              />
-            </div>
-            <div>
-              <label className="block font-bold text-slate-700 mb-1">Radius (KM)</label>
+              <label className="block font-bold text-slate-700 mb-1">Delivery Radius (KM) *</label>
               <input
                 type="number"
                 value={formData.deliveryRadiusKm}
                 onChange={(e) => setFormData({ ...formData, deliveryRadiusKm: Number(e.target.value) })}
-                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold"
+                className="w-full p-2.5 bg-white border border-slate-200 rounded-xl font-bold text-xs"
               />
             </div>
           </div>
