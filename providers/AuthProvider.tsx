@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, signOut as firebaseSignOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/firebase/config";
 import { User, AdminUser, BranchManagerUser } from "@/types";
@@ -19,74 +19,58 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const setUser = useStore((state) => state.setUser);
   const setAdminUser = useStore((state) => state.setAdminUser);
   const setBranchManagerUser = useStore((state) => state.setBranchManagerUser);
+  const logout = useStore((state) => state.logout);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    console.log("[Auth Audit] Firebase initialized. Monitoring onAuthStateChanged...");
+    console.log("[Auth] Initializing Firebase Auth state listener...");
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      console.log("[Auth Audit] Current Firebase User:", firebaseUser ? { uid: firebaseUser.uid, email: firebaseUser.email } : null);
-      console.log("[Auth Audit] Cookie Values:", typeof document !== "undefined" ? document.cookie : "");
-      console.log("[Auth Audit] Local Storage Values (Zustand):", typeof localStorage !== "undefined" ? localStorage.getItem("food_admin_firebase_store_v1") : "");
-
       if (firebaseUser) {
         try {
-          // Check admins collection
+          // 1. Check admins collection
           const adminDoc = await getDoc(doc(db, "admins", firebaseUser.uid));
           if (adminDoc.exists()) {
             const data = adminDoc.data();
-            const adminObj: AdminUser = {
-              id: firebaseUser.uid,
-              name: data.name || "Super Admin",
-              email: firebaseUser.email || "",
-              role: "admin",
-              phone: data.phone || "",
-              avatar: data.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
-            };
+            if (data.role === "admin") {
+              const adminObj: AdminUser = {
+                id: firebaseUser.uid,
+                name: data.name || "Super Admin",
+                email: firebaseUser.email || "",
+                role: "admin",
+                phone: data.phone || "",
+                avatar: data.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
+              };
 
-            console.log("[Auth Audit] Current Role: admin");
-            console.log("[Auth Audit] Auth Guard Decision: User validated as Super Admin");
-
-            document.cookie = "admin_session=true; path=/; max-age=86400; SameSite=Lax;";
-            document.cookie = "admin_role=admin; path=/; max-age=86400; SameSite=Lax;";
-            document.cookie = "user_role=admin; path=/; max-age=86400; SameSite=Lax;";
-
-            setUser(adminObj);
-            setAdminUser(adminObj);
-            setIsLoading(false);
-            return;
+              setUser(adminObj);
+              setAdminUser(adminObj);
+              setIsLoading(false);
+              return;
+            }
           }
 
-          // Check managers collection
+          // 2. Check managers collection
           const managerDoc = await getDoc(doc(db, "managers", firebaseUser.uid));
           if (managerDoc.exists()) {
             const data = managerDoc.data();
             if (data.status === "INACTIVE") {
-              console.log("[Auth Audit] Auth Guard Decision: Branch Manager is INACTIVE, clearing session");
-              document.cookie = "branch_manager_session=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax;";
-              document.cookie = "branch_manager_role=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax;";
-              setUser(null);
+              console.warn("[Auth] Branch Manager is INACTIVE. Logging out...");
+              await firebaseSignOut(auth);
+              logout();
             } else {
               const managerObj: BranchManagerUser = {
                 id: firebaseUser.uid,
                 name: data.name || "Branch Manager",
                 email: firebaseUser.email || "",
-                role: "branchManager",
+                role: data.role === "branch_manager" ? "branch_manager" : "branchManager",
                 restaurantId: data.restaurantId || "",
-                branchId: data.assignedBranchId || "",
-                assignedBranchId: data.assignedBranchId || "",
+                branchId: data.assignedBranchId || data.branchId || "",
+                assignedBranchId: data.assignedBranchId || data.branchId || "",
                 assignedBranchName: data.assignedBranchName || "Branch",
                 status: data.status || "ACTIVE",
                 phone: data.phone || "",
                 avatar: data.avatar || "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80"
               };
-
-              console.log("[Auth Audit] Current Role: branchManager");
-              console.log("[Auth Audit] Auth Guard Decision: User validated as Branch Manager");
-
-              document.cookie = "branch_manager_session=true; path=/; max-age=86400; SameSite=Lax;";
-              document.cookie = "branch_manager_role=branchManager; path=/; max-age=86400; SameSite=Lax;";
-              document.cookie = "user_role=branchManager; path=/; max-age=86400; SameSite=Lax;";
 
               setUser(managerObj);
               setBranchManagerUser(managerObj);
@@ -95,31 +79,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             return;
           }
 
-          // Fallback admin
-          console.log("[Auth Audit] Current Role: admin (fallback)");
-          document.cookie = "admin_session=true; path=/; max-age=86400; SameSite=Lax;";
-          document.cookie = "admin_role=admin; path=/; max-age=86400; SameSite=Lax;";
-          document.cookie = "user_role=admin; path=/; max-age=86400; SameSite=Lax;";
-
-          const defaultAdmin: AdminUser = {
-            id: firebaseUser.uid,
-            name: firebaseUser.displayName || "Admin User",
-            email: firebaseUser.email || "",
-            role: "admin"
-          };
-          setUser(defaultAdmin);
-          setAdminUser(defaultAdmin);
+          // 3. User authenticated in Firebase but not in admins or managers collection
+          console.warn("[Auth] User record not found in database. Access denied.");
+          await firebaseSignOut(auth);
+          logout();
         } catch (e) {
-          console.error("Error fetching user profile from Firestore:", e);
+          console.error("[Auth] Error fetching user profile from Firestore:", e);
+          logout();
         }
       } else {
-        console.log("[Auth Audit] Auth Guard Decision: No Firebase user active");
+        console.log("[Auth] No active Firebase Auth user session");
+        logout();
       }
       setIsLoading(false);
     });
 
     return () => unsubscribe();
-  }, [setUser, setAdminUser, setBranchManagerUser]);
+  }, [setUser, setAdminUser, setBranchManagerUser, logout]);
 
   return (
     <AuthContext.Provider value={{ user, isLoading }}>

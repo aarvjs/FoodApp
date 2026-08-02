@@ -1,4 +1,4 @@
-export type UserRole = "admin" | "branchManager";
+export type UserRole = "admin" | "branchManager" | "branch_manager";
 
 export interface AddressLocation {
   formattedAddress: string;
@@ -37,7 +37,7 @@ export interface AdminUser extends User {
 }
 
 export interface BranchManagerUser extends User {
-  role: "branchManager";
+  role: "branchManager" | "branch_manager";
   restaurantId: string;
   assignedBranchId: string;
   assignedBranchName: string;

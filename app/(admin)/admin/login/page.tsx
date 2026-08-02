@@ -1,13 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ShieldCheck, Mail, Lock, ArrowRight, Loader2, User, Phone, AlertCircle, X } from "lucide-react";
 import { useStore } from "@/lib/store/useStore";
+import { useAuth } from "@/providers/AuthProvider";
 import { authService } from "@/services/authService";
 
 export default function AdminLoginPage() {
   const router = useRouter();
+  const { user, isLoading: isAuthLoading } = useAuth();
   const setUser = useStore((state) => state.setUser);
   const setAdminUser = useStore((state) => state.setAdminUser);
 
@@ -21,6 +23,13 @@ export default function AdminLoginPage() {
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const [showErrorPopup, setShowErrorPopup] = useState(false);
+
+  // Auto-redirect if already logged in as Super Admin
+  useEffect(() => {
+    if (!isAuthLoading && user?.role === "admin") {
+      router.push("/admin/dashboard");
+    }
+  }, [user, isAuthLoading, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,11 +48,6 @@ export default function AdminLoginPage() {
           phone
         });
 
-        console.log("[Auth Audit] Login success: Super Admin registered", userObj.email);
-        document.cookie = "admin_session=true; path=/; max-age=86400; SameSite=Lax;";
-        document.cookie = "admin_role=admin; path=/; max-age=86400; SameSite=Lax;";
-        document.cookie = "user_role=admin; path=/; max-age=86400; SameSite=Lax;";
-
         setUser(userObj);
         setAdminUser(userObj);
         setSuccessMsg("Super Admin Account registered successfully!");
@@ -60,17 +64,12 @@ export default function AdminLoginPage() {
           return;
         }
 
-        console.log("[Auth Audit] Login success: Super Admin authenticated", userObj.email);
-        document.cookie = "admin_session=true; path=/; max-age=86400; SameSite=Lax;";
-        document.cookie = "admin_role=admin; path=/; max-age=86400; SameSite=Lax;";
-        document.cookie = "user_role=admin; path=/; max-age=86400; SameSite=Lax;";
-
         setUser(userObj);
         setAdminUser(userObj);
         router.push("/admin/dashboard");
       }
     } catch (err: any) {
-      console.error("[Auth Audit] Login failed:", err);
+      console.error("[Auth] Super Admin authentication failed:", err);
       const msg = err.message || "Authentication failed. User not found in database or invalid credentials.";
       setError(msg);
       setShowErrorPopup(true);

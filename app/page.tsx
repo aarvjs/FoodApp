@@ -4,19 +4,21 @@ import React, { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ShieldCheck, Store, ArrowRight, UtensilsCrossed } from "lucide-react";
-import { useStore } from "@/lib/store/useStore";
+import { useAuth } from "@/providers/AuthProvider";
 
 export default function RootLandingPage() {
   const router = useRouter();
-  const user = useStore((state) => state.user);
+  const { user, isLoading } = useAuth();
 
   useEffect(() => {
-    if (user?.role === "admin") {
-      router.push("/admin/dashboard");
-    } else if (user?.role === "branchManager") {
-      router.push("/branch-manager/dashboard");
+    if (!isLoading) {
+      if (user?.role === "admin") {
+        router.push("/admin/dashboard");
+      } else if (user?.role === "branch_manager" || user?.role === "branchManager") {
+        router.push("/branch-manager/dashboard");
+      }
     }
-  }, [user, router]);
+  }, [user, isLoading, router]);
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col justify-between p-6">

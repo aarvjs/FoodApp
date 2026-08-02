@@ -1,13 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Store, Mail, Lock, ArrowRight, Loader2, KeyRound, AlertCircle, X } from "lucide-react";
 import { useStore } from "@/lib/store/useStore";
+import { useAuth } from "@/providers/AuthProvider";
 import { authService } from "@/services/authService";
 
 export default function BranchManagerLoginPage() {
   const router = useRouter();
+  const { user, isLoading: isAuthLoading } = useAuth();
   const setUser = useStore((state) => state.setUser);
   const setBranchManagerUser = useStore((state) => state.setBranchManagerUser);
 
@@ -16,6 +18,13 @@ export default function BranchManagerLoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [showErrorPopup, setShowErrorPopup] = useState(false);
+
+  // Auto-redirect if already logged in as Branch Manager
+  useEffect(() => {
+    if (!isAuthLoading && (user?.role === "branch_manager" || user?.role === "branchManager")) {
+      router.push("/branch-manager/dashboard");
+    }
+  }, [user, isAuthLoading, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,7 +35,7 @@ export default function BranchManagerLoginPage() {
     try {
       const userObj = await authService.login(email, password);
 
-      if (userObj.role !== "branchManager") {
+      if (userObj.role !== "branch_manager" && userObj.role !== "branchManager") {
         const msg = "Account authorized as Admin. Please log in through Super Admin Portal.";
         setError(msg);
         setShowErrorPopup(true);
@@ -34,16 +43,11 @@ export default function BranchManagerLoginPage() {
         return;
       }
 
-      console.log("[Auth Audit] Login success: Branch Manager authenticated", userObj.email);
-      document.cookie = "branch_manager_session=true; path=/; max-age=86400; SameSite=Lax;";
-      document.cookie = "branch_manager_role=branchManager; path=/; max-age=86400; SameSite=Lax;";
-      document.cookie = "user_role=branchManager; path=/; max-age=86400; SameSite=Lax;";
-
       setUser(userObj);
       setBranchManagerUser(userObj);
       router.push("/branch-manager/dashboard");
     } catch (err: any) {
-      console.error("[Auth Audit] Branch Manager Login failed:", err);
+      console.error("[Auth] Branch Manager login failed:", err);
       const msg = err.message || "Invalid credentials or user record not found.";
       setError(msg);
       setShowErrorPopup(true);
