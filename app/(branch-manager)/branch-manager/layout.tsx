@@ -11,8 +11,11 @@ export default function BranchManagerLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const branchManagerUser = useStore((state) => state.branchManagerUser);
   const user = useStore((state) => state.user);
-  useFirestoreRealtime("branchManager", user?.branchId);
+  const activeUser = branchManagerUser || (user?.role === "branchManager" ? user : null);
+  const branchId = activeUser?.assignedBranchId || activeUser?.branchId;
+  useFirestoreRealtime("branchManager", branchId);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (

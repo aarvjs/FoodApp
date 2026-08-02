@@ -26,7 +26,7 @@ export default function BranchManagerLoginPage() {
     try {
       const userObj = await authService.login(email, password);
 
-      if (userObj.role !== "branchManager") {
+      if (userObj.role !== "branchManager" && (userObj.role as string) !== "branch_manager") {
         const msg = "Account authorized as Admin. Please log in through Super Admin Portal.";
         setError(msg);
         setShowErrorPopup(true);

@@ -44,12 +44,17 @@ export const authService = {
       throw new Error(err.message || "Authentication failed. Please check your credentials.");
     }
 
+    console.log("[Branch Audit] Firebase UID:", firebaseUser.uid);
+    console.log("[Branch Audit] Email:", firebaseUser.email);
+
     // First check admins collection
     const adminDocRef = doc(db, "admins", firebaseUser.uid);
     const adminSnap = await getDoc(adminDocRef);
 
     if (adminSnap.exists()) {
       const data = adminSnap.data();
+      console.log("[Branch Audit] Firestore document found in admins:", data);
+      console.log("[Branch Audit] Role: admin");
       return {
         id: firebaseUser.uid,
         name: data.name || "Super Admin",
@@ -60,32 +65,48 @@ export const authService = {
       } as AdminUser;
     }
 
-    // Next check managers collection
-    const managerDocRef = doc(db, "managers", firebaseUser.uid);
-    const managerSnap = await getDoc(managerDocRef);
+    // Next check managers collection by UID first, then fallback to email query
+    let managerData: any = null;
+    let managerDocSnap = await getDoc(doc(db, "managers", firebaseUser.uid));
+    if (managerDocSnap.exists()) {
+      managerData = managerDocSnap.data();
+    } else if (firebaseUser.email) {
+      const q = query(collection(db, "managers"), where("email", "==", firebaseUser.email.trim()));
+      const querySnap = await getDocs(q);
+      if (!querySnap.empty) {
+        managerData = querySnap.docs[0].data();
+      }
+    }
 
-    if (managerSnap.exists()) {
-      const data = managerSnap.data();
-      if (data.status === "INACTIVE") {
+    if (managerData) {
+      console.log("[Branch Audit] Firestore document found in managers:", managerData);
+      console.log("[Branch Audit] Role:", managerData.role || "branchManager");
+      console.log("[Branch Audit] Branch ID:", managerData.assignedBranchId || managerData.branchId || "");
+      console.log("[Branch Audit] Restaurant ID:", managerData.restaurantId || "");
+
+      if (managerData.status === "INACTIVE") {
+        console.log("[Branch Audit] Manager status is INACTIVE. Signing out.");
         await firebaseSignOut(auth);
         throw new Error("Your account has been disabled by the Super Admin.");
       }
+
       return {
         id: firebaseUser.uid,
-        name: data.name || "Branch Manager",
+        name: managerData.name || "Branch Manager",
         email: firebaseUser.email || email,
         role: "branchManager",
-        phone: data.phone || "",
-        restaurantId: data.restaurantId || "",
-        branchId: data.assignedBranchId || "",
-        assignedBranchId: data.assignedBranchId || "",
-        assignedBranchName: data.assignedBranchName || "Branch",
-        status: data.status || "ACTIVE",
-        avatar: data.avatar || "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80"
+        phone: managerData.phone || "",
+        restaurantId: managerData.restaurantId || "",
+        branchId: managerData.assignedBranchId || managerData.branchId || "",
+        assignedBranchId: managerData.assignedBranchId || managerData.branchId || "",
+        assignedBranchName: managerData.assignedBranchName || managerData.branchName || "Branch",
+        status: managerData.status || "ACTIVE",
+        avatar: managerData.avatar || "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80"
       } as BranchManagerUser;
     }
 
     // If authenticated with Firebase Auth but not found in admins or managers in Firestore
+    console.log("[Branch Audit] User record not found in Firestore admins or managers collections.");
     await firebaseSignOut(auth);
     throw new Error("User record not found in database. Access denied.");
   },

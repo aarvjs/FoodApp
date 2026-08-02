@@ -20,14 +20,18 @@ import { useStore } from "@/lib/store/useStore";
 import { revenueService } from "@/services/revenueService";
 
 export default function BranchManagerDashboardPage() {
+  const branchManagerUser = useStore((state) => state.branchManagerUser);
   const user = useStore((state) => state.user);
+  const activeUser = branchManagerUser || (user?.role === "branchManager" ? user : null);
+  const targetBranchId = activeUser?.assignedBranchId || activeUser?.branchId;
+
   const branches = useStore((state) => state.branches);
   const orders = useStore((state) => state.orders);
   const updateOrderStatus = useStore((state) => state.updateOrderStatus);
 
   // STRICTLY SCOPED TO ASSIGNED BRANCH ONLY!
-  const assignedBranch = branches.find((b) => b.id === user?.branchId) || branches[0];
-  const branchOrders = orders.filter((o) => o.branchId === assignedBranch?.id);
+  const assignedBranch = branches.find((b) => b.id === targetBranchId) || branches[0];
+  const branchOrders = orders.filter((o) => o.branchId === (assignedBranch?.id || targetBranchId));
 
   const metrics = revenueService.calculateMetrics(orders, assignedBranch?.id);
   const pendingOrders = branchOrders.filter((o) => o.status === "PENDING");

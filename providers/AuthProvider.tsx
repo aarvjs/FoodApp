@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { auth, db } from "@/firebase/config";
 import { User, AdminUser, BranchManagerUser } from "@/types";
 import { useStore } from "@/lib/store/useStore";
@@ -25,9 +25,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.log("[Auth Audit] Firebase initialized. Monitoring onAuthStateChanged...");
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      console.log("[Auth Audit] Current Firebase User:", firebaseUser ? { uid: firebaseUser.uid, email: firebaseUser.email } : null);
-      console.log("[Auth Audit] Cookie Values:", typeof document !== "undefined" ? document.cookie : "");
-      console.log("[Auth Audit] Local Storage Values (Zustand):", typeof localStorage !== "undefined" ? localStorage.getItem("food_admin_firebase_store_v1") : "");
+      console.log("[Branch Audit] AuthProvider onAuthStateChanged:", firebaseUser?.uid);
 
       if (firebaseUser) {
         try {
@@ -44,8 +42,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               avatar: data.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
             };
 
-            console.log("[Auth Audit] Current Role: admin");
-            console.log("[Auth Audit] Auth Guard Decision: User validated as Super Admin");
+            console.log("[Branch Audit] Current Role: admin");
 
             document.cookie = "admin_session=true; path=/; max-age=86400; SameSite=Lax;";
             document.cookie = "admin_role=admin; path=/; max-age=86400; SameSite=Lax;";
@@ -57,32 +54,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             return;
           }
 
-          // Check managers collection
-          const managerDoc = await getDoc(doc(db, "managers", firebaseUser.uid));
-          if (managerDoc.exists()) {
-            const data = managerDoc.data();
-            if (data.status === "INACTIVE") {
-              console.log("[Auth Audit] Auth Guard Decision: Branch Manager is INACTIVE, clearing session");
+          // Check managers collection by UID first, fallback to query by email
+          let managerData: any = null;
+          let managerDocSnap = await getDoc(doc(db, "managers", firebaseUser.uid));
+          if (managerDocSnap.exists()) {
+            managerData = managerDocSnap.data();
+          } else if (firebaseUser.email) {
+            const q = query(collection(db, "managers"), where("email", "==", firebaseUser.email.trim()));
+            const querySnap = await getDocs(q);
+            if (!querySnap.empty) {
+              managerData = querySnap.docs[0].data();
+            }
+          }
+
+          if (managerData) {
+            console.log("[Branch Audit] Firebase UID:", firebaseUser.uid);
+            console.log("[Branch Audit] Email:", firebaseUser.email);
+            console.log("[Branch Audit] Firestore document in managers:", managerData);
+            console.log("[Branch Audit] Branch ID:", managerData.assignedBranchId || managerData.branchId || "");
+            console.log("[Branch Audit] Restaurant ID:", managerData.restaurantId || "");
+
+            if (managerData.status === "INACTIVE") {
+              console.log("[Branch Audit] Account status is INACTIVE, clearing manager session");
               document.cookie = "branch_manager_session=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax;";
               document.cookie = "branch_manager_role=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax;";
               setUser(null);
             } else {
               const managerObj: BranchManagerUser = {
                 id: firebaseUser.uid,
-                name: data.name || "Branch Manager",
+                name: managerData.name || "Branch Manager",
                 email: firebaseUser.email || "",
                 role: "branchManager",
-                restaurantId: data.restaurantId || "",
-                branchId: data.assignedBranchId || "",
-                assignedBranchId: data.assignedBranchId || "",
-                assignedBranchName: data.assignedBranchName || "Branch",
-                status: data.status || "ACTIVE",
-                phone: data.phone || "",
-                avatar: data.avatar || "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80"
+                restaurantId: managerData.restaurantId || "",
+                branchId: managerData.assignedBranchId || managerData.branchId || "",
+                assignedBranchId: managerData.assignedBranchId || managerData.branchId || "",
+                assignedBranchName: managerData.assignedBranchName || managerData.branchName || "Branch",
+                status: managerData.status || "ACTIVE",
+                phone: managerData.phone || "",
+                avatar: managerData.avatar || "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80"
               };
-
-              console.log("[Auth Audit] Current Role: branchManager");
-              console.log("[Auth Audit] Auth Guard Decision: User validated as Branch Manager");
 
               document.cookie = "branch_manager_session=true; path=/; max-age=86400; SameSite=Lax;";
               document.cookie = "branch_manager_role=branchManager; path=/; max-age=86400; SameSite=Lax;";
@@ -96,7 +106,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
 
           // Fallback admin
-          console.log("[Auth Audit] Current Role: admin (fallback)");
           document.cookie = "admin_session=true; path=/; max-age=86400; SameSite=Lax;";
           document.cookie = "admin_role=admin; path=/; max-age=86400; SameSite=Lax;";
           document.cookie = "user_role=admin; path=/; max-age=86400; SameSite=Lax;";
@@ -113,7 +122,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.error("Error fetching user profile from Firestore:", e);
         }
       } else {
-        console.log("[Auth Audit] Auth Guard Decision: No Firebase user active");
+        console.log("[Branch Audit] No active Firebase user in AuthProvider");
       }
       setIsLoading(false);
     });
