@@ -22,6 +22,10 @@ import { useStore } from "@/lib/store/useStore";
 import { analyticsService } from "@/services/analyticsService";
 
 export default function AdminDashboardPage() {
+  React.useEffect(() => {
+    console.log("[Auth Audit] Dashboard Mounted");
+  }, []);
+
   const restaurants = useStore((state) => state.restaurants);
   const branches = useStore((state) => state.branches);
   const orders = useStore((state) => state.orders);

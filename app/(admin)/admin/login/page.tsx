@@ -9,6 +9,7 @@ import { authService } from "@/services/authService";
 export default function AdminLoginPage() {
   const router = useRouter();
   const setUser = useStore((state) => state.setUser);
+  const setAdminUser = useStore((state) => state.setAdminUser);
 
   const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [name, setName] = useState("");
@@ -38,8 +39,13 @@ export default function AdminLoginPage() {
           phone
         });
 
+        console.log("[Auth Audit] Login success: Super Admin registered", userObj.email);
+        document.cookie = "admin_session=true; path=/; max-age=86400; SameSite=Lax;";
+        document.cookie = "admin_role=admin; path=/; max-age=86400; SameSite=Lax;";
         document.cookie = "user_role=admin; path=/; max-age=86400; SameSite=Lax;";
+
         setUser(userObj);
+        setAdminUser(userObj);
         setSuccessMsg("Super Admin Account registered successfully!");
         router.push("/admin/dashboard");
       } else {
@@ -54,11 +60,17 @@ export default function AdminLoginPage() {
           return;
         }
 
+        console.log("[Auth Audit] Login success: Super Admin authenticated", userObj.email);
+        document.cookie = "admin_session=true; path=/; max-age=86400; SameSite=Lax;";
+        document.cookie = "admin_role=admin; path=/; max-age=86400; SameSite=Lax;";
         document.cookie = "user_role=admin; path=/; max-age=86400; SameSite=Lax;";
+
         setUser(userObj);
+        setAdminUser(userObj);
         router.push("/admin/dashboard");
       }
     } catch (err: any) {
+      console.error("[Auth Audit] Login failed:", err);
       const msg = err.message || "Authentication failed. User not found in database or invalid credentials.";
       setError(msg);
       setShowErrorPopup(true);

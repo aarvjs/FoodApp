@@ -39,7 +39,13 @@ function dedupeById<T extends { id: string }>(items: T[]): T[] {
 
 interface AppState {
   user: User | null;
+  adminUser: User | null;
+  branchManagerUser: User | null;
   setUser: (user: User | null) => void;
+  setAdminUser: (user: User | null) => void;
+  setBranchManagerUser: (user: User | null) => void;
+  logoutAdmin: () => void;
+  logoutBranchManager: () => void;
   logout: () => void;
 
   selectedRestaurantId: string | null;
@@ -114,12 +120,24 @@ export const useStore = create<AppState>()(
   persist(
     (set, get) => ({
       user: null,
-      setUser: (user) => set({ 
-        user,
-        selectedRestaurantId: user?.restaurantId || null,
-        selectedBranchId: user?.assignedBranchId || user?.branchId || null
+      adminUser: null,
+      branchManagerUser: null,
+      setUser: (user) => set((state) => {
+        const isAdmin = user?.role === "admin";
+        const isManager = user?.role === "branchManager";
+        return { 
+          user,
+          adminUser: isAdmin ? user : state.adminUser,
+          branchManagerUser: isManager ? user : state.branchManagerUser,
+          selectedRestaurantId: user?.restaurantId || state.selectedRestaurantId,
+          selectedBranchId: user?.assignedBranchId || user?.branchId || state.selectedBranchId
+        };
       }),
-      logout: () => set({ user: null, selectedRestaurantId: null, selectedBranchId: null }),
+      setAdminUser: (adminUser) => set({ adminUser }),
+      setBranchManagerUser: (branchManagerUser) => set({ branchManagerUser }),
+      logoutAdmin: () => set({ adminUser: null, user: null }),
+      logoutBranchManager: () => set({ branchManagerUser: null, user: null }),
+      logout: () => set({ user: null, adminUser: null, branchManagerUser: null, selectedRestaurantId: null, selectedBranchId: null }),
 
       selectedRestaurantId: null,
       selectedBranchId: null,
@@ -348,7 +366,11 @@ export const useStore = create<AppState>()(
     {
       name: "food_admin_firebase_store_v1",
       storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({ user: state.user })
+      partialize: (state) => ({ 
+        user: state.user,
+        adminUser: state.adminUser,
+        branchManagerUser: state.branchManagerUser
+      })
     }
   )
 );

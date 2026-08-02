@@ -19,6 +19,7 @@ import {
   X
 } from "lucide-react";
 import { useStore } from "@/lib/store/useStore";
+import { authService } from "@/services/authService";
 
 const branchManagerNavItems = [
   { name: "Dashboard", href: "/branch-manager/dashboard", icon: LayoutDashboard },
@@ -40,16 +41,24 @@ interface BranchManagerSidebarProps {
 
 export const BranchManagerSidebar: React.FC<BranchManagerSidebarProps> = ({ isOpen = false, onClose }) => {
   const pathname = usePathname();
-  const logout = useStore((state) => state.logout);
+  const logoutBranchManager = useStore((state) => state.logoutBranchManager);
   const user = useStore((state) => state.user);
   const branches = useStore((state) => state.branches);
 
   const assignedBranch = branches.find((b) => b.id === user?.branchId) || branches[0];
 
-  const handleLogout = () => {
-    document.cookie = "user_role=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
-    logout();
-    window.location.href = "/branch-manager/login";
+  const handleLogout = async () => {
+    try {
+      document.cookie = "branch_manager_session=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax;";
+      document.cookie = "branch_manager_role=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax;";
+      document.cookie = "user_role=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax;";
+      await authService.logout();
+    } catch (e) {
+      console.warn("Signout notice:", e);
+    } finally {
+      logoutBranchManager();
+      window.location.href = "/branch-manager/login";
+    }
   };
 
   return (

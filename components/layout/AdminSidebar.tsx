@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import { useStore } from "@/lib/store/useStore";
 
+import { authService } from "@/services/authService";
+
 const adminNavItems = [
   { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
   { name: "Restaurants", href: "/admin/restaurants", icon: Store },
@@ -34,12 +36,20 @@ interface AdminSidebarProps {
 
 export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen = false, onClose }) => {
   const pathname = usePathname();
-  const logout = useStore((state) => state.logout);
+  const logoutAdmin = useStore((state) => state.logoutAdmin);
 
-  const handleLogout = () => {
-    document.cookie = "user_role=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
-    logout();
-    window.location.href = "/admin/login";
+  const handleLogout = async () => {
+    try {
+      document.cookie = "admin_session=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax;";
+      document.cookie = "admin_role=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax;";
+      document.cookie = "user_role=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax;";
+      await authService.logout();
+    } catch (e) {
+      console.warn("Signout notice:", e);
+    } finally {
+      logoutAdmin();
+      window.location.href = "/admin/login";
+    }
   };
 
   return (

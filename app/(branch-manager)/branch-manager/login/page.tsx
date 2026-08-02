@@ -9,6 +9,7 @@ import { authService } from "@/services/authService";
 export default function BranchManagerLoginPage() {
   const router = useRouter();
   const setUser = useStore((state) => state.setUser);
+  const setBranchManagerUser = useStore((state) => state.setBranchManagerUser);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -33,10 +34,16 @@ export default function BranchManagerLoginPage() {
         return;
       }
 
+      console.log("[Auth Audit] Login success: Branch Manager authenticated", userObj.email);
+      document.cookie = "branch_manager_session=true; path=/; max-age=86400; SameSite=Lax;";
+      document.cookie = "branch_manager_role=branchManager; path=/; max-age=86400; SameSite=Lax;";
       document.cookie = "user_role=branchManager; path=/; max-age=86400; SameSite=Lax;";
+
       setUser(userObj);
+      setBranchManagerUser(userObj);
       router.push("/branch-manager/dashboard");
     } catch (err: any) {
+      console.error("[Auth Audit] Branch Manager Login failed:", err);
       const msg = err.message || "Invalid credentials or user record not found.";
       setError(msg);
       setShowErrorPopup(true);
