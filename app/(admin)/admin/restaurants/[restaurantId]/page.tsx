@@ -58,6 +58,8 @@ import { ReviewsModule } from "./components/ReviewsModule";
 import { AnalyticsModule } from "./components/AnalyticsModule";
 import { SettingsModule } from "./components/SettingsModule";
 
+import { useStore } from "@/lib/store/useStore";
+
 type TabType = 
   | "overview" 
   | "branches" 
@@ -86,6 +88,8 @@ export default function RestaurantDetailsPage() {
   const [offers, setOffers] = useState<OfferModel[]>([]);
   const [gallery, setGallery] = useState<GalleryItemModel[]>([]);
   const [reviews, setReviews] = useState<ReviewModel[]>([]);
+
+  const liveStoreOrders = useStore((state) => state.orders);
 
   const [activeTab, setActiveTab] = useState<TabType>("overview");
   const [loading, setLoading] = useState(true);
@@ -141,6 +145,25 @@ export default function RestaurantDetailsPage() {
     loadRestaurantData();
   }, [restaurantId]);
 
+  // Real-time subscription to restaurant orders from Firestore
+  useEffect(() => {
+    if (!restaurantId) return;
+    const unsub = orderRepository.subscribeByRestaurant(restaurantId, (liveResOrders) => {
+      setOrders(liveResOrders);
+    });
+    return () => unsub();
+  }, [restaurantId]);
+
+  // Compute live effective orders combining live store orders & direct subscription orders
+  const storeMatchingOrders = liveStoreOrders.filter((o) => {
+    if (!restaurantId) return true;
+    const isDirectRest = o.restaurantId === restaurantId;
+    const isBranchRest = o.branchId === restaurantId || branches.some((b) => b.restaurantId === restaurantId && b.id === o.branchId);
+    return isDirectRest || isBranchRest;
+  });
+
+  const effectiveOrders = storeMatchingOrders.length > 0 ? storeMatchingOrders : orders;
+
   if (loading) {
     return (
       <div className="p-6 space-y-6">
@@ -164,7 +187,7 @@ export default function RestaurantDetailsPage() {
     { id: "menu", label: `Menu (${menuItems.length})`, icon: UtensilsCrossed },
     { id: "tables", label: `Tables (${tables.length})`, icon: Grid3X3 },
     { id: "offers", label: `Offers (${offers.length})`, icon: Tag },
-    { id: "orders", label: `Orders (${orders.length})`, icon: ShoppingBag },
+    { id: "orders", label: `Orders (${effectiveOrders.length})`, icon: ShoppingBag },
     { id: "customers", label: "Customers", icon: Users },
     { id: "gallery", label: `Gallery (${gallery.length})`, icon: Image },
     { id: "reviews", label: `Reviews (${reviews.length})`, icon: Star },
@@ -281,11 +304,11 @@ export default function RestaurantDetailsPage() {
       )}
 
       {activeTab === "orders" && (
-        <OrdersModule orders={orders} onRefresh={loadRestaurantData} restaurantId={restaurantId} />
+        <OrdersModule orders={effectiveOrders} onRefresh={loadRestaurantData} restaurantId={restaurantId} />
       )}
 
       {activeTab === "customers" && (
-        <CustomersModule orders={orders} />
+        <CustomersModule orders={effectiveOrders} />
       )}
 
       {activeTab === "gallery" && (
@@ -302,7 +325,7 @@ export default function RestaurantDetailsPage() {
       )}
 
       {activeTab === "analytics" && (
-        <AnalyticsModule orders={orders} menuItems={menuItems} />
+        <AnalyticsModule orders={effectiveOrders} menuItems={menuItems} />
       )}
 
       {activeTab === "settings" && (

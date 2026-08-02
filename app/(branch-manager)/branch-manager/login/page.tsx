@@ -33,7 +33,7 @@ export default function BranchManagerLoginPage() {
         return;
       }
 
-      document.cookie = "user_role=branchManager; path=/; max-age=86400;";
+      document.cookie = "user_role=branchManager; path=/; max-age=86400; SameSite=Lax;";
       setUser(userObj);
       router.push("/branch-manager/dashboard");
     } catch (err: any) {

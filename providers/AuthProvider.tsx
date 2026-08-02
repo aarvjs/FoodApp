@@ -27,14 +27,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const adminDoc = await getDoc(doc(db, "admins", firebaseUser.uid));
           if (adminDoc.exists()) {
             const data = adminDoc.data();
-            setUser({
+            const adminUser: AdminUser = {
               id: firebaseUser.uid,
               name: data.name || "Super Admin",
               email: firebaseUser.email || "",
               role: "admin",
               phone: data.phone || "",
               avatar: data.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
-            } as AdminUser);
+            };
+
+            // SYNC COOKIE FOR MIDDLEWARE (Vercel Production)
+            document.cookie = "user_role=admin; path=/; max-age=86400; SameSite=Lax;";
+            setUser(adminUser);
             setIsLoading(false);
             return;
           }
@@ -44,9 +48,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (managerDoc.exists()) {
             const data = managerDoc.data();
             if (data.status === "INACTIVE") {
+              document.cookie = "user_role=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax;";
               setUser(null);
             } else {
-              setUser({
+              const managerUser: BranchManagerUser = {
                 id: firebaseUser.uid,
                 name: data.name || "Branch Manager",
                 email: firebaseUser.email || "",
@@ -58,12 +63,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 status: data.status || "ACTIVE",
                 phone: data.phone || "",
                 avatar: data.avatar || "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80"
-              } as BranchManagerUser);
+              };
+
+              // SYNC COOKIE FOR MIDDLEWARE (Vercel Production)
+              document.cookie = "user_role=branchManager; path=/; max-age=86400; SameSite=Lax;";
+              setUser(managerUser);
             }
             setIsLoading(false);
             return;
           }
 
+          // Default fallback to admin if in Firebase Auth
+          document.cookie = "user_role=admin; path=/; max-age=86400; SameSite=Lax;";
           setUser({
             id: firebaseUser.uid,
             name: firebaseUser.displayName || "Admin User",
@@ -73,6 +84,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } catch (e) {
           console.error("Error fetching user profile from Firestore:", e);
         }
+      } else {
+        // Clear cookie when no Firebase user
+        document.cookie = "user_role=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax;";
+        setUser(null);
       }
       setIsLoading(false);
     });

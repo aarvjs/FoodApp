@@ -38,7 +38,7 @@ export default function AdminLoginPage() {
           phone
         });
 
-        document.cookie = "user_role=admin; path=/; max-age=86400;";
+        document.cookie = "user_role=admin; path=/; max-age=86400; SameSite=Lax;";
         setUser(userObj);
         setSuccessMsg("Super Admin Account registered successfully!");
         router.push("/admin/dashboard");
@@ -54,7 +54,7 @@ export default function AdminLoginPage() {
           return;
         }
 
-        document.cookie = "user_role=admin; path=/; max-age=86400;";
+        document.cookie = "user_role=admin; path=/; max-age=86400; SameSite=Lax;";
         setUser(userObj);
         router.push("/admin/dashboard");
       }

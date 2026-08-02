@@ -84,6 +84,67 @@ export const orderRepository = {
     }
   },
 
+  subscribeByRestaurant(
+    restaurantId: string,
+    callback: (orders: OrderModel[]) => void,
+    onError?: (err: any) => void
+  ) {
+    if (!restaurantId) {
+      callback([]);
+      return () => {};
+    }
+
+    let orders1: OrderModel[] = [];
+    let orders2: OrderModel[] = [];
+
+    const mergeAndEmit = () => {
+      const map = new Map<string, OrderModel>();
+      orders1.forEach((o) => map.set(o.id, o));
+      orders2.forEach((o) => map.set(o.id, o));
+      const merged = Array.from(map.values());
+      merged.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+      callback(merged);
+    };
+
+    const q1 = query(
+      collection(db, COLLECTION_NAME),
+      where("restaurantId", "==", restaurantId)
+    );
+
+    const q2 = query(
+      collection(db, COLLECTION_NAME),
+      where("branchId", "==", restaurantId)
+    );
+
+    const unsub1 = onSnapshot(
+      q1,
+      (snap) => {
+        orders1 = snap.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() } as OrderModel));
+        mergeAndEmit();
+      },
+      (err) => {
+        console.warn("orderRepository.subscribeByRestaurant q1 notice:", err.message);
+        if (onError) onError(err);
+      }
+    );
+
+    const unsub2 = onSnapshot(
+      q2,
+      (snap) => {
+        orders2 = snap.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() } as OrderModel));
+        mergeAndEmit();
+      },
+      (err) => {
+        console.warn("orderRepository.subscribeByRestaurant q2 notice:", err.message);
+      }
+    );
+
+    return () => {
+      unsub1();
+      unsub2();
+    };
+  },
+
   async create(data: Partial<OrderModel>): Promise<OrderModel> {
     if (!data.branchId || !data.restaurantId) {
       throw new Error("orderRepository.create: branchId and restaurantId are mandatory.");

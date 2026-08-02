@@ -295,15 +295,51 @@ export interface Offer {
   status: "ACTIVE" | "DRAFT" | "EXPIRED";
 }
 
+export interface SavedAddress {
+  id?: string;
+  label?: string;
+  fullAddress: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  latitude?: number;
+  longitude?: number;
+  isDefault?: boolean;
+}
+
+export interface CustomerTimelineItem {
+  id: string;
+  title: string;
+  description: string;
+  timestamp: string;
+  type: "REGISTRATION" | "FIRST_ORDER" | "LATEST_ORDER" | "ADDRESS_UPDATE" | "PROFILE_UPDATE";
+}
+
 export interface Customer {
   id: string;
   name: string;
-  email: string;
+  email?: string;
   phone: string;
   totalOrders: number;
   totalSpent: number;
   lastOrderDate: string;
   branchId?: string;
+  avatar?: string;
+  profileImage?: string;
+  createdAt?: string;
+  registeredDate?: string;
+  address?: string;
+  currentSavedAddress?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  latitude?: number;
+  longitude?: number;
+  status?: "ACTIVE" | "INACTIVE";
+  assignedRestaurantCount?: number;
+  savedAddresses?: SavedAddress[];
+  timeline?: CustomerTimelineItem[];
 }
 
 export interface AppNotification {

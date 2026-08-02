@@ -23,7 +23,16 @@ export function proxy(request: NextRequest) {
     }
   }
 
-  // 3. Handle root redirect
+  // 3. Prevent authenticated users from visiting login pages
+  if (pathname === "/admin/login" && userRole === "admin") {
+    return NextResponse.redirect(new URL("/admin/dashboard", request.url));
+  }
+
+  if (pathname === "/branch-manager/login" && userRole === "branchManager") {
+    return NextResponse.redirect(new URL("/branch-manager/dashboard", request.url));
+  }
+
+  // 4. Handle root redirect
   if (pathname === "/") {
     if (userRole === "admin") {
       return NextResponse.redirect(new URL("/admin/dashboard", request.url));
