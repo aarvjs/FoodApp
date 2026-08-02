@@ -5,7 +5,7 @@ export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const cookies = request.cookies;
 
-  // Ignore static assets / sw.js
+  // Ignore service worker or static Next.js assets
   if (pathname === "/sw.js" || pathname.startsWith("/_next")) {
     return NextResponse.next();
   }
@@ -14,17 +14,14 @@ export function proxy(request: NextRequest) {
     cookies.get("admin_session")?.value === "true" ||
     cookies.get("admin_role")?.value === "admin";
 
-  const managerRoleCookie = cookies.get("branch_manager_role")?.value || cookies.get("user_role")?.value;
   const hasManagerSession =
     cookies.get("branch_manager_session")?.value === "true" ||
-    managerRoleCookie === "branchManager" ||
-    managerRoleCookie === "branch_manager";
+    cookies.get("branch_manager_role")?.value === "branchManager";
 
   // 1. Super Admin route protection
   if (pathname.startsWith("/admin") && !pathname.startsWith("/admin/login")) {
     const isAuthorizedAdmin = hasAdminSession || cookies.get("user_role")?.value === "admin";
     if (!isAuthorizedAdmin) {
-      console.log("[Branch Audit] Current Route:", pathname, "| Redirect Reason: Missing admin session");
       const loginUrl = new URL("/admin/login", request.url);
       loginUrl.searchParams.set("from", pathname);
       return NextResponse.redirect(loginUrl);
@@ -33,9 +30,8 @@ export function proxy(request: NextRequest) {
 
   // 2. Branch Manager route protection
   if (pathname.startsWith("/branch-manager") && !pathname.startsWith("/branch-manager/login")) {
-    const isAuthorizedManager = hasManagerSession;
+    const isAuthorizedManager = hasManagerSession || cookies.get("user_role")?.value === "branchManager";
     if (!isAuthorizedManager) {
-      console.log("[Branch Audit] Current Route:", pathname, "| Redirect Reason: Missing branch manager session");
       const loginUrl = new URL("/branch-manager/login", request.url);
       loginUrl.searchParams.set("from", pathname);
       return NextResponse.redirect(loginUrl);
@@ -44,12 +40,10 @@ export function proxy(request: NextRequest) {
 
   // 3. Prevent authenticated users from visiting login pages
   if (pathname === "/admin/login" && hasAdminSession) {
-    console.log("[Branch Audit] Current Route:", pathname, "| Redirect Reason: Authenticated Admin accessing login page");
     return NextResponse.redirect(new URL("/admin/dashboard", request.url));
   }
 
   if (pathname === "/branch-manager/login" && hasManagerSession) {
-    console.log("[Branch Audit] Current Route:", pathname, "| Redirect Reason: Authenticated Branch Manager accessing login page");
     return NextResponse.redirect(new URL("/branch-manager/dashboard", request.url));
   }
 

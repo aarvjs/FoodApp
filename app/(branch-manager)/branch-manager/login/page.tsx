@@ -26,7 +26,7 @@ export default function BranchManagerLoginPage() {
     try {
       const userObj = await authService.login(email, password);
 
-      if (userObj.role !== "branchManager" && (userObj.role as string) !== "branch_manager") {
+      if (userObj.role !== "branchManager") {
         const msg = "Account authorized as Admin. Please log in through Super Admin Portal.";
         setError(msg);
         setShowErrorPopup(true);
@@ -57,7 +57,7 @@ export default function BranchManagerLoginPage() {
       {showErrorPopup && error && (
         <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-4 relative text-center animate-in fade-in zoom-in duration-200">
-            <button 
+            <button
               onClick={() => setShowErrorPopup(false)}
               className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-100 transition-colors"
             >
