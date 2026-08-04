@@ -5,6 +5,10 @@ import { UtensilsCrossed, Plus, Trash2, Edit3, X, Upload, Loader2, Star, Flame, 
 import { useStore } from "@/lib/store/useStore";
 import { Product, ProductCustomization } from "@/types";
 
+import { ComboManagementTab } from "@/components/combos/ComboManagementTab";
+import { CustomizationTab } from "@/components/customization/CustomizationTab";
+import { Sliders, Package } from "lucide-react";
+
 export default function SuperAdminMenusPage() {
   const products = useStore((state) => state.products);
   const categories = useStore((state) => state.categories);
@@ -13,6 +17,18 @@ export default function SuperAdminMenusPage() {
   const addProduct = useStore((state) => state.addProduct);
   const updateProduct = useStore((state) => state.updateProduct);
   const deleteProduct = useStore((state) => state.deleteProduct);
+
+  const combos = useStore((state) => state.combos);
+  const customizationGroups = useStore((state) => state.customizationGroups);
+  const addCombo = useStore((state) => state.addCombo);
+  const updateCombo = useStore((state) => state.updateCombo);
+  const deleteCombo = useStore((state) => state.deleteCombo);
+  const toggleComboAvailability = useStore((state) => state.toggleComboAvailability);
+  const addCustomizationGroup = useStore((state) => state.addCustomizationGroup);
+  const updateCustomizationGroup = useStore((state) => state.updateCustomizationGroup);
+  const deleteCustomizationGroup = useStore((state) => state.deleteCustomizationGroup);
+
+  const [activeTab, setActiveTab] = useState<"products" | "combos" | "customization">("products");
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Product | null>(null);
@@ -148,8 +164,6 @@ export default function SuperAdminMenusPage() {
         ingredients: formData.ingredients.split(",").map((s) => s.trim()),
         customTags: formData.customTags.split(",").map((s) => s.trim()),
         customizations: customizationsList,
-        restaurantId: restaurants[0]?.id || "",
-        branchIds: branches.map((b) => b.id),
         status: formData.status,
         imageFile: imageFile || undefined,
         imageFiles: multipleFiles.length > 0 ? multipleFiles : undefined
@@ -163,7 +177,7 @@ export default function SuperAdminMenusPage() {
 
       setIsModalOpen(false);
     } catch (err: any) {
-      alert("Failed to save food item: " + err.message);
+      alert("Failed to save menu item: " + err.message);
     } finally {
       setSubmitting(false);
     }
@@ -185,70 +199,132 @@ export default function SuperAdminMenusPage() {
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
             <UtensilsCrossed className="w-6 h-6 text-emerald-600" /> Master Menu & Product Catalog
           </h1>
-          <p className="text-xs text-slate-500">Super Admin oversight of all food items, customizations, prep times & images in Cloud Firestore</p>
+          <p className="text-xs text-slate-500">Manage Products, Combos, and Customization Groups across restaurants & branches</p>
         </div>
+        {activeTab === "products" && (
+          <button
+            onClick={() => handleOpenModal()}
+            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/20 flex items-center gap-2 transition-all"
+          >
+            <Plus className="w-4 h-4" /> Add Food Item
+          </button>
+        )}
+      </div>
+
+      {/* 3 Tabs Bar */}
+      <div className="flex items-center gap-2 border-b border-slate-200/80 pb-3">
         <button
-          onClick={() => handleOpenModal()}
-          className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/20 flex items-center gap-2 transition-all"
+          onClick={() => setActiveTab("products")}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+            activeTab === "products"
+              ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/20"
+              : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80"
+          }`}
         >
-          <Plus className="w-4 h-4" /> Add Food Item
+          <UtensilsCrossed className="w-4 h-4" /> Products ({products.length})
+        </button>
+
+        <button
+          onClick={() => setActiveTab("combos")}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+            activeTab === "combos"
+              ? "bg-amber-600 text-white shadow-md shadow-amber-600/20"
+              : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80"
+          }`}
+        >
+          <Package className="w-4 h-4" /> Combos ({combos.length})
+        </button>
+
+        <button
+          onClick={() => setActiveTab("customization")}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+            activeTab === "customization"
+              ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
+              : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80"
+          }`}
+        >
+          <Sliders className="w-4 h-4" /> Customization ({customizationGroups.length})
         </button>
       </div>
 
-      {/* Search & Filter Bar */}
-      <div className="p-4 bg-white border border-slate-200/80 rounded-2xl shadow-sm flex flex-col sm:flex-row gap-3 items-center justify-between text-xs">
-        <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-2.5" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl"
-            placeholder="Search menu title, description..."
-          />
-        </div>
+      {/* Tab Content */}
+      {activeTab === "combos" && (
+        <ComboManagementTab
+          combos={combos}
+          products={products}
+          onAddCombo={addCombo}
+          onUpdateCombo={updateCombo}
+          onDeleteCombo={deleteCombo}
+          onToggleAvailability={toggleComboAvailability}
+        />
+      )}
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <select
-            value={filterCategory}
-            onChange={(e) => setFilterCategory(e.target.value)}
-            className="p-2 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-700"
-          >
-            <option value="ALL">All Categories</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.name}>{c.name}</option>
-            ))}
-          </select>
+      {activeTab === "customization" && (
+        <CustomizationTab
+          groups={customizationGroups}
+          products={products}
+          onAddGroup={addCustomizationGroup}
+          onUpdateGroup={updateCustomizationGroup}
+          onDeleteGroup={deleteCustomizationGroup}
+        />
+      )}
 
-          <select
-            value={filterFoodType}
-            onChange={(e) => setFilterFoodType(e.target.value)}
-            className="p-2 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-700"
-          >
-            <option value="ALL">All Food Types</option>
-            <option value="Veg">Veg</option>
-            <option value="Non Veg">Non Veg</option>
-            <option value="Egg">Egg</option>
-          </select>
-        </div>
-      </div>
+      {activeTab === "products" && (
+        <>
+          {/* Search & Filter Bar */}
+          <div className="p-4 bg-white border border-slate-200/80 rounded-2xl shadow-sm flex flex-col sm:flex-row gap-3 items-center justify-between text-xs">
+            <div className="relative w-full sm:w-80">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-2.5" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                placeholder="Search menu title, description..."
+              />
+            </div>
 
-      {/* Grid of Menu Items */}
-      {filteredProducts.length === 0 ? (
-        <div className="bg-white border border-slate-200/80 rounded-3xl p-10 text-center space-y-3 shadow-sm">
-          <UtensilsCrossed className="w-12 h-12 text-slate-300 mx-auto" />
-          <h3 className="text-lg font-bold text-slate-800">No Food Items Found</h3>
-          <p className="text-xs text-slate-400 max-w-sm mx-auto">
-            Click "Add Food Item" to create food products with multiple photos, food types, and custom add-ons.
-          </p>
-          <button
-            onClick={() => handleOpenModal()}
-            className="px-4 py-2 bg-emerald-600 text-white font-bold text-xs rounded-xl"
-          >
-            Add First Item
-          </button>
-        </div>
-      ) : (
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <select
+                value={filterCategory}
+                onChange={(e) => setFilterCategory(e.target.value)}
+                className="p-2 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-700"
+              >
+                <option value="ALL">All Categories</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.name}>{c.name}</option>
+                ))}
+              </select>
+
+              <select
+                value={filterFoodType}
+                onChange={(e) => setFilterFoodType(e.target.value)}
+                className="p-2 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-700"
+              >
+                <option value="ALL">All Food Types</option>
+                <option value="Veg">Veg</option>
+                <option value="Non Veg">Non Veg</option>
+                <option value="Egg">Egg</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Grid of Menu Items */}
+          {filteredProducts.length === 0 ? (
+            <div className="bg-white border border-slate-200/80 rounded-3xl p-10 text-center space-y-3 shadow-sm">
+              <UtensilsCrossed className="w-12 h-12 text-slate-300 mx-auto" />
+              <h3 className="text-lg font-bold text-slate-800">No Food Items Found</h3>
+              <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                Click "Add Food Item" to create food products with multiple photos, food types, and custom add-ons.
+              </p>
+              <button
+                onClick={() => handleOpenModal()}
+                className="px-4 py-2 bg-emerald-600 text-white font-bold text-xs rounded-xl"
+              >
+                Add First Item
+              </button>
+            </div>
+          ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredProducts.map((p, idx) => (
             <div key={p.id || `prod-${idx}`} className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
@@ -327,6 +403,8 @@ export default function SuperAdminMenusPage() {
             </div>
           ))}
         </div>
+      )}
+      </>
       )}
 
       {/* Rich Modal Editor */}

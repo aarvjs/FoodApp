@@ -11,7 +11,9 @@ import {
   offerService, 
   orderService, 
   customerService, 
-  tableService 
+  tableService,
+  comboService,
+  customizationService
 } from "@/services";
 
 export function useFirestoreRealtime(userRole?: string, targetBranchId?: string) {
@@ -29,6 +31,8 @@ export function useFirestoreRealtime(userRole?: string, targetBranchId?: string)
   const setCustomers = useStore((state) => state.setCustomers);
   const setTables = useStore((state) => state.setTables);
   const setTableBookings = useStore((state) => state.setTableBookings);
+  const setCombos = useStore((state) => state.setCombos);
+  const setCustomizationGroups = useStore((state) => state.setCustomizationGroups);
 
   useEffect(() => {
     // Only subscribe to live Firestore snapshots when an active user session exists
@@ -50,6 +54,8 @@ export function useFirestoreRealtime(userRole?: string, targetBranchId?: string)
     let unsubOffers: (() => void) | undefined;
     let unsubTables: (() => void) | undefined;
     let unsubBookings: (() => void) | undefined;
+    let unsubCombos: (() => void) | undefined;
+    let unsubCustomizationGroups: (() => void) | undefined;
 
     if (activeBranchId) {
       // CLEAR old branch items before loading new branch data
@@ -59,6 +65,7 @@ export function useFirestoreRealtime(userRole?: string, targetBranchId?: string)
       setOffers([]);
       setTables([]);
       setTableBookings([]);
+      setCombos([]);
 
       unsubCategories = categoryService.subscribeToBranchCategories(activeBranchId, (items) => {
         setCategories(items);
@@ -82,6 +89,14 @@ export function useFirestoreRealtime(userRole?: string, targetBranchId?: string)
 
       unsubBookings = tableService.subscribeToBranchBookings(activeBranchId, (items) => {
         setTableBookings(items);
+      });
+
+      unsubCombos = comboService.subscribeToBranchCombos(activeBranchId, (items) => {
+        setCombos(items);
+      });
+
+      unsubCustomizationGroups = customizationService.subscribeToCustomizationGroups((items) => {
+        setCustomizationGroups(items);
       });
     } else {
       unsubCategories = categoryService.subscribeToCategories((items) => {
@@ -107,6 +122,14 @@ export function useFirestoreRealtime(userRole?: string, targetBranchId?: string)
       unsubBookings = tableService.subscribeToBookings((items) => {
         setTableBookings(items);
       });
+
+      unsubCombos = comboService.subscribeToCombos((items) => {
+        setCombos(items);
+      });
+
+      unsubCustomizationGroups = customizationService.subscribeToCustomizationGroups((items) => {
+        setCustomizationGroups(items);
+      });
     }
 
     const unsubCustomers = customerService.subscribeToCustomers((items) => {
@@ -123,6 +146,8 @@ export function useFirestoreRealtime(userRole?: string, targetBranchId?: string)
       unsubCustomers?.();
       unsubTables?.();
       unsubBookings?.();
+      unsubCombos?.();
+      unsubCustomizationGroups?.();
     };
-  }, [user, userRole, activeBranchId, setRestaurants, setBranches, setCategories, setProducts, setOrders, setOffers, setCustomers, setTables, setTableBookings]);
+  }, [user, userRole, activeBranchId, setRestaurants, setBranches, setCategories, setProducts, setOrders, setOffers, setCustomers, setTables, setTableBookings, setCombos, setCustomizationGroups]);
 }

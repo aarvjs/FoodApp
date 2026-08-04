@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
-import { UtensilsCrossed, Plus, Trash2, Edit3, X, Upload, Loader2, Star, Flame, Check, Search, Store } from "lucide-react";
+import { UtensilsCrossed, Plus, Trash2, Edit3, X, Upload, Loader2, Star, Flame, Check, Search, Store, Package, Sliders } from "lucide-react";
 import { useStore } from "@/lib/store/useStore";
 import { Product, ProductCustomization } from "@/types";
+import { ComboManagementTab } from "@/components/combos/ComboManagementTab";
+import { CustomizationTab } from "@/components/customization/CustomizationTab";
 
 export default function BranchManagerMenuPage() {
   const user = useStore((state) => state.user);
@@ -12,6 +14,18 @@ export default function BranchManagerMenuPage() {
   const addProduct = useStore((state) => state.addProduct);
   const updateProduct = useStore((state) => state.updateProduct);
   const deleteProduct = useStore((state) => state.deleteProduct);
+
+  const combos = useStore((state) => state.combos);
+  const customizationGroups = useStore((state) => state.customizationGroups);
+  const addCombo = useStore((state) => state.addCombo);
+  const updateCombo = useStore((state) => state.updateCombo);
+  const deleteCombo = useStore((state) => state.deleteCombo);
+  const toggleComboAvailability = useStore((state) => state.toggleComboAvailability);
+  const addCustomizationGroup = useStore((state) => state.addCustomizationGroup);
+  const updateCustomizationGroup = useStore((state) => state.updateCustomizationGroup);
+  const deleteCustomizationGroup = useStore((state) => state.deleteCustomizationGroup);
+
+  const [activeTab, setActiveTab] = useState<"products" | "combos" | "customization">("products");
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Product | null>(null);
@@ -49,6 +63,9 @@ export default function BranchManagerMenuPage() {
     if (p.branchIds && p.branchIds.includes(user.branchId)) return true;
     return true;
   });
+
+  const branchCombos = combos;
+  const branchCustomizationGroups = customizationGroups;
 
   const filteredProducts = branchProducts.filter((p) => {
     const matchSearch = searchQuery === "" || (p.name || p.title || "").toLowerCase().includes(searchQuery.toLowerCase());
@@ -152,112 +169,171 @@ export default function BranchManagerMenuPage() {
             Manage food menu, stock status & item customizations for: <strong>{user?.assignedBranchName || "Assigned Branch"}</strong>
           </p>
         </div>
+        {activeTab === "products" && (
+          <button
+            onClick={() => handleOpenModal()}
+            className="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-amber-500/20 flex items-center gap-2 transition-all"
+          >
+            <Plus className="w-4 h-4" /> Add Branch Menu Item
+          </button>
+        )}
+      </div>
+
+      {/* 3 Tabs Navigation Bar */}
+      <div className="flex items-center gap-2 border-b border-slate-200/80 pb-3">
         <button
-          onClick={() => handleOpenModal()}
-          className="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-amber-500/20 flex items-center gap-2 transition-all"
+          onClick={() => setActiveTab("products")}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${activeTab === "products"
+            ? "bg-amber-600 text-white shadow-md shadow-amber-600/20"
+            : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80"
+            }`}
         >
-          <Plus className="w-4 h-4" /> Add Branch Menu Item
+          <UtensilsCrossed className="w-4 h-4" /> Products ({branchProducts.length})
+        </button>
+
+        <button
+          onClick={() => setActiveTab("combos")}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${activeTab === "combos"
+            ? "bg-orange-600 text-white shadow-md shadow-orange-600/20"
+            : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80"
+            }`}
+        >
+          <Package className="w-4 h-4" /> Combos ({branchCombos.length})
+        </button>
+
+        <button
+          onClick={() => setActiveTab("customization")}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${activeTab === "customization"
+            ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
+            : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80"
+            }`}
+        >
+          <Sliders className="w-4 h-4" /> Customization ({branchCustomizationGroups.length})
         </button>
       </div>
 
-      {/* Search & Filter Bar */}
-      <div className="p-4 bg-white border border-slate-200/80 rounded-2xl shadow-sm flex flex-col sm:flex-row gap-3 items-center justify-between text-xs">
-        <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-2.5" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl"
-            placeholder="Search branch menu items..."
-          />
-        </div>
+      {/* Tab Content */}
+      {activeTab === "combos" && (
+        <ComboManagementTab
+          combos={branchCombos}
+          products={branchProducts}
+          onAddCombo={addCombo}
+          onUpdateCombo={updateCombo}
+          onDeleteCombo={deleteCombo}
+          onToggleAvailability={toggleComboAvailability}
+        />
+      )}
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <select
-            value={filterFoodType}
-            onChange={(e) => setFilterFoodType(e.target.value)}
-            className="p-2 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-700"
-          >
-            <option value="ALL">All Food Types</option>
-            <option value="Veg">Veg</option>
-            <option value="Non Veg">Non Veg</option>
-            <option value="Egg">Egg</option>
-          </select>
-        </div>
-      </div>
+      {activeTab === "customization" && (
+        <CustomizationTab
+          groups={branchCustomizationGroups}
+          products={branchProducts}
+          onAddGroup={addCustomizationGroup}
+          onUpdateGroup={updateCustomizationGroup}
+          onDeleteGroup={deleteCustomizationGroup}
+        />
+      )}
 
-      {/* Branch Menu Items Grid */}
-      {filteredProducts.length === 0 ? (
-        <div className="bg-white border border-slate-200/80 rounded-3xl p-10 text-center space-y-3 shadow-sm">
-          <Store className="w-12 h-12 text-slate-300 mx-auto" />
-          <h3 className="text-lg font-bold text-slate-800">No Food Items for Branch</h3>
-          <p className="text-xs text-slate-400 max-w-sm mx-auto">
-            Click "Add Branch Menu Item" to add new food items with images and customizations.
-          </p>
-          <button
-            onClick={() => handleOpenModal()}
-            className="px-4 py-2 bg-amber-500 text-slate-950 font-bold text-xs rounded-xl"
-          >
-            Add First Item
-          </button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProducts.map((p, idx) => {
-            const isItemAvailable = p.isAvailable ?? p.available ?? true;
-            return (
-              <div key={p.id || `bprod-${idx}`} className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                <div className="h-44 bg-slate-100 relative">
-                  <img src={p.image} alt={p.name || p.title} className="w-full h-full object-cover" />
-                  <span className={`absolute top-2 left-2 px-2 py-0.5 rounded text-[10px] font-bold text-white uppercase ${
-                    p.foodType === "Egg" ? "bg-amber-600" : p.isVeg || p.foodType === "Veg" ? "bg-emerald-600" : "bg-rose-600"
-                  }`}>
-                    {p.foodType || (p.isVeg ? "Veg" : "Non-Veg")}
-                  </span>
-                </div>
+      {activeTab === "products" && (
+        <>
+          {/* Search & Filter Bar */}
+          <div className="p-4 bg-white border border-slate-200/80 rounded-2xl shadow-sm flex flex-col sm:flex-row gap-3 items-center justify-between text-xs">
+            <div className="relative w-full sm:w-80">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-2.5" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                placeholder="Search branch menu items..."
+              />
+            </div>
 
-                <div className="p-4 space-y-3">
-                  <div>
-                    <h3 className="font-bold text-slate-900 text-sm">{p.name || p.title}</h3>
-                    <p className="text-xs text-slate-500 line-clamp-1">{p.description}</p>
-                    <span className="text-sm font-black text-slate-900 mt-1 block">
-                      ₹{p.offerPrice || p.discountPrice || p.price}
-                    </span>
-                  </div>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <select
+                value={filterFoodType}
+                onChange={(e) => setFilterFoodType(e.target.value)}
+                className="p-2 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-700"
+              >
+                <option value="ALL">All Food Types</option>
+                <option value="Veg">Veg</option>
+                <option value="Non Veg">Non Veg</option>
+                <option value="Egg">Egg</option>
+              </select>
+            </div>
+          </div>
 
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
-                    <button
-                      onClick={() => updateProduct(p.id, { isAvailable: !isItemAvailable, available: !isItemAvailable })}
-                      className={`px-3 py-1 rounded-lg font-bold text-xs transition-colors ${
-                        isItemAvailable ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"
-                      }`}
-                    >
-                      {isItemAvailable ? "In Stock" : "Out of Stock"}
-                    </button>
+          {/* Branch Menu Items Grid */}
+          {filteredProducts.length === 0 ? (
+            <div className="bg-white border border-slate-200/80 rounded-3xl p-10 text-center space-y-3 shadow-sm">
+              <Store className="w-12 h-12 text-slate-300 mx-auto" />
+              <h3 className="text-lg font-bold text-slate-800">No Food Items for Branch</h3>
+              <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                Click "Add Branch Menu Item" to add new food items with images and customizations.
+              </p>
+              <button
+                onClick={() => handleOpenModal()}
+                className="px-4 py-2 bg-amber-500 text-slate-950 font-bold text-xs rounded-xl"
+              >
+                Add First Item
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredProducts.map((p, idx) => {
+                const isItemAvailable = p.isAvailable ?? p.available ?? true;
+                return (
+                  <div key={p.id || `bprod-${idx}`} className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                    <div className="h-44 bg-slate-100 relative">
+                      <img src={p.image} alt={p.name || p.title} className="w-full h-full object-cover" />
+                      <span className={`absolute top-2 left-2 px-2 py-0.5 rounded text-[10px] font-bold text-white uppercase ${p.foodType === "Egg" ? "bg-amber-600" : p.isVeg || p.foodType === "Veg" ? "bg-emerald-600" : "bg-rose-600"
+                        }`}>
+                        {p.foodType || (p.isVeg ? "Veg" : "Non-Veg")}
+                      </span>
+                    </div>
 
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => handleOpenModal(p)}
-                        className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg"
-                        title="Edit Menu Item"
-                      >
-                        <Edit3 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => deleteProduct(p.id)}
-                        className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg"
-                        title="Delete Menu Item"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                    <div className="p-4 space-y-3">
+                      <div>
+                        <h3 className="font-bold text-slate-900 text-sm">{p.name || p.title}</h3>
+                        <p className="text-xs text-slate-500 line-clamp-1">{p.description}</p>
+                        <span className="text-sm font-black text-slate-900 mt-1 block">
+                          ₹{p.offerPrice || p.discountPrice || p.price}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
+                        <button
+                          onClick={() => updateProduct(p.id, { isAvailable: !isItemAvailable, available: !isItemAvailable })}
+                          className={`px-3 py-1 rounded-lg font-bold text-xs transition-colors ${isItemAvailable ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"
+                            }`}
+                        >
+                          {isItemAvailable ? "In Stock" : "Out of Stock"}
+                        </button>
+
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleOpenModal(p)}
+                            className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg"
+                            title="Edit Menu Item"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => deleteProduct(p.id)}
+                            className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg"
+                            title="Delete Menu Item"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
 
       {/* Modal Editor */}

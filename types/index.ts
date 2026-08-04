@@ -133,6 +133,84 @@ export interface ProductCustomization {
   isAvailable: boolean;
 }
 
+export interface CustomizationOption {
+  id: string;
+  name: string;
+  price: number;
+  isAvailable: boolean;
+}
+
+export interface CustomizationGroup {
+  id: string;
+  restaurantId: string;
+  branchId?: string;
+  branchIds?: string[];
+  title: string;
+  selectionType: "single" | "multi";
+  isRequired: boolean;
+  minSelection: number;
+  maxSelection: number;
+  options: CustomizationOption[];
+  status: "ACTIVE" | "INACTIVE";
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ComboReplacementItem {
+  productId: string;
+  productName: string;
+  productImage?: string;
+  extraPrice: number;
+}
+
+export interface ComboItemReference {
+  productId: string;
+  productName: string;
+  productImage?: string;
+  productPrice?: number;
+  defaultQuantity: number;
+  canRemove: boolean;
+  priceDeductionOnRemoval?: number;
+  allowedReplacements?: ComboReplacementItem[];
+}
+
+export interface ComboAddonOption {
+  id: string;
+  name: string;
+  price: number;
+  isAvailable: boolean;
+}
+
+export interface ComboAddonGroup {
+  id: string;
+  title: string;
+  options: ComboAddonOption[];
+}
+
+export type AvailabilitySlot = "FULL_DAY" | "BREAKFAST" | "LUNCH" | "DINNER";
+
+export interface Combo {
+  id: string;
+  restaurantId: string;
+  branchId?: string;
+  branchIds: string[];
+  name: string;
+  description: string;
+  price: number;
+  discountPrice?: number;
+  image: string;
+  images?: string[];
+  isAvailable: boolean;
+  availabilitySlot: AvailabilitySlot;
+  items: ComboItemReference[];
+  addonGroups?: ComboAddonGroup[];
+  customizationGroupIds?: string[];
+  category?: string;
+  status: "ACTIVE" | "INACTIVE";
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface Product {
   id: string;
   title?: string;
@@ -164,6 +242,8 @@ export interface Product {
   ingredients?: string[];
   customTags?: string[];
   customizations?: ProductCustomization[];
+  customizationGroupIds?: string[];
+  customizationGroups?: CustomizationGroup[];
   rating?: number;
   prepTimeMinutes: number;
   status?: "ACTIVE" | "INACTIVE";

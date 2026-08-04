@@ -77,6 +77,13 @@ export default function AdminLoginPage() {
     }
   };
 
+  const handleSwitchMode = () => {
+    setIsRegisterMode((prev) => !prev);
+    setError("");
+    setSuccessMsg("");
+    setShowErrorPopup(false);
+  };
+
   return (
     <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
       {/* Error Popup Modal */}
@@ -96,12 +103,27 @@ export default function AdminLoginPage() {
               <h3 className="text-lg font-bold text-slate-900">Authentication Error</h3>
               <p className="text-xs text-slate-600 leading-relaxed">{error}</p>
             </div>
-            <button
-              onClick={() => setShowErrorPopup(false)}
-              className="w-full py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-rose-600/30 transition-all"
-            >
-              Close & Try Again
-            </button>
+            
+            {error.toLowerCase().includes("already registered") || error.toLowerCase().includes("please sign in") ? (
+              <button
+                onClick={() => {
+                  setIsRegisterMode(false);
+                  setError("");
+                  setShowErrorPopup(false);
+                }}
+                className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center gap-1.5"
+              >
+                <span>Switch to Sign In</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            ) : (
+              <button
+                onClick={() => setShowErrorPopup(false)}
+                className="w-full py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-rose-600/30 transition-all"
+              >
+                Close & Try Again
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -120,6 +142,29 @@ export default function AdminLoginPage() {
               : "Global System Management & Multi-Branch Control"}
           </p>
         </div>
+
+        {error && (
+          <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl text-xs font-semibold space-y-2 animate-in fade-in duration-200">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+              <span className="leading-relaxed">{error}</span>
+            </div>
+            {(error.toLowerCase().includes("already registered") || error.toLowerCase().includes("please sign in")) && isRegisterMode && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsRegisterMode(false);
+                  setError("");
+                  setShowErrorPopup(false);
+                }}
+                className="w-full py-1.5 px-3 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow transition-colors flex items-center justify-center gap-1.5"
+              >
+                <span>Click here to Sign In</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        )}
 
         {successMsg && (
           <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl text-xs font-semibold">
@@ -218,10 +263,7 @@ export default function AdminLoginPage() {
         <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs">
           <button
             type="button"
-            onClick={() => {
-              setIsRegisterMode(!isRegisterMode);
-              setError("");
-            }}
+            onClick={handleSwitchMode}
             className="text-emerald-600 font-bold hover:underline"
           >
             {isRegisterMode ? "Already have an account? Sign In" : "First time? Register Super Admin"}

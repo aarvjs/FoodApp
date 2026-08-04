@@ -35,50 +35,55 @@ service cloud.firestore {
 
     // Restaurants Collection: Managed by Super Admin
     match /restaurants/{restaurantId} {
-      allow read: if isAuthenticated();
+      allow read: if true;
       allow create, update, delete: if isAdmin();
     }
 
     // Branches Collection: Managed by Super Admin
     match /branches/{branchId} {
-      allow read: if isAuthenticated();
+      allow read: if true;
       allow create, update, delete: if isAdmin();
+    }
+
+    // Combos Collection: Created by Super Admin & Branch Managers, read by App
+    match /combos/{comboId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin() || isManager() || isAuthenticated();
     }
 
     // Categories Collection
     match /categories/{categoryId} {
-      allow read: if isAuthenticated();
+      allow read: if true;
       allow create, update, delete: if isAdmin() || isManager();
     }
 
     // Menu Items Collection
     match /menuItems/{menuItemId} {
-      allow read: if isAuthenticated();
+      allow read: if true;
       allow create: if isAdmin() || isManager();
       allow update, delete: if isAdmin() || isManager();
     }
 
     // Tables Collection
     match /tables/{tableId} {
-      allow read: if isAuthenticated();
+      allow read: if true;
       allow create, update, delete: if isAdmin() || isManager();
     }
 
     // Table Bookings Collection
     match /tableBookings/{bookingId} {
-      allow read: if isAuthenticated();
-      allow create, update, delete: if isAdmin() || isManager();
+      allow read, create, update, delete: if true;
     }
 
     // Banners Collection
     match /banners/{bannerId} {
-      allow read: if isAuthenticated();
+      allow read: if true;
       allow create, update, delete: if isAdmin() || isManager();
     }
 
     // Offers Collection
     match /offers/{offerId} {
-      allow read: if isAuthenticated();
+      allow read: if true;
       allow create, update, delete: if isAdmin() || isManager();
     }
 

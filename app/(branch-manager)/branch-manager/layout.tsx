@@ -23,7 +23,7 @@ export default function BranchManagerLayout({
   useFirestoreRealtime("branchManager", user?.assignedBranchId || user?.branchId);
 
   // Exclude login page from sidebar layout & guard check
-  const isLoginPage = pathname === "/branch-manager/login";
+  const isLoginPage = pathname?.startsWith("/branch-manager/login");
 
   useEffect(() => {
     if (!isLoading && !isLoginPage) {
@@ -42,7 +42,7 @@ export default function BranchManagerLayout({
     return (
       <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center text-slate-100 p-4">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-10 h-10 text-amber-500 animate-spin" />
+          <Loader2 className="w-10 h-10 text-amber-500 animate-spin " />
           <p className="text-xs font-semibold text-slate-400">Verifying Branch Manager session...</p>
         </div>
       </div>

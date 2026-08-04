@@ -28,20 +28,24 @@ export const authService = {
       firebaseUser = userCredential.user;
     } catch (err: any) {
       const code = err?.code || "";
+      const message = err?.message || "";
       if (
         code === "auth/invalid-credential" || 
         code === "auth/user-not-found" || 
-        code === "auth/wrong-password"
+        code === "auth/wrong-password" ||
+        message.includes("invalid-credential") ||
+        message.includes("user-not-found") ||
+        message.includes("wrong-password")
       ) {
         throw new Error("User not found or invalid credentials. Please check your email and password.");
-      } else if (code === "auth/invalid-email") {
+      } else if (code === "auth/invalid-email" || message.includes("invalid-email")) {
         throw new Error("Invalid email address format.");
-      } else if (code === "auth/user-disabled") {
+      } else if (code === "auth/user-disabled" || message.includes("user-disabled")) {
         throw new Error("This account has been disabled.");
-      } else if (code === "auth/too-many-requests") {
+      } else if (code === "auth/too-many-requests" || message.includes("too-many-requests")) {
         throw new Error("Too many failed attempts. Please try again later.");
       }
-      throw new Error(err.message || "Authentication failed. Please check your credentials.");
+      throw new Error(err?.message || "Authentication failed. Please check your credentials.");
     }
 
     // First check admins collection
@@ -100,14 +104,15 @@ export const authService = {
       firebaseUser = userCredential.user;
     } catch (err: any) {
       const code = err?.code || "";
-      if (code === "auth/email-already-in-use") {
+      const message = err?.message || "";
+      if (code === "auth/email-already-in-use" || message.includes("email-already-in-use")) {
         throw new Error("This email is already registered. Please sign in instead.");
-      } else if (code === "auth/weak-password") {
+      } else if (code === "auth/weak-password" || message.includes("weak-password")) {
         throw new Error("Password must be at least 6 characters long.");
-      } else if (code === "auth/invalid-email") {
+      } else if (code === "auth/invalid-email" || message.includes("invalid-email")) {
         throw new Error("Invalid email address format.");
       }
-      throw new Error(err.message || "Registration failed. Please check provided details.");
+      throw new Error(err?.message || "Registration failed. Please check provided details.");
     }
 
     const adminData = {
@@ -143,7 +148,21 @@ export const authService = {
     assignedBranchName: string;
   }): Promise<BranchManagerUser> => {
     const secondaryAuth = getSecondaryAuth();
-    const userCredential = await createUserWithEmailAndPassword(secondaryAuth, data.email, data.pass);
+    let userCredential;
+    try {
+      userCredential = await createUserWithEmailAndPassword(secondaryAuth, data.email, data.pass);
+    } catch (err: any) {
+      const code = err?.code || "";
+      const message = err?.message || "";
+      if (code === "auth/email-already-in-use" || message.includes("email-already-in-use")) {
+        throw new Error("This email is already registered for another account.");
+      } else if (code === "auth/weak-password" || message.includes("weak-password")) {
+        throw new Error("Password must be at least 6 characters long.");
+      } else if (code === "auth/invalid-email" || message.includes("invalid-email")) {
+        throw new Error("Invalid email address format.");
+      }
+      throw new Error(err?.message || "Failed to create manager account.");
+    }
     const newUid = userCredential.user.uid;
 
     const managerData = {

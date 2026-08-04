@@ -21,7 +21,7 @@ export default function AdminLayout({
   useFirestoreRealtime(user?.role, user?.branchId);
 
   // Exclude login page from sidebar layout & guard check
-  const isLoginPage = pathname === "/admin/login";
+  const isLoginPage = pathname?.startsWith("/admin/login");
 
   useEffect(() => {
     if (!isLoading && !isLoginPage) {

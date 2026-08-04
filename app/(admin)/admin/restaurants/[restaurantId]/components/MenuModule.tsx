@@ -8,6 +8,10 @@ import { CategoryModel } from "@/models/category";
 import { menuRepository } from "@/repositories/menuRepository";
 import { Toast } from "@/components/ui/Toast";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
+import { useStore } from "@/lib/store/useStore";
+import { ComboManagementTab } from "@/components/combos/ComboManagementTab";
+import { CustomizationTab } from "@/components/customization/CustomizationTab";
+import { Package, Sliders } from "lucide-react";
 
 interface MenuModuleProps {
   restaurantId: string;
@@ -18,6 +22,21 @@ interface MenuModuleProps {
 }
 
 export function MenuModule({ restaurantId, branches, categories, menuItems, onRefresh }: MenuModuleProps) {
+  const storeProducts = useStore((state) => state.products);
+  const combos = useStore((state) => state.combos);
+  const customizationGroups = useStore((state) => state.customizationGroups);
+
+  const addCombo = useStore((state) => state.addCombo);
+  const updateCombo = useStore((state) => state.updateCombo);
+  const deleteCombo = useStore((state) => state.deleteCombo);
+  const toggleComboAvailability = useStore((state) => state.toggleComboAvailability);
+
+  const addCustomizationGroup = useStore((state) => state.addCustomizationGroup);
+  const updateCustomizationGroup = useStore((state) => state.updateCustomizationGroup);
+  const deleteCustomizationGroup = useStore((state) => state.deleteCustomizationGroup);
+
+  const [activeTab, setActiveTab] = useState<"products" | "combos" | "customization">("products");
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItemModel | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -56,6 +75,10 @@ export function MenuModule({ restaurantId, branches, categories, menuItems, onRe
     { id: "cust-1", name: "Extra Cheese", price: 30, isAvailable: true },
     { id: "cust-2", name: "Extra Patty", price: 45, isAvailable: true }
   ]);
+
+  const restCombos = combos.filter((c) => c.restaurantId === restaurantId || !c.restaurantId);
+  const restCustomizationGroups = customizationGroups.filter((g) => g.restaurantId === restaurantId || !g.restaurantId);
+  const availableProductsList = storeProducts.length > 0 ? storeProducts : (menuItems as any);
 
   const handleOpenModal = (item?: MenuItemModel) => {
     if (item) {
@@ -107,7 +130,7 @@ export function MenuModule({ restaurantId, branches, categories, menuItems, onRe
       });
       setCustomizationsList([
         { id: "cust-1", name: "Extra Cheese", price: 30, isAvailable: true },
-        { id: "cust-2", name: "Extra Sauce", price: 15, isAvailable: true }
+        { id: "cust-2", name: "Extra Patty", price: 45, isAvailable: true }
       ]);
     }
     setMainImageFile(null);
@@ -118,8 +141,12 @@ export function MenuModule({ restaurantId, branches, categories, menuItems, onRe
   const handleAddCustomization = () => {
     setCustomizationsList([
       ...customizationsList,
-      { id: "cust-" + Date.now(), name: "Cold Drink (250ml)", price: 25, isAvailable: true }
+      { id: "cust-" + Date.now(), name: "Extra Sauce", price: 15, isAvailable: true }
     ]);
+  };
+
+  const handleRemoveCustomization = (id: string) => {
+    setCustomizationsList(customizationsList.filter((c) => c.id !== id));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -180,11 +207,11 @@ export function MenuModule({ restaurantId, branches, categories, menuItems, onRe
     setSubmitting(true);
     try {
       await menuRepository.delete(deletingItemId);
-      setToastMessage("Food item removed.");
+      setToastMessage("Food item deleted.");
       setDeletingItemId(null);
       onRefresh();
     } catch (err: any) {
-      alert("Failed to delete menu item: " + err.message);
+      alert("Failed to delete item: " + err.message);
     } finally {
       setSubmitting(false);
     }
@@ -204,21 +231,81 @@ export function MenuModule({ restaurantId, branches, categories, menuItems, onRe
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-            <UtensilsCrossed className="w-5 h-5 text-emerald-600" /> Restaurant Food Menu Catalog
+            <UtensilsCrossed className="w-5 h-5 text-emerald-600" /> Restaurant Menu & Customization Builder
           </h2>
-          <p className="text-xs text-slate-500">Every menu item is strictly linked to a restaurant branch ID</p>
+          <p className="text-xs text-slate-500">Manage Products, Combos & Customization Options for this Restaurant</p>
         </div>
 
+        {activeTab === "products" && (
+          <button
+            onClick={() => handleOpenModal()}
+            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-lg flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" /> Add Food Item
+          </button>
+        )}
+      </div>
+
+      {/* 3 Tabs Navigation Bar */}
+      <div className="flex items-center gap-2 border-b border-slate-200/80 pb-3">
         <button
-          onClick={() => handleOpenModal()}
-          className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-lg flex items-center gap-2"
+          onClick={() => setActiveTab("products")}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+            activeTab === "products"
+              ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/20"
+              : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80"
+          }`}
         >
-          <Plus className="w-4 h-4" /> Add Food Item
+          <UtensilsCrossed className="w-4 h-4" /> Products ({menuItems.length})
+        </button>
+
+        <button
+          onClick={() => setActiveTab("combos")}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+            activeTab === "combos"
+              ? "bg-amber-600 text-white shadow-md shadow-amber-600/20"
+              : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80"
+          }`}
+        >
+          <Package className="w-4 h-4" /> Combos ({restCombos.length})
+        </button>
+
+        <button
+          onClick={() => setActiveTab("customization")}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+            activeTab === "customization"
+              ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
+              : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80"
+          }`}
+        >
+          <Sliders className="w-4 h-4" /> Customization ({restCustomizationGroups.length})
         </button>
       </div>
 
-      {/* Menu Table / Grid */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm overflow-hidden text-xs">
+      {/* Tab Content */}
+      {activeTab === "combos" && (
+        <ComboManagementTab
+          combos={restCombos}
+          products={availableProductsList}
+          onAddCombo={addCombo}
+          onUpdateCombo={updateCombo}
+          onDeleteCombo={deleteCombo}
+          onToggleAvailability={toggleComboAvailability}
+        />
+      )}
+
+      {activeTab === "customization" && (
+        <CustomizationTab
+          groups={restCustomizationGroups}
+          products={availableProductsList}
+          onAddGroup={addCustomizationGroup}
+          onUpdateGroup={updateCustomizationGroup}
+          onDeleteGroup={deleteCustomizationGroup}
+        />
+      )}
+
+      {activeTab === "products" && (
+        <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm overflow-hidden text-xs">
         <table className="w-full text-left text-slate-700">
           <thead className="bg-slate-50 text-slate-500 uppercase font-bold text-[10px]">
             <tr>
@@ -263,6 +350,7 @@ export function MenuModule({ restaurantId, branches, categories, menuItems, onRe
           </tbody>
         </table>
       </div>
+      )}
 
       {/* Large Food Item Modal */}
       {isModalOpen && (

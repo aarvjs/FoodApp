@@ -93,6 +93,7 @@ export default function BranchManagerTablesPage() {
           </h1>
           <p className="text-xs text-slate-500">Manage floor seating & customer table reservations for your branch</p>
         </div>
+        
 
         <div className="flex items-center gap-2">
           <div className="bg-slate-100 p-1 rounded-xl flex items-center gap-1 text-xs">

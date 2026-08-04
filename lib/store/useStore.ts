@@ -14,7 +14,9 @@ import {
   Offer, 
   Customer, 
   DeliveryChargeRule,
-  OrderStatus 
+  OrderStatus,
+  Combo,
+  CustomizationGroup
 } from "@/types";
 import { 
   restaurantService, 
@@ -25,7 +27,9 @@ import {
   orderService, 
   customerService, 
   bannerService, 
-  tableService 
+  tableService,
+  comboService,
+  customizationService
 } from "@/services";
 
 function dedupeById<T extends { id: string }>(items: T[]): T[] {
@@ -108,6 +112,19 @@ interface AppState {
   setTableBookings: (bookings: TableBooking[]) => void;
   createTableBooking: (booking: Partial<TableBooking>) => Promise<TableBooking>;
   updateBookingStatus: (id: string, status: TableBookingStatus, tableId?: string) => Promise<void>;
+
+  combos: Combo[];
+  setCombos: (combos: Combo[]) => void;
+  addCombo: (combo: Partial<Combo> & { imageFile?: File | string; imageFiles?: File[] }) => Promise<Combo>;
+  updateCombo: (id: string, updated: Partial<Combo> & { imageFile?: File | string; imageFiles?: File[] }) => Promise<void>;
+  deleteCombo: (id: string) => Promise<void>;
+  toggleComboAvailability: (id: string, isAvailable: boolean) => Promise<void>;
+
+  customizationGroups: CustomizationGroup[];
+  setCustomizationGroups: (groups: CustomizationGroup[]) => void;
+  addCustomizationGroup: (group: Partial<CustomizationGroup>) => Promise<CustomizationGroup>;
+  updateCustomizationGroup: (id: string, updated: Partial<CustomizationGroup>) => Promise<void>;
+  deleteCustomizationGroup: (id: string) => Promise<void>;
 }
 
 const initialDeliveryCharges: DeliveryChargeRule[] = [
@@ -360,6 +377,80 @@ export const useStore = create<AppState>()(
         await tableService.updateBookingStatus(id, status, tableId);
         set((state) => ({
           tableBookings: state.tableBookings.map((b) => (b.id === id ? { ...b, status, updatedAt: new Date().toISOString() } : b))
+        }));
+      },
+
+      // Combos
+      combos: [],
+      setCombos: (combos) => set({ combos: dedupeById(combos) }),
+      addCombo: async (data) => {
+        const currentRest = get().selectedRestaurantId || get().user?.restaurantId || "";
+        const currentBranch = get().selectedBranchId || get().user?.assignedBranchId || get().user?.branchId || "";
+        const allBranchIds = get().branches.map((b) => b.id);
+        const targetBranchIds = (data.branchIds && data.branchIds.length > 0)
+          ? data.branchIds
+          : (data.branchId ? [data.branchId] : (currentBranch ? [currentBranch] : allBranchIds));
+
+        const payload = {
+          ...data,
+          restaurantId: data.restaurantId || currentRest,
+          branchId: data.branchId || currentBranch || (allBranchIds[0] || ""),
+          branchIds: targetBranchIds
+        };
+        const created = await comboService.addCombo(payload);
+        set((state) => ({ combos: dedupeById([created, ...state.combos]) }));
+        return created;
+      },
+      updateCombo: async (id, updated) => {
+        await comboService.updateCombo(id, updated);
+        set((state) => ({
+          combos: state.combos.map((c) => (c.id === id ? { ...c, ...updated } : c))
+        }));
+      },
+      deleteCombo: async (id) => {
+        await comboService.deleteCombo(id);
+        set((state) => ({
+          combos: state.combos.filter((c) => c.id !== id)
+        }));
+      },
+      toggleComboAvailability: async (id, isAvailable) => {
+        await comboService.toggleAvailability(id, isAvailable);
+        set((state) => ({
+          combos: state.combos.map((c) => (c.id === id ? { ...c, isAvailable } : c))
+        }));
+      },
+
+      // Customization Groups
+      customizationGroups: [],
+      setCustomizationGroups: (groups) => set({ customizationGroups: dedupeById(groups) }),
+      addCustomizationGroup: async (data) => {
+        const currentRest = get().selectedRestaurantId || get().user?.restaurantId || "";
+        const currentBranch = get().selectedBranchId || get().user?.assignedBranchId || get().user?.branchId || "";
+        const allBranchIds = get().branches.map((b) => b.id);
+        const targetBranchIds = (data.branchIds && data.branchIds.length > 0)
+          ? data.branchIds
+          : (data.branchId ? [data.branchId] : (currentBranch ? [currentBranch] : allBranchIds));
+
+        const payload = {
+          ...data,
+          restaurantId: data.restaurantId || currentRest,
+          branchId: data.branchId || currentBranch || (allBranchIds[0] || ""),
+          branchIds: targetBranchIds
+        };
+        const created = await customizationService.addCustomizationGroup(payload);
+        set((state) => ({ customizationGroups: dedupeById([created, ...state.customizationGroups]) }));
+        return created;
+      },
+      updateCustomizationGroup: async (id, updated) => {
+        await customizationService.updateCustomizationGroup(id, updated);
+        set((state) => ({
+          customizationGroups: state.customizationGroups.map((g) => (g.id === id ? { ...g, ...updated } : g))
+        }));
+      },
+      deleteCustomizationGroup: async (id) => {
+        await customizationService.deleteCustomizationGroup(id);
+        set((state) => ({
+          customizationGroups: state.customizationGroups.filter((g) => g.id !== id)
         }));
       }
     }),
