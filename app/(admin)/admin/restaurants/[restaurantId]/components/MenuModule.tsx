@@ -286,11 +286,10 @@ export function MenuModule({ restaurantId, branches, categories, menuItems, onRe
       {activeTab === "combos" && (
         <ComboManagementTab
           combos={restCombos}
-          products={availableProductsList}
+          restaurantId={restaurantId}
           onAddCombo={addCombo}
           onUpdateCombo={updateCombo}
           onDeleteCombo={deleteCombo}
-          onToggleAvailability={toggleComboAvailability}
         />
       )}
 

@@ -251,11 +251,9 @@ export default function SuperAdminMenusPage() {
       {activeTab === "combos" && (
         <ComboManagementTab
           combos={combos}
-          products={products}
           onAddCombo={addCombo}
           onUpdateCombo={updateCombo}
           onDeleteCombo={deleteCombo}
-          onToggleAvailability={toggleComboAvailability}
         />
       )}
 

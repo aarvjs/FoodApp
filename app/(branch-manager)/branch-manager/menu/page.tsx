@@ -64,8 +64,18 @@ export default function BranchManagerMenuPage() {
     return true;
   });
 
-  const branchCombos = combos;
-  const branchCustomizationGroups = customizationGroups;
+  const branchCombos = combos.filter((c) => {
+    if (!user?.branchId) return true;
+    if (c.branchId && c.branchId === user.branchId) return true;
+    if (c.branchIds && c.branchIds.includes(user.branchId)) return true;
+    return false;
+  });
+  const branchCustomizationGroups = customizationGroups.filter((g) => {
+    if (!user?.branchId) return true;
+    if (g.branchId && g.branchId === user.branchId) return true;
+    if (g.branchIds && g.branchIds.includes(user.branchId)) return true;
+    return false;
+  });
 
   const filteredProducts = branchProducts.filter((p) => {
     const matchSearch = searchQuery === "" || (p.name || p.title || "").toLowerCase().includes(searchQuery.toLowerCase());
@@ -216,11 +226,13 @@ export default function BranchManagerMenuPage() {
       {activeTab === "combos" && (
         <ComboManagementTab
           combos={branchCombos}
-          products={branchProducts}
+          restaurantId={user?.restaurantId || ""}
+          branchId={user?.branchId}
+          branchIds={user?.branchId ? [user.branchId] : []}
+          isBranchManager={true}
           onAddCombo={addCombo}
           onUpdateCombo={updateCombo}
           onDeleteCombo={deleteCombo}
-          onToggleAvailability={toggleComboAvailability}
         />
       )}
 

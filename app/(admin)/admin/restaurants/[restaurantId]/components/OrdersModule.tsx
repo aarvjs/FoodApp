@@ -388,15 +388,55 @@ export function OrdersModule({ orders: initialOrders, onRefresh, restaurantId }:
             <div className="space-y-2">
               <h4 className="font-bold text-slate-900 text-xs">Order Items</h4>
               <div className="divide-y divide-slate-100 border border-slate-200 rounded-2xl overflow-hidden bg-white">
-                {selectedOrder.items?.map((item: any, idx: number) => (
-                  <div key={idx} className="p-3 flex justify-between items-center">
-                    <div>
-                      <p className="font-bold text-slate-800">{item.productName || item.name} × {item.quantity}</p>
-                      <p className="text-[10px] text-slate-400">₹{item.price} each</p>
+                {selectedOrder.items?.map((item: any, idx: number) => {
+                  const baseP = item.basePrice || item.price || 0;
+                  const unitP = item.unitPrice || item.price || 0;
+                  const totalItemP = unitP * (item.quantity || 1);
+                  const addonsP = unitP > baseP ? unitP - baseP : 0;
+
+                  return (
+                    <div key={idx} className="p-3 space-y-1.5 border-b border-slate-100 last:border-none">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <p className="font-bold text-slate-800">{item.quantity}x {item.productName || item.name}</p>
+                            {(item.isCombo || item.comboName) && (
+                              <span className="px-1.5 py-0.5 bg-amber-100 text-amber-900 font-black text-[9px] rounded">
+                                COMBO{item.comboName ? `: ${item.comboName}` : ""}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[10px] text-slate-400">Unit Price: ₹{unitP}</p>
+                        </div>
+                        <span className="font-bold text-slate-900">₹{totalItemP}</span>
+                      </div>
+
+                      {(item.customizationSelections?.length > 0 || (item.customizations && item.customizations.length > 0)) && (
+                        <div className="text-[10px] text-amber-900 bg-amber-50/90 border border-amber-200/80 p-2 rounded-xl space-y-1 font-medium">
+                          <div className="flex justify-between items-center text-[9.5px] font-bold text-amber-900 border-b border-amber-200/60 pb-0.5">
+                            <span>Customizations Selected</span>
+                            <span>Base: ₹{baseP}{addonsP > 0 ? ` + Add-ons: ₹${addonsP}` : ''}</span>
+                          </div>
+                          {item.customizationSelections && item.customizationSelections.length > 0 ? (
+                            item.customizationSelections.map((c: any, cIdx: number) => (
+                              <div key={cIdx} className="flex justify-between">
+                                <span>• {c.groupName || 'Option'}: <strong>{c.optionName || c.name}</strong></span>
+                                <span className="font-semibold text-amber-800">+{c.additionalPrice > 0 ? `₹${c.additionalPrice}` : 'Free'}</span>
+                              </div>
+                            ))
+                          ) : (
+                            item.customizations.map((c: string, cIdx: number) => (
+                              <div key={cIdx}>• {c}</div>
+                            ))
+                          )}
+                          <div className="text-[9.5px] font-bold text-amber-900 pt-0.5 border-t border-amber-200/60 text-right">
+                            Final Item Unit Price: ₹{unitP}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <span className="font-bold text-slate-900">₹{item.price * item.quantity}</span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 

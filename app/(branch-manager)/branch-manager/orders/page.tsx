@@ -207,17 +207,52 @@ export default function BranchManagerOrdersPage() {
                   <div className="space-y-2">
                     <div>
                       <span className="text-[10px] font-bold text-slate-400 uppercase">Items Ordered & Customizations</span>
-                      {ord.items?.map((it, idx) => (
-                        <div key={idx} className="space-y-0.5 mt-1 border-b border-slate-100 pb-1">
-                          <div className="flex justify-between font-semibold text-slate-800">
-                            <span>{it.quantity}x {it.productName}</span>
-                            <span>₹{it.price * it.quantity}</span>
+                      {ord.items?.map((it: any, idx: number) => {
+                        const baseP = it.basePrice || it.price || 0;
+                        const unitP = it.unitPrice || it.price || 0;
+                        const totalItemP = unitP * (it.quantity || 1);
+                        const addonsP = unitP > baseP ? unitP - baseP : 0;
+
+                        return (
+                          <div key={idx} className="space-y-1.5 mt-2 border-b border-slate-100 pb-2">
+                            <div className="flex justify-between font-semibold text-slate-800">
+                              <span className="flex items-center gap-1.5 flex-wrap">
+                                <span>{it.quantity}x {it.productName}</span>
+                                {(it.isCombo || it.comboName) && (
+                                  <span className="px-1.5 py-0.5 bg-amber-100 text-amber-900 font-black text-[9px] rounded">
+                                    COMBO{it.comboName ? `: ${it.comboName}` : ""}
+                                  </span>
+                                )}
+                              </span>
+                              <span className="font-bold text-slate-900">₹{totalItemP}</span>
+                            </div>
+
+                            {(it.customizationSelections?.length > 0 || (it.customizations && it.customizations.length > 0)) && (
+                              <div className="text-[10.5px] text-amber-900 bg-amber-50/90 border border-amber-200/80 p-2 rounded-xl space-y-1 font-medium">
+                                <div className="flex justify-between items-center text-[10px] font-bold text-amber-900 border-b border-amber-200/60 pb-1">
+                                  <span>Customizations Selected</span>
+                                  <span>Base: ₹{baseP}{addonsP > 0 ? ` + Add-ons: ₹${addonsP}` : ''}</span>
+                                </div>
+                                {it.customizationSelections && it.customizationSelections.length > 0 ? (
+                                  it.customizationSelections.map((c: any, cIdx: number) => (
+                                    <div key={cIdx} className="flex justify-between">
+                                      <span>• {c.groupName || 'Option'}: <strong>{c.optionName || c.name}</strong></span>
+                                      <span className="font-semibold text-amber-800">+{c.additionalPrice > 0 ? `₹${c.additionalPrice}` : 'Free'}</span>
+                                    </div>
+                                  ))
+                                ) : (
+                                  it.customizations.map((c: string, cIdx: number) => (
+                                    <div key={cIdx}>• {c}</div>
+                                  ))
+                                )}
+                                <div className="text-[10px] font-bold text-amber-900 pt-1 border-t border-amber-200/60 text-right">
+                                  Final Item Unit Price: ₹{unitP}
+                                </div>
+                              </div>
+                            )}
                           </div>
-                          {it.customizations && it.customizations.length > 0 && (
-                            <p className="text-[10px] text-amber-700 font-medium italic">Note: {it.customizations.join(", ")}</p>
-                          )}
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                     <p className="text-[11px] text-slate-500 font-medium">
                       Branch: <strong className="text-slate-800">{ord.branchName || assignedBranch?.name || "Branch"}</strong>

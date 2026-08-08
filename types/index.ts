@@ -156,57 +156,37 @@ export interface CustomizationGroup {
   updatedAt?: string;
 }
 
-export interface ComboReplacementItem {
-  productId: string;
-  productName: string;
-  productImage?: string;
-  extraPrice: number;
-}
-
-export interface ComboItemReference {
-  productId: string;
-  productName: string;
-  productImage?: string;
-  productPrice?: number;
-  defaultQuantity: number;
-  canRemove: boolean;
-  priceDeductionOnRemoval?: number;
-  allowedReplacements?: ComboReplacementItem[];
-}
-
-export interface ComboAddonOption {
-  id: string;
-  name: string;
-  price: number;
-  isAvailable: boolean;
-}
-
-export interface ComboAddonGroup {
-  id: string;
-  title: string;
-  options: ComboAddonOption[];
-}
-
-export type AvailabilitySlot = "FULL_DAY" | "BREAKFAST" | "LUNCH" | "DINNER";
-
 export interface Combo {
   id: string;
+  name: string;
+  image: string;
+  description?: string;
+  isAvailable?: boolean;
+  isActive?: boolean;
   restaurantId: string;
   branchId?: string;
-  branchIds: string[];
+  branchIds?: string[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ComboItem {
+  id: string;
+  comboId: string;
+  restaurantId: string;
+  branchId?: string;
+  branchIds?: string[];
   name: string;
+  image: string;
   description: string;
   price: number;
-  discountPrice?: number;
-  image: string;
-  images?: string[];
-  isAvailable: boolean;
-  availabilitySlot: AvailabilitySlot;
-  items: ComboItemReference[];
-  addonGroups?: ComboAddonGroup[];
-  customizationGroupIds?: string[];
-  category?: string;
-  status: "ACTIVE" | "INACTIVE";
+  originalPrice?: number;
+  foodType: "Veg" | "Non Veg";
+  isVeg: boolean;
+  rating?: number;
+  ratingCount?: number;
+  isCustomisable?: boolean;
+  customizationGroups?: CustomizationGroup[];
   createdAt?: string;
   updatedAt?: string;
 }
