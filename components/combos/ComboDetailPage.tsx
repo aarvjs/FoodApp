@@ -7,7 +7,8 @@ import {
   subscribeToComboItems,
   addComboItem,
   updateComboItem,
-  deleteComboItem
+  deleteComboItem,
+  toggleAvailability
 } from "@/services/comboService";
 import { ComboItemModal } from "./ComboItemModal";
 import { ComboProductCustomizationModal } from "./ComboProductCustomizationModal";
@@ -32,8 +33,26 @@ export const ComboDetailPage: React.FC<ComboDetailPageProps> = ({
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ComboItem | null>(null);
 
+  // Active status state
+  const [isComboActive, setIsComboActive] = useState<boolean>(combo.isActive ?? combo.isAvailable ?? true);
+
   // Customization modal state
   const [customizingItem, setCustomizingItem] = useState<ComboItem | null>(null);
+
+  useEffect(() => {
+    setIsComboActive(combo.isActive ?? combo.isAvailable ?? true);
+  }, [combo.isActive, combo.isAvailable]);
+
+  const handleToggleActive = async () => {
+    const nextState = !isComboActive;
+    setIsComboActive(nextState);
+    try {
+      await toggleAvailability(combo.id, nextState);
+    } catch (err) {
+      console.error("Failed to toggle combo availability:", err);
+      setIsComboActive(!nextState);
+    }
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -125,13 +144,40 @@ export const ComboDetailPage: React.FC<ComboDetailPageProps> = ({
               ) : null}
             </div>
 
-            <button
-              onClick={handleOpenAddModal}
-              className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-black text-xs rounded-xl shadow-xl transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add Item to Combo</span>
-            </button>
+            <div className="flex items-center gap-3 shrink-0">
+              {/* Active / Inactive Toggle Switch */}
+              <button
+                type="button"
+                onClick={handleToggleActive}
+                className={`px-4 py-2.5 rounded-xl font-extrabold text-xs shadow-lg backdrop-blur-md transition-all flex items-center gap-2 cursor-pointer border ${
+                  isComboActive
+                    ? "bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-400/40"
+                    : "bg-slate-800 hover:bg-slate-900 text-slate-200 border-slate-600/50"
+                }`}
+                title={`Click to turn ${isComboActive ? "OFF (INACTIVE)" : "ON (ACTIVE)"}`}
+              >
+                <span>{isComboActive ? "ACTIVE (ON)" : "INACTIVE (OFF)"}</span>
+                <span
+                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                    isComboActive ? "bg-emerald-400" : "bg-slate-600"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                      isComboActive ? "translate-x-4.5" : "translate-x-0.5"
+                    }`}
+                  />
+                </span>
+              </button>
+
+              <button
+                onClick={handleOpenAddModal}
+                className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-black text-xs rounded-xl shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add Item to Combo</span>
+              </button>
+            </div>
           </div>
         </div>
 

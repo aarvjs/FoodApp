@@ -43,12 +43,18 @@ export const restaurantRepository = {
   },
 
   async getById(id: string): Promise<RestaurantModel | null> {
-    const docRef = doc(db, COLLECTION_NAME, id);
-    const snap = await getDoc(docRef);
-    if (snap.exists()) {
-      return { id: snap.id, ...snap.data() } as RestaurantModel;
+    if (!id) return null;
+    try {
+      const docRef = doc(db, COLLECTION_NAME, id);
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        return { id: snap.id, ...snap.data() } as RestaurantModel;
+      }
+      return null;
+    } catch (e) {
+      console.warn("restaurantRepository.getById error:", e);
+      return null;
     }
-    return null;
   },
 
   async create(data: Partial<RestaurantModel>): Promise<RestaurantModel> {

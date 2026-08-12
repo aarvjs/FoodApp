@@ -19,9 +19,10 @@ interface MenuModuleProps {
   categories: CategoryModel[];
   menuItems: MenuItemModel[];
   onRefresh: () => void;
+  initialTab?: "products" | "combos" | "customization";
 }
 
-export function MenuModule({ restaurantId, branches, categories, menuItems, onRefresh }: MenuModuleProps) {
+export function MenuModule({ restaurantId, branches, categories, menuItems, onRefresh, initialTab = "products" }: MenuModuleProps) {
   const storeProducts = useStore((state) => state.products);
   const combos = useStore((state) => state.combos);
   const customizationGroups = useStore((state) => state.customizationGroups);
@@ -35,7 +36,7 @@ export function MenuModule({ restaurantId, branches, categories, menuItems, onRe
   const updateCustomizationGroup = useStore((state) => state.updateCustomizationGroup);
   const deleteCustomizationGroup = useStore((state) => state.deleteCustomizationGroup);
 
-  const [activeTab, setActiveTab] = useState<"products" | "combos" | "customization">("products");
+  const [activeTab, setActiveTab] = useState<"products" | "combos" | "customization">(initialTab);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItemModel | null>(null);
@@ -290,6 +291,7 @@ export function MenuModule({ restaurantId, branches, categories, menuItems, onRe
           onAddCombo={addCombo}
           onUpdateCombo={updateCombo}
           onDeleteCombo={deleteCombo}
+          onToggleAvailability={toggleComboAvailability}
         />
       )}
 

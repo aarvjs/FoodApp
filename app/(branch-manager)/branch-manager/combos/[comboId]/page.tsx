@@ -10,7 +10,8 @@ import {
   updateCombo,
   addComboItem,
   updateComboItem,
-  deleteComboItem
+  deleteComboItem,
+  toggleAvailability
 } from "@/services/comboService";
 import { ComboItemModal } from "@/components/combos/ComboItemModal";
 import { ComboModal } from "@/components/combos/ComboModal";
@@ -69,6 +70,19 @@ export default function BranchManagerComboDetailPage() {
 
   const handleBack = () => {
     router.push("/branch-manager/menu");
+  };
+
+  const handleToggleActive = async () => {
+    if (!combo) return;
+    const isCurrentActive = combo.isActive ?? combo.isAvailable ?? true;
+    const nextState = !isCurrentActive;
+    setCombo({ ...combo, isActive: nextState, isAvailable: nextState });
+    try {
+      await toggleAvailability(combo.id, nextState);
+    } catch (err) {
+      console.error("Failed to toggle combo availability:", err);
+      setCombo({ ...combo, isActive: isCurrentActive, isAvailable: isCurrentActive });
+    }
   };
 
   const handleSaveCombo = async (data: Partial<Combo> & { imageFile?: File | string }) => {
@@ -153,6 +167,33 @@ export default function BranchManagerComboDetailPage() {
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
+                {/* Active / Inactive Toggle Switch */}
+                {combo && (
+                  <button
+                    type="button"
+                    onClick={handleToggleActive}
+                    className={`px-3.5 py-2.5 rounded-xl font-extrabold text-xs shadow-lg backdrop-blur-md transition-all flex items-center gap-2 cursor-pointer border ${
+                      (combo.isActive ?? combo.isAvailable ?? true)
+                        ? "bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-400/40"
+                        : "bg-slate-800 hover:bg-slate-900 text-slate-200 border-slate-600/50"
+                    }`}
+                    title={`Click to turn ${(combo.isActive ?? combo.isAvailable ?? true) ? "OFF (INACTIVE)" : "ON (ACTIVE)"}`}
+                  >
+                    <span>{(combo.isActive ?? combo.isAvailable ?? true) ? "ACTIVE (ON)" : "INACTIVE (OFF)"}</span>
+                    <span
+                      className={`relative inline-flex h-4.5 w-8 items-center rounded-full transition-colors ${
+                        (combo.isActive ?? combo.isAvailable ?? true) ? "bg-emerald-400" : "bg-slate-600"
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                          (combo.isActive ?? combo.isAvailable ?? true) ? "translate-x-4" : "translate-x-0.5"
+                        }`}
+                      />
+                    </span>
+                  </button>
+                )}
+
                 <button
                   onClick={() => setIsEditComboModalOpen(true)}
                   className="px-4 py-2.5 bg-white/90 hover:bg-white text-slate-800 font-extrabold text-xs rounded-xl shadow-lg transition-all flex items-center gap-1.5 cursor-pointer"

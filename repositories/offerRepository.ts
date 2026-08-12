@@ -22,6 +22,10 @@ export const offerRepository = {
       throw new Error("offerRepository.create: branchId and restaurantId are mandatory.");
     }
     const docRef = doc(collection(db, COLLECTION_NAME));
+    const usageLimitVal = data.usageLimit !== undefined ? Number(data.usageLimit) : 0;
+    const usageCountVal = data.usageCount !== undefined ? Number(data.usageCount) : 0;
+    const remainingUsesVal = usageLimitVal > 0 ? Math.max(0, usageLimitVal - usageCountVal) : 0;
+
     const newOffer: OfferModel = {
       id: docRef.id,
       restaurantId: data.restaurantId,
@@ -32,13 +36,42 @@ export const offerRepository = {
       type: data.type || "FLAT_DISCOUNT",
       discountPercentage: data.discountPercentage || 15,
       coupon: data.coupon || "SPECIAL15",
-      minimumOrder: data.minimumOrder || 299,
+      minimumOrder: data.minimumOrder !== undefined ? Number(data.minimumOrder) : 299,
       status: data.status || "ACTIVE",
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+
+      validityType: data.validityType || "FULL_DAY",
+      startTime: data.startTime || "",
+      endTime: data.endTime || "",
+      applicableDays: data.applicableDays || [],
+      usageLimit: usageLimitVal,
+      usageCount: usageCountVal,
+      remainingUses: remainingUsesVal,
+      minimumOrderAmount: data.minimumOrderAmount !== undefined ? Number(data.minimumOrderAmount) : Number(data.minimumOrder || 0),
+      discountType: data.discountType || (data.discountPercentage ? "PERCENTAGE" : "FIXED_AMOUNT"),
+      discountValue: data.discountValue !== undefined ? Number(data.discountValue) : Number(data.discountPercentage || 0),
+      maximumDiscountAmount: data.maximumDiscountAmount !== undefined ? Number(data.maximumDiscountAmount) : 0,
+      excludedCategoryIds: data.excludedCategoryIds || [],
+      isActive: data.isActive !== false && data.status !== "EXPIRED"
     };
 
     await setDoc(docRef, newOffer);
     return newOffer;
+  },
+
+  async update(id: string, data: Partial<OfferModel>): Promise<void> {
+    const docRef = doc(db, COLLECTION_NAME, id);
+    const updatePayload: Record<string, any> = {
+      ...data,
+      updatedAt: new Date().toISOString()
+    };
+    if (data.usageLimit !== undefined || data.usageCount !== undefined) {
+      const limit = data.usageLimit !== undefined ? Number(data.usageLimit) : 0;
+      const count = data.usageCount !== undefined ? Number(data.usageCount) : 0;
+      updatePayload.remainingUses = limit > 0 ? Math.max(0, limit - count) : 0;
+    }
+    await updateDoc(docRef, updatePayload);
   },
 
   async delete(id: string): Promise<void> {

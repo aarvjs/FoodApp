@@ -193,6 +193,15 @@ export const orderRepository = {
     rejectionReason?: string
   ): Promise<void> {
     const docRef = doc(db, COLLECTION_NAME, id);
+    const snap = await getDoc(docRef);
+    if (!snap.exists()) {
+      throw new Error("Order not found.");
+    }
+    const currentData = snap.data();
+    if ((currentData.status || "").toUpperCase() === "CANCELLED") {
+      throw new Error("This order has already been cancelled and cannot be updated.");
+    }
+
     let payload: any = {
       status,
       updatedAt: new Date().toISOString()
@@ -204,53 +213,124 @@ export const orderRepository = {
     await updateDoc(docRef, payload);
 
     try {
-      const snap = await getDoc(docRef);
-      if (snap.exists()) {
-        const orderData = snap.data();
-        const customerId = orderData.customerId || orderData.userId;
-        const orderNum = orderData.orderNumber || id;
-        if (customerId) {
-          let title = `Order Status Updated`;
-          let body = `Your order #${orderNum} status is now ${status.replace(/_/g, ' ')}.`;
+      const orderData = currentData;
+      const customerId = orderData.customerId || orderData.userId;
+      const orderNum = orderData.orderNumber || id;
+      if (customerId) {
+        let title = `Order Status Updated`;
+        let body = `Your order #${orderNum} status is now ${status.replace(/_/g, ' ')}.`;
 
-          if (status === 'ACCEPTED') {
-            title = 'Order Accepted! 🍳';
-            body = `Your order #${orderNum} has been accepted. Estimated prep time: ${estimatedPrepMinutes || 20} mins.`;
-          } else if (status === 'PREPARING') {
-            title = 'Kitchen Preparing Your Order 👨‍🍳';
-            body = `The chef is now preparing your meal for order #${orderNum}.`;
-          } else if (status === 'READY') {
-            title = 'Order Ready! 📦';
-            body = `Your order #${orderNum} is ready and waiting for pickup/dispatch.`;
-          } else if (status === 'OUT_FOR_DELIVERY') {
-            title = 'Out for Delivery! 🛵';
-            body = `Your order #${orderNum} is on the way. Our rider will reach you soon!`;
-          } else if (status === 'DELIVERED') {
-            title = 'Order Delivered! 🎉';
-            body = `Your order #${orderNum} has been delivered. Bon appétit!`;
-          } else if (status === 'REJECTED') {
-            title = 'Order Rejected ❌';
-            body = `Order #${orderNum} was rejected. Reason: ${rejectionReason || 'Kitchen busy'}`;
-          } else if (status === 'CANCELLED') {
-            title = 'Order Cancelled ⚠️';
-            body = `Order #${orderNum} has been cancelled.`;
-          }
-
-          const notifRef = doc(collection(db, "notifications"));
-          await setDoc(notifRef, {
-            id: notifRef.id,
-            userId: customerId,
-            orderId: id,
-            title,
-            body,
-            type: 'delivery',
-            read: false,
-            createdAt: new Date().toISOString()
-          });
+        if (status === 'ACCEPTED') {
+          title = 'Order Accepted! 🍳';
+          body = `Your order #${orderNum} has been accepted. Estimated prep time: ${estimatedPrepMinutes || 20} mins.`;
+        } else if (status === 'PREPARING') {
+          title = 'Kitchen Preparing Your Order 👨‍🍳';
+          body = `The chef is now preparing your meal for order #${orderNum}.`;
+        } else if (status === 'READY') {
+          title = 'Order Ready! 📦';
+          body = `Your order #${orderNum} is ready and waiting for pickup/dispatch.`;
+        } else if (status === 'OUT_FOR_DELIVERY') {
+          title = 'Out for Delivery! 🛵';
+          body = `Your order #${orderNum} is on the way. Our rider will reach you soon!`;
+        } else if (status === 'DELIVERED') {
+          title = 'Order Delivered! 🎉';
+          body = `Your order #${orderNum} has been delivered. Bon appétit!`;
+        } else if (status === 'REJECTED') {
+          title = 'Order Rejected ❌';
+          body = `Order #${orderNum} was rejected. Reason: ${rejectionReason || 'Kitchen busy'}`;
+        } else if (status === 'CANCELLED') {
+          title = 'Order Cancelled ⚠️';
+          body = `Order #${orderNum} has been cancelled.`;
         }
+
+        const notifRef = doc(collection(db, "notifications"));
+        await setDoc(notifRef, {
+          id: notifRef.id,
+          userId: customerId,
+          orderId: id,
+          title,
+          body,
+          type: 'delivery',
+          read: false,
+          createdAt: new Date().toISOString()
+        });
       }
     } catch (e) {
       console.warn("Failed to generate notification record:", e);
     }
+  },
+
+  async cancelOrder(
+    id: string,
+    cancelledBy: "customer" | "admin" | "branch_manager" | string,
+    cancellationReason: string,
+    cancellationNote?: string
+  ): Promise<{ success: boolean; message?: string }> {
+    const docRef = doc(db, COLLECTION_NAME, id);
+    const snap = await getDoc(docRef);
+    if (!snap.exists()) {
+      return { success: false, message: "Order not found." };
+    }
+    const orderData = snap.data();
+    const currentStatus = (orderData.status || "").toUpperCase();
+
+    if (currentStatus === "CANCELLED") {
+      return { success: false, message: "This order has already been cancelled." };
+    }
+    if (currentStatus === "DELIVERED" || currentStatus === "COMPLETED") {
+      return { success: false, message: "Delivered or completed orders cannot be cancelled." };
+    }
+
+    const now = new Date().toISOString();
+    const payload: any = {
+      status: "CANCELLED",
+      cancelledBy,
+      cancellationReason,
+      cancellationNote: cancellationNote || "",
+      cancelledAt: now,
+      updatedAt: now
+    };
+
+    if (orderData.paymentStatus === "PAID") {
+      payload.paymentStatus = "REFUNDED";
+    }
+
+    await updateDoc(docRef, payload);
+
+    try {
+      const customerId = orderData.customerId || orderData.userId;
+      const orderNum = orderData.orderNumber || id;
+      if (customerId) {
+        const notifRef = doc(collection(db, "notifications"));
+        await setDoc(notifRef, {
+          id: notifRef.id,
+          userId: customerId,
+          orderId: id,
+          title: "Order Cancelled ⚠️",
+          body: `Order #${orderNum} has been cancelled by ${cancelledBy.replace(/_/g, " ")}. Reason: ${cancellationReason}`,
+          type: "delivery",
+          read: false,
+          createdAt: now
+        });
+      }
+    } catch (e) {
+      console.warn("Failed to create cancellation notification:", e);
+    }
+
+    return { success: true };
+  },
+
+  async deleteOrder(id: string): Promise<{ success: boolean; message?: string }> {
+    const docRef = doc(db, COLLECTION_NAME, id);
+    const snap = await getDoc(docRef);
+    if (!snap.exists()) {
+      return { success: false, message: "Order not found." };
+    }
+    const currentData = snap.data();
+    if ((currentData.status || "").toUpperCase() !== "CANCELLED") {
+      return { success: false, message: "Only cancelled orders can be deleted." };
+    }
+    await deleteDoc(docRef);
+    return { success: true };
   }
 };

@@ -85,6 +85,7 @@ interface AppState {
   setOrders: (orders: Order[]) => void;
   addOrder: (order: Partial<Order>) => Promise<Order>;
   updateOrderStatus: (id: string, status: OrderStatus, prepTime?: number, rejectionReason?: string) => Promise<void>;
+  cancelOrder: (id: string, cancelledBy: string, cancellationReason: string, cancellationNote?: string) => Promise<{ success: boolean; message?: string }>;
   deleteOrder: (id: string) => Promise<void>;
 
   coupons: Coupon[];
@@ -287,11 +288,33 @@ export const useStore = create<AppState>()(
           } : o))
         }));
       },
+      cancelOrder: async (id, cancelledBy, cancellationReason, cancellationNote) => {
+        const result = await orderService.cancelOrder(id, cancelledBy, cancellationReason, cancellationNote);
+        if (result.success) {
+          const now = new Date().toISOString();
+          set((state) => ({
+            orders: state.orders.map((o) => (o.id === id ? {
+              ...o,
+              status: "CANCELLED",
+              cancelledBy,
+              cancellationReason,
+              cancellationNote: cancellationNote || "",
+              cancelledAt: now,
+              updatedAt: now
+            } : o))
+          }));
+        }
+        return result;
+      },
       deleteOrder: async (id) => {
-        await orderService.deleteOrder(id);
-        set((state) => ({
-          orders: state.orders.filter((o) => o.id !== id)
-        }));
+        const result = await orderService.deleteOrder(id);
+        if (result.success) {
+          set((state) => ({
+            orders: state.orders.filter((o) => o.id !== id)
+          }));
+        } else {
+          throw new Error(result.message || "Failed to delete order.");
+        }
       },
 
       // Coupons & Offers

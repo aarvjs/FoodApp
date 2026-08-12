@@ -312,6 +312,10 @@ export interface Order {
   status: OrderStatus;
   estimatedPrepMinutes?: number;
   rejectionReason?: string;
+  cancelledBy?: "customer" | "admin" | "branch_manager" | string;
+  cancellationReason?: string;
+  cancellationNote?: string;
+  cancelledAt?: string;
   createdAt: string;
   updatedAt?: string;
 }
@@ -341,8 +345,8 @@ export interface Coupon {
 export interface Offer {
   id: string;
   title: string;
-  description: string;
-  banner: string;
+  description?: string;
+  banner?: string;
   type?: "FESTIVAL" | "FREE_DELIVERY" | "FLAT_DISCOUNT" | "COMBO";
   discountPercentage?: number;
   coupon?: string;
@@ -353,6 +357,20 @@ export interface Offer {
   restaurantId?: string;
   branchId: string;
   status: "ACTIVE" | "DRAFT" | "EXPIRED";
+  validityType?: "FULL_DAY" | "SCHEDULED_TIME";
+  startTime?: string;
+  endTime?: string;
+  applicableDays?: string[];
+  usageLimit?: number;
+  usageCount?: number;
+  remainingUses?: number;
+  minimumOrderAmount?: number;
+  discountType?: "PERCENTAGE" | "FIXED_AMOUNT";
+  discountValue?: number;
+  maximumDiscountAmount?: number;
+  excludedCategoryIds?: string[];
+  isActive?: boolean;
+  updatedAt?: string;
 }
 
 export interface SavedAddress {

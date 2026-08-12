@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Edit3, Trash2, Search, Package, Sparkles, ChevronRight, Layers } from "lucide-react";
 import { Combo } from "@/types";
+import { comboService } from "@/services/comboService";
 import { ComboModal } from "./ComboModal";
 import { ComboDetailPage } from "./ComboDetailPage";
 
@@ -12,6 +13,7 @@ interface ComboManagementTabProps {
   onAddCombo: (data: Partial<Combo> & { imageFile?: File | string }) => Promise<Combo> | Promise<void>;
   onUpdateCombo: (id: string, updated: Partial<Combo> & { imageFile?: File | string }) => Promise<void>;
   onDeleteCombo: (id: string) => Promise<void>;
+  onToggleAvailability?: (id: string, isAvailable: boolean) => Promise<void>;
   restaurantId?: string;
   branchId?: string;
   branchIds?: string[];
@@ -23,6 +25,7 @@ export const ComboManagementTab: React.FC<ComboManagementTabProps> = ({
   onAddCombo,
   onUpdateCombo,
   onDeleteCombo,
+  onToggleAvailability,
   restaurantId = "",
   branchId,
   branchIds,
@@ -70,6 +73,21 @@ export const ComboManagementTab: React.FC<ComboManagementTabProps> = ({
     e.stopPropagation();
     if (confirm(`Are you sure you want to delete combo "${combo.name}"?`)) {
       await onDeleteCombo(combo.id);
+    }
+  };
+
+  const handleToggleActive = async (e: React.MouseEvent, combo: Combo) => {
+    e.stopPropagation();
+    const currentActive = combo.isActive ?? combo.isAvailable ?? true;
+    const nextState = !currentActive;
+    try {
+      if (onToggleAvailability) {
+        await onToggleAvailability(combo.id, nextState);
+      } else {
+        await comboService.toggleAvailability(combo.id, nextState);
+      }
+    } catch (err) {
+      console.error("Failed to toggle combo status:", err);
     }
   };
 
@@ -160,20 +178,34 @@ export const ComboManagementTab: React.FC<ComboManagementTabProps> = ({
                     alt={combo.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 pointer-events-none"
                   />
-                  <div className="absolute top-3 right-3">
-                    <span
-                      className={`px-2.5 py-1 text-[10px] font-extrabold rounded-full shadow-sm backdrop-blur-sm ${
-                        isComboActive
-                          ? "bg-emerald-500/90 text-white"
-                          : "bg-slate-700/80 text-slate-200"
-                      }`}
-                    >
+                  {/* Interactive Active / Inactive Toggle Button Overlay */}
+                  <div
+                    onClick={(e) => handleToggleActive(e, combo)}
+                    className={`absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full shadow-md backdrop-blur-md cursor-pointer transition-all border ${
+                      isComboActive
+                        ? "bg-emerald-600/90 hover:bg-emerald-600 text-white border-emerald-400/40"
+                        : "bg-slate-900/85 hover:bg-slate-900 text-slate-200 border-slate-700/50"
+                    }`}
+                    title={`Click to turn ${isComboActive ? "OFF (INACTIVE)" : "ON (ACTIVE)"}`}
+                  >
+                    <span className="text-[10px] font-black uppercase tracking-wider">
                       {isComboActive ? "ACTIVE" : "INACTIVE"}
                     </span>
+                    <div
+                      className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors ${
+                        isComboActive ? "bg-emerald-400" : "bg-slate-600"
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                          isComboActive ? "translate-x-3.5" : "translate-x-0.5"
+                        }`}
+                      />
+                    </div>
                   </div>
                 </div>
 
-                {/* 2. Card details (Clickable) */}
+                {/* 2. Card details */}
                 <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
                   <div
                     onClick={() => handleCardClick(combo)}
@@ -193,6 +225,37 @@ export const ComboManagementTab: React.FC<ComboManagementTabProps> = ({
                         Click to manage items in this combo
                       </p>
                     )}
+                  </div>
+
+                  {/* Active / Inactive Toggle Control Row */}
+                  <div
+                    onClick={(e) => handleToggleActive(e, combo)}
+                    className="flex items-center justify-between p-2 rounded-xl bg-slate-50 hover:bg-slate-100/80 border border-slate-200/80 transition-colors cursor-pointer"
+                  >
+                    <span className="text-[11px] font-bold text-slate-700">
+                      Status:{" "}
+                      <span className={isComboActive ? "text-emerald-600 font-extrabold" : "text-slate-500 font-extrabold"}>
+                        {isComboActive ? "ACTIVE" : "INACTIVE"}
+                      </span>
+                    </span>
+
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-extrabold text-slate-500">
+                        {isComboActive ? "ON" : "OFF"}
+                      </span>
+                      <button
+                        type="button"
+                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                          isComboActive ? "bg-emerald-500" : "bg-slate-300"
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                            isComboActive ? "translate-x-4.5" : "translate-x-0.5"
+                          }`}
+                        />
+                      </button>
+                    </div>
                   </div>
 
                   {/* 3. Actions Footer */}

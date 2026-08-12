@@ -61,6 +61,10 @@ export const offerService = {
   addOffer: async (data: Partial<Offer> & { coupon?: string; discount?: number; minimumOrder?: number }): Promise<Offer> => {
     const docRef = doc(collection(db, COLLECTION_NAME));
     
+    const usageLimitVal = data.usageLimit !== undefined ? Number(data.usageLimit) : 0;
+    const usageCountVal = data.usageCount !== undefined ? Number(data.usageCount) : 0;
+    const remainingUsesVal = usageLimitVal > 0 ? Math.max(0, usageLimitVal - usageCountVal) : 0;
+
     const newOffer: Offer = {
       id: docRef.id,
       title: data.title || "Special Deal",
@@ -72,10 +76,24 @@ export const offerService = {
       restaurantId: data.restaurantId || "",
       coupon: data.coupon || "FLAT15",
       discount: data.discount || data.discountPercentage || 15,
-      minimumOrder: data.minimumOrder || 299,
+      minimumOrder: data.minimumOrder !== undefined ? Number(data.minimumOrder) : 299,
       startDate: data.startDate || new Date().toISOString().split("T")[0],
       endDate: data.endDate || new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0],
-      status: data.status || "ACTIVE"
+      status: data.status || "ACTIVE",
+      validityType: data.validityType || "FULL_DAY",
+      startTime: data.startTime || "",
+      endTime: data.endTime || "",
+      applicableDays: data.applicableDays || [],
+      usageLimit: usageLimitVal,
+      usageCount: usageCountVal,
+      remainingUses: remainingUsesVal,
+      minimumOrderAmount: data.minimumOrderAmount !== undefined ? Number(data.minimumOrderAmount) : Number(data.minimumOrder || 0),
+      discountType: data.discountType || (data.discountPercentage ? "PERCENTAGE" : "FIXED_AMOUNT"),
+      discountValue: data.discountValue !== undefined ? Number(data.discountValue) : Number(data.discountPercentage || data.discount || 0),
+      maximumDiscountAmount: data.maximumDiscountAmount !== undefined ? Number(data.maximumDiscountAmount) : 0,
+      excludedCategoryIds: data.excludedCategoryIds || [],
+      isActive: data.isActive !== false && data.status !== "EXPIRED",
+      updatedAt: new Date().toISOString()
     } as any;
 
     await setDoc(docRef, newOffer);
@@ -84,7 +102,16 @@ export const offerService = {
 
   updateOffer: async (id: string, updated: Partial<Offer>): Promise<void> => {
     const docRef = doc(db, COLLECTION_NAME, id);
-    await updateDoc(docRef, updated);
+    const updatePayload: Record<string, any> = {
+      ...updated,
+      updatedAt: new Date().toISOString()
+    };
+    if (updated.usageLimit !== undefined || updated.usageCount !== undefined) {
+      const limit = updated.usageLimit !== undefined ? Number(updated.usageLimit) : 0;
+      const count = updated.usageCount !== undefined ? Number(updated.usageCount) : 0;
+      updatePayload.remainingUses = limit > 0 ? Math.max(0, limit - count) : 0;
+    }
+    await updateDoc(docRef, updatePayload);
   },
 
   deleteOffer: async (id: string): Promise<void> => {

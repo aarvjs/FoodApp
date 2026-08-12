@@ -20,7 +20,8 @@ import {
   Phone,
   Mail,
   IndianRupee,
-  Users
+  Users,
+  Package
 } from "lucide-react";
 import { restaurantRepository } from "@/repositories/restaurantRepository";
 import { branchRepository } from "@/repositories/branchRepository";
@@ -63,8 +64,9 @@ import { useStore } from "@/lib/store/useStore";
 type TabType = 
   | "overview" 
   | "branches" 
+  | "categories"
   | "menu" 
-  | "categories" 
+  | "combos"
   | "tables" 
   | "offers" 
   | "orders" 
@@ -90,6 +92,7 @@ export default function RestaurantDetailsPage() {
   const [reviews, setReviews] = useState<ReviewModel[]>([]);
 
   const liveStoreOrders = useStore((state) => state.orders);
+  const combos = useStore((state) => state.combos);
 
   const [activeTab, setActiveTab] = useState<TabType>("overview");
   const [loading, setLoading] = useState(true);
@@ -185,6 +188,7 @@ export default function RestaurantDetailsPage() {
     { id: "branches", label: `Branches (${branches.length})`, icon: GitBranch },
     { id: "categories", label: `Categories (${categories.length})`, icon: Layers },
     { id: "menu", label: `Menu (${menuItems.length})`, icon: UtensilsCrossed },
+    { id: "combos", label: `Combos (${combos.filter((c) => c.restaurantId === restaurantId || !c.restaurantId).length})`, icon: Package },
     { id: "tables", label: `Tables (${tables.length})`, icon: Grid3X3 },
     { id: "offers", label: `Offers (${offers.length})`, icon: Tag },
     { id: "orders", label: `Orders (${effectiveOrders.length})`, icon: ShoppingBag },
@@ -282,6 +286,17 @@ export default function RestaurantDetailsPage() {
           categories={categories}
           menuItems={menuItems}
           onRefresh={loadRestaurantData}
+        />
+      )}
+
+      {activeTab === "combos" && (
+        <MenuModule
+          restaurantId={restaurantId}
+          branches={branches}
+          categories={categories}
+          menuItems={menuItems}
+          onRefresh={loadRestaurantData}
+          initialTab="combos"
         />
       )}
 

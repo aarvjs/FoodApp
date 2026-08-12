@@ -233,6 +233,7 @@ export default function BranchManagerMenuPage() {
           onAddCombo={addCombo}
           onUpdateCombo={updateCombo}
           onDeleteCombo={deleteCombo}
+          onToggleAvailability={toggleComboAvailability}
         />
       )}
 
