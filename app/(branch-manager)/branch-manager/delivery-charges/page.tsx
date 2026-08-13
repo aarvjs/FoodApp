@@ -1,19 +1,21 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Truck, Plus, Edit2, Trash2, CheckCircle2, XCircle, AlertCircle, MapPin, Building2, Loader2, Save, Check } from "lucide-react";
+import { Truck, Plus, Edit2, Trash2, CheckCircle2, XCircle, AlertCircle, Building2, MapPin, Loader2, Save, Check } from "lucide-react";
 import { useStore } from "@/lib/store/useStore";
 import { DeliveryChargeSlab } from "@/models/deliveryChargeSlab";
 import { deliveryChargeSlabRepository } from "@/repositories/deliveryChargeSlabRepository";
 import { deliveryChargeSlabService } from "@/services/deliveryChargeSlabService";
 
-export default function AdminDeliveryChargesPage() {
-  const restaurants = useStore((state) => state.restaurants);
+export default function BranchManagerDeliveryChargesPage() {
+  const user = useStore((state) => state.user);
   const branches = useStore((state) => state.branches);
   const updateBranch = useStore((state) => state.updateBranch);
 
-  const [selectedRestaurantId, setSelectedRestaurantId] = useState<string>("");
-  const [selectedBranchId, setSelectedBranchId] = useState<string>("");
+  const assignedBranch = branches.find(
+    (b) => b.id === user?.assignedBranchId || b.id === user?.branchId
+  ) || branches[0];
+
   const [slabs, setSlabs] = useState<DeliveryChargeSlab[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -29,7 +31,7 @@ export default function AdminDeliveryChargesPage() {
   const [taxSavedToast, setTaxSavedToast] = useState<boolean>(false);
   const [taxError, setTaxError] = useState<string | null>(null);
 
-  // Modal State for Slabs
+  // Modal state for Slabs
   const [showModal, setShowModal] = useState<boolean>(false);
   const [editingSlab, setEditingSlab] = useState<DeliveryChargeSlab | null>(null);
   const [minDist, setMinDist] = useState<string>("");
@@ -39,50 +41,27 @@ export default function AdminDeliveryChargesPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [savingSlab, setSavingSlab] = useState<boolean>(false);
 
-  // Set default restaurant on load
+  // Sync radius & tax inputs with assigned branch
   useEffect(() => {
-    if (restaurants.length > 0 && !selectedRestaurantId) {
-      setSelectedRestaurantId(restaurants[0].id);
-    }
-  }, [restaurants, selectedRestaurantId]);
-
-  const filteredBranches = branches.filter(
-    (b) => !selectedRestaurantId || b.restaurantId === selectedRestaurantId
-  );
-
-  useEffect(() => {
-    if (filteredBranches.length > 0) {
-      if (!selectedBranchId || !filteredBranches.some((b) => b.id === selectedBranchId)) {
-        setSelectedBranchId(filteredBranches[0].id);
-      }
-    } else {
-      setSelectedBranchId("");
-    }
-  }, [selectedRestaurantId, filteredBranches, selectedBranchId]);
-
-  const activeBranch = branches.find((b) => b.id === selectedBranchId);
-
-  // Sync radius & tax inputs with current active branch
-  useEffect(() => {
-    if (activeBranch) {
-      if (activeBranch.maxRadiusConfigured) {
-        setRadiusInput((activeBranch.maximumDeliveryRadius ?? activeBranch.deliveryRadiusKm ?? 20).toString());
+    if (assignedBranch) {
+      if (assignedBranch.maxRadiusConfigured) {
+        setRadiusInput((assignedBranch.maximumDeliveryRadius ?? assignedBranch.deliveryRadiusKm ?? 20).toString());
       } else {
         setRadiusInput("");
       }
-      setTaxInput((activeBranch.taxPercentage ?? activeBranch.gstPercentage ?? 0).toString());
+      setTaxInput((assignedBranch.taxPercentage ?? assignedBranch.gstPercentage ?? 0).toString());
     } else {
       setRadiusInput("");
       setTaxInput("0");
     }
     setRadiusError(null);
     setTaxError(null);
-  }, [activeBranch]);
+  }, [assignedBranch]);
 
 
-  // Subscribe to Firestore delivery charge slabs in real-time
+  // Real-time Firestore listener scoped to assigned branch ID
   useEffect(() => {
-    if (!selectedBranchId) {
+    if (!assignedBranch?.id) {
       setSlabs([]);
       setLoading(false);
       return;
@@ -90,26 +69,26 @@ export default function AdminDeliveryChargesPage() {
 
     setLoading(true);
     const unsubscribe = deliveryChargeSlabRepository.subscribeByBranch(
-      selectedBranchId,
+      assignedBranch.id,
       (fetchedSlabs) => {
         setSlabs(fetchedSlabs);
         setLoading(false);
       },
       (err) => {
-        console.error("Failed to subscribe to slabs:", err);
+        console.error("Failed to fetch branch delivery charge slabs:", err);
         setLoading(false);
       }
     );
 
     return () => unsubscribe();
-  }, [selectedBranchId]);
+  }, [assignedBranch?.id]);
 
   const handleSaveMaximumRadius = async (e: React.FormEvent) => {
     e.preventDefault();
     setRadiusError(null);
 
-    if (!selectedBranchId || !activeBranch) {
-      setRadiusError("Please select a branch.");
+    if (!assignedBranch) {
+      setRadiusError("No assigned branch found.");
       return;
     }
 
@@ -121,7 +100,7 @@ export default function AdminDeliveryChargesPage() {
 
     setSavingRadius(true);
     try {
-      await updateBranch(selectedBranchId, {
+      await updateBranch(assignedBranch.id, {
         maximumDeliveryRadius: radVal,
         deliveryRadiusKm: radVal,
         maxRadiusConfigured: true
@@ -139,8 +118,8 @@ export default function AdminDeliveryChargesPage() {
     e.preventDefault();
     setTaxError(null);
 
-    if (!selectedBranchId || !activeBranch) {
-      setTaxError("Please select a branch.");
+    if (!assignedBranch) {
+      setTaxError("No assigned branch found.");
       return;
     }
 
@@ -152,7 +131,7 @@ export default function AdminDeliveryChargesPage() {
 
     setSavingTax(true);
     try {
-      await updateBranch(selectedBranchId, {
+      await updateBranch(assignedBranch.id, {
         taxPercentage: taxVal,
         gstPercentage: taxVal,
       });
@@ -166,8 +145,8 @@ export default function AdminDeliveryChargesPage() {
   };
 
 
-  const isMaxRadiusConfigured = Boolean(activeBranch?.maxRadiusConfigured);
-  const maxConfiguredRadius = activeBranch?.maximumDeliveryRadius ?? activeBranch?.deliveryRadiusKm;
+  const isMaxRadiusConfigured = Boolean(assignedBranch?.maxRadiusConfigured);
+  const maxConfiguredRadius = assignedBranch?.maximumDeliveryRadius ?? assignedBranch?.deliveryRadiusKm;
 
   const handleOpenAddModal = () => {
     setEditingSlab(null);
@@ -193,21 +172,18 @@ export default function AdminDeliveryChargesPage() {
     e.preventDefault();
     setErrorMsg(null);
 
+    if (!assignedBranch) {
+      setErrorMsg("No assigned branch found for this account.");
+      return;
+    }
+
     const minNum = parseFloat(minDist);
     const maxNum = parseFloat(maxDist);
     const chargeNum = parseFloat(charge);
 
-    const targetRestaurantId = selectedRestaurantId || activeBranch?.restaurantId || "";
-    const targetBranchId = selectedBranchId;
-
-    if (!targetBranchId || !targetRestaurantId) {
-      setErrorMsg("Please select a valid restaurant and branch.");
-      return;
-    }
-
     const payload: Partial<DeliveryChargeSlab> = {
-      restaurantId: targetRestaurantId,
-      branchId: targetBranchId,
+      restaurantId: assignedBranch.restaurantId,
+      branchId: assignedBranch.id,
       minDistanceKm: minNum,
       maxDistanceKm: maxNum,
       deliveryCharge: chargeNum,
@@ -282,66 +258,35 @@ export default function AdminDeliveryChargesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <Truck className="w-6 h-6 text-emerald-600" /> Delivery Charges Management
+            <Truck className="w-6 h-6 text-amber-600" /> Branch Delivery Charge Slabs
           </h1>
           <p className="text-xs text-slate-500">
-            Configure Maximum Delivery Radius and distance-based fee slabs per branch
+            Manage Maximum Delivery Radius and distance-based fees for {assignedBranch?.name || "your branch"}
           </p>
         </div>
 
         <button
           onClick={handleOpenAddModal}
-          disabled={!selectedBranchId}
-          className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow transition-all flex items-center gap-2 self-start sm:self-auto"
+          disabled={!assignedBranch}
+          className="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-slate-950 font-bold text-xs rounded-xl shadow transition-all flex items-center gap-2 self-start sm:self-auto"
         >
           <Plus className="w-4 h-4" /> Add Delivery Charge Slab
         </button>
       </div>
 
-      {/* Restaurant & Branch Selectors */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Restaurant Selector */}
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm space-y-1.5">
-          <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-            <Building2 className="w-3.5 h-3.5 text-emerald-600" /> Select Restaurant
-          </label>
-          <select
-            value={selectedRestaurantId}
-            onChange={(e) => setSelectedRestaurantId(e.target.value)}
-            className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-          >
-            {restaurants.length === 0 ? (
-              <option value="">No Restaurants Found</option>
-            ) : (
-              restaurants.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.name}
-                </option>
-              ))
-            )}
-          </select>
+      {/* Branch Info Card */}
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm flex items-center gap-4">
+        <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+          <Building2 className="w-6 h-6" />
         </div>
-
-        {/* Branch Selector */}
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm space-y-1.5">
-          <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-            <MapPin className="w-3.5 h-3.5 text-emerald-600" /> Select Branch
-          </label>
-          <select
-            value={selectedBranchId}
-            onChange={(e) => setSelectedBranchId(e.target.value)}
-            className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-          >
-            {filteredBranches.length === 0 ? (
-              <option value="">No Branches Available</option>
-            ) : (
-              filteredBranches.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name} ({b.location?.city || "Branch"})
-                </option>
-              ))
-            )}
-          </select>
+        <div>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            Assigned Branch
+          </span>
+          <h3 className="font-bold text-slate-900 text-sm">{assignedBranch?.name || "Branch Office"}</h3>
+          <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+            <MapPin className="w-3 h-3 text-slate-400" /> {assignedBranch?.address || assignedBranch?.location?.formattedAddress || "Location set"}
+          </p>
         </div>
       </div>
 
@@ -362,14 +307,14 @@ export default function AdminDeliveryChargesPage() {
               )}
             </div>
             <p className="text-xs text-slate-500 mt-1">
-              Set the outer boundary limit for deliveries from {activeBranch?.name || "this branch"}. Distance slabs will operate within this boundary.
+              Configure the maximum outer delivery boundary for this branch. Distance slabs must stay within this radius.
             </p>
           </div>
         </div>
 
         {radiusSavedToast && (
           <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-bold flex items-center gap-2">
-            <Check className="w-4 h-4 text-emerald-600" /> Maximum Delivery Radius saved successfully for {activeBranch?.name}!
+            <Check className="w-4 h-4 text-emerald-600" /> Maximum Delivery Radius updated successfully!
           </div>
         )}
 
@@ -394,7 +339,7 @@ export default function AdminDeliveryChargesPage() {
                 value={radiusInput}
                 onChange={(e) => setRadiusInput(e.target.value)}
                 required
-                className="w-full p-2.5 pr-12 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                className="w-full p-2.5 pr-12 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
               />
               <span className="absolute right-3 top-2.5 font-bold text-slate-400 text-xs">
                 KM
@@ -404,8 +349,8 @@ export default function AdminDeliveryChargesPage() {
 
           <button
             type="submit"
-            disabled={savingRadius || !selectedBranchId}
-            className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow transition-all flex items-center justify-center gap-2 shrink-0"
+            disabled={savingRadius || !assignedBranch}
+            className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-slate-950 font-bold text-xs rounded-xl shadow transition-all flex items-center justify-center gap-2 shrink-0"
           >
             {savingRadius ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save Radius
@@ -419,19 +364,19 @@ export default function AdminDeliveryChargesPage() {
           <div>
             <div className="flex items-center gap-2">
               <h3 className="font-bold text-slate-900 text-sm">GST / Tax Percentage</h3>
-              <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-full flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Configured: {activeBranch?.taxPercentage ?? activeBranch?.gstPercentage ?? 0}%
+              <span className="px-2.5 py-0.5 bg-amber-100 text-amber-900 text-[10px] font-bold rounded-full flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3 text-amber-600" /> Configured: {assignedBranch?.taxPercentage ?? assignedBranch?.gstPercentage ?? 0}%
               </span>
             </div>
             <p className="text-xs text-slate-500 mt-1">
-              Set the GST / Tax percentage applied to orders for {activeBranch?.name || "this branch"}. Set to 0 to disable tax.
+              Set the GST / Tax percentage applied to orders for {assignedBranch?.name || "your branch"}. Set to 0 to disable tax.
             </p>
           </div>
         </div>
 
         {taxSavedToast && (
-          <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-bold flex items-center gap-2">
-            <Check className="w-4 h-4 text-emerald-600" /> GST / Tax percentage saved successfully for {activeBranch?.name}!
+          <div className="p-3 bg-amber-50 border border-amber-200 text-amber-900 rounded-xl text-xs font-bold flex items-center gap-2">
+            <Check className="w-4 h-4 text-amber-600" /> GST / Tax percentage saved successfully for {assignedBranch?.name}!
           </div>
         )}
 
@@ -457,7 +402,7 @@ export default function AdminDeliveryChargesPage() {
                 value={taxInput}
                 onChange={(e) => setTaxInput(e.target.value)}
                 required
-                className="w-full p-2.5 pr-12 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                className="w-full p-2.5 pr-12 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
               />
               <span className="absolute right-3 top-2.5 font-bold text-slate-400 text-xs">
                 %
@@ -467,8 +412,8 @@ export default function AdminDeliveryChargesPage() {
 
           <button
             type="submit"
-            disabled={savingTax || !selectedBranchId}
-            className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow transition-all flex items-center justify-center gap-2 shrink-0"
+            disabled={savingTax || !assignedBranch}
+            className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-slate-950 font-bold text-xs rounded-xl shadow transition-all flex items-center justify-center gap-2 shrink-0"
           >
             {savingTax ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save GST / Tax
@@ -477,13 +422,13 @@ export default function AdminDeliveryChargesPage() {
       </div>
 
 
-      {/* Configured Distance Slabs Table */}
+      {/* Table Section */}
       <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm space-y-4">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="font-bold text-slate-900 text-sm">Configured Distance Slabs</h3>
             <p className="text-xs text-slate-500">
-              Delivery fees are calculated based on the customer&apos;s distance from this branch
+              Delivery fees configured here apply dynamically to customers ordering from this branch
             </p>
           </div>
           <span className="text-xs font-semibold px-3 py-1 bg-slate-100 text-slate-700 rounded-full">
@@ -493,7 +438,7 @@ export default function AdminDeliveryChargesPage() {
 
         {loading ? (
           <div className="py-12 flex items-center justify-center text-slate-400 gap-2 text-xs">
-            <Loader2 className="w-5 h-5 animate-spin text-emerald-600" />
+            <Loader2 className="w-5 h-5 animate-spin text-amber-600" />
             Loading distance slabs...
           </div>
         ) : slabs.length === 0 ? (
@@ -501,12 +446,12 @@ export default function AdminDeliveryChargesPage() {
             <Truck className="w-8 h-8 text-slate-400 mx-auto" />
             <p className="font-bold text-slate-700 text-xs">No Delivery Charge Slabs Configured</p>
             <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
-              Add distance ranges (e.g., 0 - 3 KM @ ₹20) for this branch to start distance-based charge calculations.
+              Add custom distance ranges (e.g. 0-3 KM → ₹20) to set up distance-based delivery charges for your branch.
             </p>
             <button
               onClick={handleOpenAddModal}
-              disabled={!selectedBranchId}
-              className="mt-2 px-3.5 py-2 bg-emerald-600 text-white text-xs font-bold rounded-lg shadow hover:bg-emerald-700 transition-colors inline-flex items-center gap-1.5"
+              disabled={!assignedBranch}
+              className="mt-2 px-3.5 py-2 bg-amber-500 text-slate-950 text-xs font-bold rounded-lg shadow hover:bg-amber-600 transition-colors inline-flex items-center gap-1.5"
             >
               <Plus className="w-3.5 h-3.5" /> Configure First Slab
             </button>
@@ -528,7 +473,7 @@ export default function AdminDeliveryChargesPage() {
                     <td className="py-3.5 px-4 font-bold text-slate-800">
                       {slab.minDistanceKm} KM - {slab.maxDistanceKm} KM
                     </td>
-                    <td className="py-3.5 px-4 font-bold text-emerald-700 text-sm">
+                    <td className="py-3.5 px-4 font-bold text-amber-700 text-sm">
                       ₹{slab.deliveryCharge}
                     </td>
                     <td className="py-3.5 px-4">
@@ -554,7 +499,7 @@ export default function AdminDeliveryChargesPage() {
                     <td className="py-3.5 px-4 text-right space-x-2">
                       <button
                         onClick={() => handleOpenEditModal(slab)}
-                        className="p-1.5 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                        className="p-1.5 text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
                         title="Edit Slab"
                       >
                         <Edit2 className="w-4 h-4" />
@@ -575,13 +520,13 @@ export default function AdminDeliveryChargesPage() {
         )}
       </div>
 
-      {/* Modal for Add / Edit Slab */}
+      {/* Add / Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 border border-slate-100 animate-in fade-in zoom-in duration-150">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
-                <Truck className="w-5 h-5 text-emerald-600" />
+                <Truck className="w-5 h-5 text-amber-600" />
                 {editingSlab ? "Edit Delivery Slab" : "Add Delivery Charge Slab"}
               </h3>
               <button
@@ -620,7 +565,7 @@ export default function AdminDeliveryChargesPage() {
                     type="number"
                     step="0.1"
                     min="0.1"
-                    placeholder="e.g. 3"
+                    placeholder="e.g. 5"
                     value={maxDist}
                     onChange={(e) => setMaxDist(e.target.value)}
                     required
@@ -635,7 +580,7 @@ export default function AdminDeliveryChargesPage() {
                   type="number"
                   step="1"
                   min="0"
-                  placeholder="e.g. 20"
+                  placeholder="e.g. 30"
                   value={charge}
                   onChange={(e) => setCharge(e.target.value)}
                   required
@@ -651,7 +596,7 @@ export default function AdminDeliveryChargesPage() {
                     onClick={() => setStatus("ACTIVE")}
                     className={`py-2 rounded-xl font-bold text-xs transition-all ${
                       status === "ACTIVE"
-                        ? "bg-emerald-600 text-white shadow"
+                        ? "bg-amber-500 text-slate-950 shadow font-bold"
                         : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                     }`}
                   >
@@ -682,7 +627,7 @@ export default function AdminDeliveryChargesPage() {
                 <button
                   type="submit"
                   disabled={savingSlab}
-                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold rounded-xl shadow flex items-center gap-2"
+                  className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-slate-950 font-bold rounded-xl shadow flex items-center gap-2"
                 >
                   {savingSlab && <Loader2 className="w-4 h-4 animate-spin" />}
                   {editingSlab ? "Update Slab" : "Save Slab"}

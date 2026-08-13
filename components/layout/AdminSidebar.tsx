@@ -13,6 +13,7 @@ import {
   Settings,
   LogOut,
   ShieldCheck,
+  Truck,
   X
 } from "lucide-react";
 import { useStore } from "@/lib/store/useStore";
@@ -23,11 +24,13 @@ const adminNavItems = [
   { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
   { name: "Restaurants", href: "/admin/restaurants", icon: Store },
   { name: "Orders", href: "/admin/orders", icon: ShoppingBag },
+  { name: "Delivery Charges", href: "/admin/delivery-charges", icon: Truck },
   { name: "Customers", href: "/admin/customers", icon: Users },
   { name: "Analytics", href: "/admin/analytics", icon: BarChart3 },
   { name: "Users & Managers", href: "/admin/branch-managers", icon: UserCheck },
   { name: "Settings", href: "/admin/settings", icon: Settings }
 ];
+
 
 interface AdminSidebarProps {
   isOpen?: boolean;

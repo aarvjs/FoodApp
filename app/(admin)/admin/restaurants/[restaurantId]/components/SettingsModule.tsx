@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { Settings, Save, Trash2, AlertTriangle, Loader2, ShieldAlert } from "lucide-react";
+import { Settings, Save, Trash2, AlertTriangle, Loader2, ShieldAlert, Truck } from "lucide-react";
+
 import { RestaurantModel } from "@/models/restaurant";
 import { restaurantRepository } from "@/repositories/restaurantRepository";
 import { Toast } from "@/components/ui/Toast";
@@ -68,71 +69,42 @@ export function SettingsModule({ restaurant, onRefresh }: SettingsModuleProps) {
         <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
           <Settings className="w-5 h-5 text-emerald-600" /> Restaurant Settings & Financial Parameters
         </h2>
-        <p className="text-xs text-slate-500">Tax charges, packaging fees, minimum order & emergency holiday mode</p>
+        <p className="text-xs text-slate-500">GST Registration number & restaurant configuration</p>
+
       </div>
 
       <form onSubmit={handleSubmit} className="bg-white border border-slate-200/80 rounded-3xl p-6 space-y-5 shadow-sm">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <label className="block font-bold text-slate-700 mb-1">GST Tax Number</label>
-            <input
-              type="text"
-              value={formData.gstNumber}
-              onChange={(e) => setFormData({ ...formData, gstNumber: e.target.value })}
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono uppercase"
-            />
-          </div>
-          <div>
-            <label className="block font-bold text-slate-700 mb-1">Tax Percentage (%)</label>
-            <input
-              type="number"
-              value={formData.taxPercentage}
-              onChange={(e) => setFormData({ ...formData, taxPercentage: Number(e.target.value) })}
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold"
-            />
-          </div>
-          <div>
-            <label className="block font-bold text-slate-700 mb-1">Packaging Fee (₹)</label>
-            <input
-              type="number"
-              value={formData.packagingCharge}
-              onChange={(e) => setFormData({ ...formData, packagingCharge: Number(e.target.value) })}
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold"
-            />
-          </div>
+        <div className="max-w-md">
+          <label className="block font-bold text-slate-700 mb-1">GST Tax Number</label>
+          <input
+            type="text"
+            value={formData.gstNumber}
+            onChange={(e) => setFormData({ ...formData, gstNumber: e.target.value })}
+            className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono uppercase"
+          />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+
+        <div className="p-4 bg-emerald-50/60 border border-emerald-200/80 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+
           <div>
-            <label className="block font-bold text-slate-700 mb-1">Base Delivery Fee (₹)</label>
-            <input
-              type="number"
-              value={formData.deliveryCharges}
-              onChange={(e) => setFormData({ ...formData, deliveryCharges: Number(e.target.value) })}
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold"
-            />
+            <h4 className="font-bold text-slate-900 flex items-center gap-1.5">
+              <Truck className="w-4 h-4 text-emerald-600" /> Distance-Based Delivery Charges Setup
+            </h4>
+            <p className="text-slate-500 text-[11px] mt-0.5">
+              Delivery fees, maximum delivery radius & distance slabs are manually managed in the centralized Delivery Charges console.
+            </p>
           </div>
-          <div>
-            <label className="block font-bold text-slate-700 mb-1">Minimum Order (₹)</label>
-            <input
-              type="number"
-              value={formData.minimumOrder}
-              onChange={(e) => setFormData({ ...formData, minimumOrder: Number(e.target.value) })}
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold"
-            />
-          </div>
-          <div>
-            <label className="block font-bold text-slate-700 mb-1">Free Delivery Above (₹)</label>
-            <input
-              type="number"
-              value={formData.freeDeliveryAmount}
-              onChange={(e) => setFormData({ ...formData, freeDeliveryAmount: Number(e.target.value) })}
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-emerald-600"
-            />
-          </div>
+          <a
+            href="/admin/delivery-charges"
+            className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow transition-colors shrink-0"
+          >
+            Manage Delivery Charges
+          </a>
         </div>
 
         <div className="pt-2 border-t border-slate-100 flex justify-end">
+
           <button
             type="submit"
             disabled={submitting}

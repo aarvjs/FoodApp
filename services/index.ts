@@ -14,5 +14,7 @@ export * from "./revenueService";
 export * from "./locationService";
 export * from "./comboService";
 export * from "./customizationService";
+export * from "./deliveryChargeSlabService";
+
 
 

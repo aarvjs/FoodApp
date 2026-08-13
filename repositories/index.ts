@@ -7,3 +7,5 @@ export * from "./orderRepository";
 export * from "./offerRepository";
 export * from "./galleryRepository";
 export * from "./reviewRepository";
+export * from "./deliveryChargeSlabRepository";
+

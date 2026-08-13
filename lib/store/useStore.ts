@@ -14,6 +14,7 @@ import {
   Offer, 
   Customer, 
   DeliveryChargeRule,
+  DeliveryChargeSlab,
   OrderStatus,
   Combo,
   CustomizationGroup
@@ -29,8 +30,10 @@ import {
   bannerService, 
   tableService,
   comboService,
-  customizationService
+  customizationService,
+  deliveryChargeSlabService
 } from "@/services";
+
 
 function dedupeById<T extends { id: string }>(items: T[]): T[] {
   const seen = new Set<string>();
@@ -102,6 +105,14 @@ interface AppState {
 
   deliveryRules: DeliveryChargeRule[];
   updateDeliveryRule: (id: string, rule: Partial<DeliveryChargeRule>) => void;
+
+  deliverySlabs: DeliveryChargeSlab[];
+  setDeliverySlabs: (slabs: DeliveryChargeSlab[]) => void;
+  addDeliverySlab: (slab: Partial<DeliveryChargeSlab>) => Promise<DeliveryChargeSlab>;
+  updateDeliverySlab: (id: string, updated: Partial<DeliveryChargeSlab>) => Promise<void>;
+  deleteDeliverySlab: (id: string) => Promise<void>;
+  toggleDeliverySlabStatus: (id: string, currentStatus: "ACTIVE" | "INACTIVE") => Promise<void>;
+
 
   tables: RestaurantTable[];
   setTables: (tables: RestaurantTable[]) => void;
@@ -352,6 +363,42 @@ export const useStore = create<AppState>()(
       updateDeliveryRule: (id, rule) => set((state) => ({
         deliveryRules: state.deliveryRules.map((d) => (d.id === id ? { ...d, ...rule } : d))
       })),
+
+      // Delivery Charge Slabs
+      deliverySlabs: [],
+      setDeliverySlabs: (slabs) => set({ deliverySlabs: dedupeById(slabs) }),
+      addDeliverySlab: async (data) => {
+        const currentRest = get().selectedRestaurantId || get().user?.restaurantId || "";
+        const currentBranch = get().selectedBranchId || get().user?.assignedBranchId || get().user?.branchId || "";
+        const payload = {
+          ...data,
+          restaurantId: data.restaurantId || currentRest,
+          branchId: data.branchId || currentBranch
+        };
+        const created = await deliveryChargeSlabService.addSlab(payload, get().deliverySlabs);
+        set((state) => ({ deliverySlabs: dedupeById([...state.deliverySlabs, created]).sort((a, b) => a.minDistanceKm - b.minDistanceKm) }));
+        return created;
+      },
+      updateDeliverySlab: async (id, updated) => {
+        await deliveryChargeSlabService.updateSlab(id, updated, get().deliverySlabs);
+        set((state) => ({
+          deliverySlabs: state.deliverySlabs.map((s) => (s.id === id ? { ...s, ...updated } : s)).sort((a, b) => a.minDistanceKm - b.minDistanceKm)
+        }));
+      },
+      deleteDeliverySlab: async (id) => {
+        await deliveryChargeSlabService.deleteSlab(id);
+        set((state) => ({
+          deliverySlabs: state.deliverySlabs.filter((s) => s.id !== id)
+        }));
+      },
+      toggleDeliverySlabStatus: async (id, currentStatus) => {
+        await deliveryChargeSlabService.toggleSlabStatus(id, currentStatus, get().deliverySlabs);
+        const newStatus = currentStatus === "ACTIVE" ? "INACTIVE" : "ACTIVE";
+        set((state) => ({
+          deliverySlabs: state.deliverySlabs.map((s) => (s.id === id ? { ...s, status: newStatus } : s))
+        }));
+      },
+
 
       // Tables
       tables: [],

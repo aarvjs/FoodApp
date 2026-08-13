@@ -285,8 +285,9 @@ export function BranchesModule({ restaurantId, restaurantName, branches, onRefre
 
             <div className="text-xs text-slate-600 space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200/60">
               <p className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-slate-400" /> {branch.location?.formattedAddress}</p>
-              <p>Delivery Radius: <strong className="text-slate-900">{branch.deliveryRadiusKm} KM</strong></p>
+              <p>Max Radius: <strong className="text-emerald-700">{branch.maxRadiusConfigured ? `${branch.maximumDeliveryRadius ?? branch.deliveryRadiusKm} KM` : "Not Configured (Set in Delivery Charges Setup)"}</strong></p>
               <p>Manager: <strong className="text-slate-900">{branch.managerName}</strong> ({branch.managerEmail})</p>
+
               <p>Hours: <strong className="text-slate-900">{branch.openingTime} - {branch.closingTime}</strong></p>
             </div>
 

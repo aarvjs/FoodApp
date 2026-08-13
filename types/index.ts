@@ -96,6 +96,12 @@ export interface Branch {
   generatedPassword?: string;
   deliveryRadiusKm: number;
   deliveryRadius?: number;
+  maximumDeliveryRadius?: number;
+  maxRadiusConfigured?: boolean;
+  taxPercentage?: number;
+  gstPercentage?: number;
+
+
   address?: string;
   latitude?: number;
   longitude?: number;
@@ -328,6 +334,19 @@ export interface DeliveryChargeRule {
   baseCharge: number;
   perKmCharge: number;
 }
+
+export interface DeliveryChargeSlab {
+  id: string;
+  restaurantId: string;
+  branchId: string;
+  minDistanceKm: number;
+  maxDistanceKm: number;
+  deliveryCharge: number;
+  status: "ACTIVE" | "INACTIVE";
+  createdAt: string;
+  updatedAt?: string;
+}
+
 
 export interface Coupon {
   id: string;

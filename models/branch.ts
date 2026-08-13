@@ -11,7 +11,13 @@ export interface BranchModel {
   managerEmail: string;
   managerId: string;
   deliveryRadiusKm: number;
+  maximumDeliveryRadius?: number;
+  maxRadiusConfigured?: boolean;
+  taxPercentage?: number;
+  gstPercentage?: number;
   openingTime: string;
+
+
   closingTime: string;
   status: "OPEN" | "CLOSED" | "BUSY";
   location: AddressLocation;

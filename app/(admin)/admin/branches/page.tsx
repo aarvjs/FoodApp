@@ -229,7 +229,9 @@ export default function SuperAdminBranchesPage() {
 
               {/* Footer */}
               <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs text-slate-500">
-                <span>Radius: <strong className="text-slate-800">{b.deliveryRadiusKm || b.deliveryRadius || 5} KM</strong></span>
+                <span className="text-[11px] font-medium text-slate-600">
+                  Max Radius: <strong className="text-emerald-700">{b.maxRadiusConfigured ? `${b.maximumDeliveryRadius ?? b.deliveryRadiusKm} KM` : "Not Configured"}</strong>
+                </span>
                 <button
                   onClick={() => deleteBranch(b.id)}
                   className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
@@ -238,6 +240,7 @@ export default function SuperAdminBranchesPage() {
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
+
             </div>
           ))}
         </div>

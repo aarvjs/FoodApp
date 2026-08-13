@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { Settings, Store, Clock, Phone, Mail, Check } from "lucide-react";
+import { Settings, Store, Clock, Phone, Mail, Check, Truck } from "lucide-react";
 import { useStore } from "@/lib/store/useStore";
+
 
 export default function BranchManagerSettingsPage() {
   const user = useStore((state) => state.user);
@@ -109,6 +110,24 @@ export default function BranchManagerSettingsPage() {
           </div>
         </form>
       </div>
+
+      <div className="bg-amber-50/60 border border-amber-200/80 rounded-2xl p-6 shadow-sm max-w-xl flex items-center justify-between">
+        <div>
+          <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+            <Truck className="w-5 h-5 text-amber-600" /> Distance-Based Delivery Charges
+          </h3>
+          <p className="text-xs text-slate-500 mt-1">
+            Configure custom distance charge slabs (e.g. 0-3 KM → ₹20) for this branch
+          </p>
+        </div>
+        <a
+          href="/branch-manager/delivery-charges"
+          className="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl shadow transition-all shrink-0"
+        >
+          Manage Slabs
+        </a>
+      </div>
     </div>
   );
 }
+
