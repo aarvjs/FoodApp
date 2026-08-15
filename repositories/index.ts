@@ -8,4 +8,6 @@ export * from "./offerRepository";
 export * from "./galleryRepository";
 export * from "./reviewRepository";
 export * from "./deliveryChargeSlabRepository";
+export * from "./rewardConfigRepository";
+
 

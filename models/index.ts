@@ -8,3 +8,5 @@ export * from "./offer";
 export * from "./gallery";
 export * from "./review";
 export * from "./user";
+export * from "./rewardConfig";
+

@@ -15,6 +15,8 @@ export * from "./locationService";
 export * from "./comboService";
 export * from "./customizationService";
 export * from "./deliveryChargeSlabService";
+export * from "./rewardConfigService";
+
 
 
 

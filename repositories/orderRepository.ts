@@ -13,8 +13,10 @@ import {
   orderBy 
 } from "firebase/firestore";
 import { OrderModel, OrderStatusType } from "@/models/order";
+import { rewardConfigRepository } from "./rewardConfigRepository";
 
 const COLLECTION_NAME = "orders";
+
 
 export const orderRepository = {
   async getByBranch(branchId: string): Promise<OrderModel[]> {
@@ -235,6 +237,18 @@ export const orderRepository = {
         } else if (status === 'DELIVERED') {
           title = 'Order Delivered! 🎉';
           body = `Your order #${orderNum} has been delivered. Bon appétit!`;
+
+          // Process Reward Points crediting for DELIVERED order
+          rewardConfigRepository.awardPointsForOrder({
+            id,
+            orderNumber: orderNum,
+            restaurantId: orderData.restaurantId,
+            branchId: orderData.branchId,
+            branchName: orderData.branchName || orderData.restaurantName,
+            customerId: customerId,
+            items: orderData.items,
+            status: 'DELIVERED'
+          }).catch((err: any) => console.warn('Reward points auto-crediting notice:', err));
         } else if (status === 'REJECTED') {
           title = 'Order Rejected ❌';
           body = `Order #${orderNum} was rejected. Reason: ${rejectionReason || 'Kitchen busy'}`;

@@ -17,6 +17,7 @@ import {
   LogOut,
   Building2,
   Truck,
+  Coins,
   X
 } from "lucide-react";
 import { useStore } from "@/lib/store/useStore";
@@ -31,10 +32,12 @@ const branchManagerNavItems = [
   { name: "Branch Customers", href: "/branch-manager/customers", icon: Users },
   { name: "Delivery Requests", href: "/branch-manager/delivery-requests", icon: Bike },
   { name: "Delivery Charges", href: "/branch-manager/delivery-charges", icon: Truck },
+  { name: "Reward Points", href: "/branch-manager/reward-points", icon: Coins },
   { name: "Promotions & Offers", href: "/branch-manager/offers", icon: Tag },
   { name: "My Profile", href: "/branch-manager/profile", icon: User },
   { name: "Branch Settings", href: "/branch-manager/settings", icon: Settings }
 ];
+
 
 
 interface BranchManagerSidebarProps {
