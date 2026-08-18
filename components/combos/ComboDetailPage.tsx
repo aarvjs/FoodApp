@@ -264,7 +264,7 @@ export const ComboDetailPage: React.FC<ComboDetailPageProps> = ({
                   </div>
 
                   {/* Customization Groups summary */}
-                  {customGroupsCount > 0 && (
+                  {customGroupsCount > 0 && !item.isVariantEnabled && (
                     <div className="p-2.5 bg-blue-50/80 border border-blue-100 rounded-xl space-y-1.5">
                       <div className="flex items-center justify-between text-[10.5px] font-bold text-blue-900">
                         <span className="flex items-center gap-1.5">
@@ -281,6 +281,34 @@ export const ComboDetailPage: React.FC<ComboDetailPageProps> = ({
                             {g.title} ({g.options?.length || 0})
                           </span>
                         ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Size / Variant Options summary */}
+                  {item.isVariantEnabled && (
+                    <div className="p-2.5 bg-amber-50/80 border border-amber-200/90 rounded-xl space-y-1.5">
+                      <div className="flex items-center justify-between text-[10.5px] font-bold text-amber-900">
+                        <span className="flex items-center gap-1.5">
+                          <Sliders className="w-3.5 h-3.5 text-amber-600" />
+                          Size Variants Configured ({item.variants?.length || 0})
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {item.variants?.map((v) => {
+                          const itemsCnt = v.items?.length || 0;
+                          const optsCnt = itemsCnt > 0
+                            ? v.items?.reduce((sum, it) => sum + (it.options?.length || 0), 0)
+                            : (v.options?.length || 0);
+                          return (
+                            <span
+                              key={v.id}
+                              className="px-2 py-0.5 bg-white border border-amber-200 text-amber-900 text-[9.5px] font-bold rounded-md"
+                            >
+                              {v.name} ({itemsCnt > 0 ? `${itemsCnt} items, ${optsCnt} opts` : `${optsCnt} opts`})
+                            </span>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
@@ -310,10 +338,14 @@ export const ComboDetailPage: React.FC<ComboDetailPageProps> = ({
                 <div className="pt-3 border-t border-slate-100 space-y-2">
                   <button
                     onClick={() => setCustomizingItem(item)}
-                    className="w-full py-2 px-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-black rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full py-2 px-3 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white text-xs font-black rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <Sliders className="w-4 h-4" />
-                    <span>Manage Customization ({customGroupsCount})</span>
+                    <span>
+                      {item.isVariantEnabled
+                        ? `Manage Sizes & Options (${item.variants?.length || 0})`
+                        : `Manage Options (${customGroupsCount})`}
+                    </span>
                   </button>
 
                   <div className="flex items-center justify-end gap-2 pt-1">
@@ -360,11 +392,17 @@ export const ComboDetailPage: React.FC<ComboDetailPageProps> = ({
           onClose={() => setCustomizingItem(null)}
           product={customizingItem}
           comboName={combo.name}
-          onSaved={(latestGroups) => {
+          onSaved={(latestGroups, isVarEnabled, latestVariants) => {
             setItems((prev) =>
               prev.map((i) =>
                 i.id === customizingItem.id
-                  ? { ...i, customizationGroups: latestGroups, isCustomisable: latestGroups.length > 0 }
+                  ? {
+                      ...i,
+                      customizationGroups: latestGroups,
+                      isVariantEnabled: isVarEnabled,
+                      variants: latestVariants,
+                      isCustomisable: (latestGroups && latestGroups.length > 0) || Boolean(isVarEnabled)
+                    }
                   : i
               )
             );

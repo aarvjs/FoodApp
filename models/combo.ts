@@ -1,4 +1,4 @@
-import { Combo, ComboItem, CustomizationGroup } from "@/types";
+import { Combo, ComboItem, CustomizationGroup, ComboItemVariant, ComboVariantItem, ComboVariantOption } from "@/types";
 
 export interface ComboModel extends Combo {}
 
@@ -102,6 +102,61 @@ export function normalizeComboItemData(data: any): ComboItem {
       : []
   }));
 
+  const rawVariants = Array.isArray(data.variants) ? data.variants : [];
+  const normalizedVariants: ComboItemVariant[] = rawVariants.map((v: any, vIdx: number) => {
+    const rawItems = Array.isArray(v.items) ? v.items : [];
+    let normalizedItems: ComboVariantItem[] = rawItems.map((item: any, iIdx: number) => ({
+      id: item.id || `vitem-${Date.now()}-${iIdx}`,
+      name: (item.name || `Item ${iIdx + 1}`).trim(),
+      description: (item.description || "").trim(),
+      isActive: item.isActive !== false,
+      displayOrder: item.displayOrder !== undefined ? Number(item.displayOrder) : iIdx,
+      options: Array.isArray(item.options)
+        ? item.options.map((opt: any, oIdx: number) => ({
+            id: opt.id || `vopt-${Date.now()}-${oIdx}`,
+            name: (opt.name || "").trim(),
+            additionalPrice: Number(opt.additionalPrice ?? opt.price) || 0,
+            isActive: opt.isActive !== false && opt.isAvailable !== false,
+            displayOrder: opt.displayOrder !== undefined ? Number(opt.displayOrder) : oIdx
+          }))
+        : []
+    }));
+
+    const legacyOptions = Array.isArray(v.options)
+      ? v.options.map((opt: any, oIdx: number) => ({
+          id: opt.id || `vopt-${Date.now()}-${oIdx}`,
+          name: (opt.name || "").trim(),
+          additionalPrice: Number(opt.additionalPrice ?? opt.price) || 0,
+          isActive: opt.isActive !== false && opt.isAvailable !== false,
+          displayOrder: opt.displayOrder !== undefined ? Number(opt.displayOrder) : oIdx
+        }))
+      : [];
+
+    if (normalizedItems.length === 0 && legacyOptions.length > 0) {
+      normalizedItems = [
+        {
+          id: `vitem-default-${v.id || vIdx}`,
+          name: "Items & Extras",
+          description: "",
+          isActive: true,
+          displayOrder: 0,
+          options: legacyOptions
+        }
+      ];
+    }
+
+    return {
+      id: v.id || `var-${Date.now()}-${vIdx}`,
+      name: (v.name || `Variant ${vIdx + 1}`).trim(),
+      isActive: v.isActive !== false,
+      displayOrder: v.displayOrder !== undefined ? Number(v.displayOrder) : vIdx,
+      items: normalizedItems,
+      options: legacyOptions
+    };
+  });
+
+  const isVariantEnabled = Boolean(data.isVariantEnabled);
+
   const normalized: ComboItem = {
     id: data.id || "",
     comboId: (data.comboId || "").trim(),
@@ -119,8 +174,10 @@ export function normalizeComboItemData(data: any): ComboItem {
     isVeg: isVeg,
     rating: data.rating !== undefined ? Number(data.rating) : 4.2,
     ratingCount: data.ratingCount !== undefined ? Number(data.ratingCount) : 569,
-    isCustomisable: data.isCustomisable ?? (normalizedGroups.length > 0 ? true : false),
+    isCustomisable: data.isCustomisable ?? (normalizedGroups.length > 0 || isVariantEnabled ? true : false),
     customizationGroups: normalizedGroups,
+    isVariantEnabled: isVariantEnabled,
+    variants: normalizedVariants,
     createdAt: data.createdAt || new Date().toISOString(),
     updatedAt: data.updatedAt || new Date().toISOString()
   };

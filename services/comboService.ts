@@ -12,7 +12,7 @@ import {
   where,
   orderBy
 } from "firebase/firestore";
-import { Combo, ComboItem, CustomizationGroup, CustomizationOption } from "@/types";
+import { Combo, ComboItem, CustomizationGroup, CustomizationOption, ComboItemVariant } from "@/types";
 import {
   normalizeComboData,
   validateComboData,
@@ -224,6 +224,8 @@ export const addComboItem = async (
   const branchIds = data.branchIds || (data.branchId ? [data.branchId] : []);
   const foodType = data.foodType === "Non Veg" || data.isVeg === false ? "Non Veg" : "Veg";
   const customGroups = data.customizationGroups || [];
+  const isVariantEnabled = Boolean(data.isVariantEnabled);
+  const variants = data.variants || [];
 
   const newItemData: ComboItem = {
     id: docRef.id,
@@ -242,8 +244,10 @@ export const addComboItem = async (
     isVeg: foodType === "Veg",
     rating: data.rating !== undefined ? Number(data.rating) : 4.2,
     ratingCount: data.ratingCount !== undefined ? Number(data.ratingCount) : 569,
-    isCustomisable: data.isCustomisable ?? (customGroups.length > 0 ? true : false),
+    isCustomisable: data.isCustomisable ?? (customGroups.length > 0 || isVariantEnabled ? true : false),
     customizationGroups: customGroups,
+    isVariantEnabled: isVariantEnabled,
+    variants: variants,
     createdAt: now,
     updatedAt: now
   };
@@ -279,6 +283,14 @@ export const updateComboItem = async (
     updatePayload.customizationGroups = updated.customizationGroups;
   }
 
+  if (updated.isVariantEnabled !== undefined) {
+    updatePayload.isVariantEnabled = updated.isVariantEnabled;
+  }
+
+  if (updated.variants !== undefined) {
+    updatePayload.variants = updated.variants;
+  }
+
   if (updated.imageFile && typeof updated.imageFile !== "string") {
     const imageUrl = await uploadImage(updated.imageFile, "comboItems");
     updatePayload.image = imageUrl;
@@ -296,7 +308,7 @@ export const deleteComboItem = async (id: string): Promise<void> => {
 };
 
 // ==========================================
-// CUSTOMIZATION GROUPS & OPTIONS PER ITEM
+// CUSTOMIZATION GROUPS & VARIANTS PER ITEM
 // ==========================================
 export const saveItemCustomizationGroups = async (
   itemId: string,
@@ -307,6 +319,21 @@ export const saveItemCustomizationGroups = async (
   await updateDoc(docRef, {
     customizationGroups: sanitizedGroups,
     isCustomisable: groups.length > 0,
+    updatedAt: new Date().toISOString()
+  });
+};
+
+export const saveItemVariants = async (
+  itemId: string,
+  isVariantEnabled: boolean,
+  variants: ComboItemVariant[]
+): Promise<void> => {
+  const docRef = doc(db, COMBO_ITEMS_COLLECTION, itemId);
+  const sanitizedVariants = sanitizeForFirestore(variants);
+  await updateDoc(docRef, {
+    isVariantEnabled: isVariantEnabled,
+    variants: sanitizedVariants,
+    isCustomisable: isVariantEnabled || variants.length > 0,
     updatedAt: new Date().toISOString()
   });
 };
@@ -326,5 +353,6 @@ export const comboService = {
   addComboItem,
   updateComboItem,
   deleteComboItem,
-  saveItemCustomizationGroups
+  saveItemCustomizationGroups,
+  saveItemVariants
 };

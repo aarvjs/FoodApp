@@ -176,6 +176,32 @@ export interface Combo {
   updatedAt?: string;
 }
 
+export interface ComboVariantOption {
+  id: string;
+  name: string;
+  additionalPrice: number;
+  isActive: boolean;
+  displayOrder?: number;
+}
+
+export interface ComboVariantItem {
+  id: string;
+  name: string;
+  description?: string;
+  isActive: boolean;
+  displayOrder?: number;
+  options: ComboVariantOption[];
+}
+
+export interface ComboItemVariant {
+  id: string;
+  name: string;
+  isActive: boolean;
+  displayOrder?: number;
+  items?: ComboVariantItem[];
+  options?: ComboVariantOption[];
+}
+
 export interface ComboItem {
   id: string;
   comboId: string;
@@ -193,6 +219,8 @@ export interface ComboItem {
   ratingCount?: number;
   isCustomisable?: boolean;
   customizationGroups?: CustomizationGroup[];
+  isVariantEnabled?: boolean;
+  variants?: ComboItemVariant[];
   createdAt?: string;
   updatedAt?: string;
 }
