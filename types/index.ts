@@ -27,6 +27,7 @@ export interface User {
   avatar?: string;
   restaurantId?: string;
   branchId?: string;
+  branchName?: string;
   assignedBranchId?: string;
   assignedBranchName?: string;
   phone?: string;
@@ -100,6 +101,7 @@ export interface Branch {
   maxRadiusConfigured?: boolean;
   taxPercentage?: number;
   gstPercentage?: number;
+  tableBookingEnabled?: boolean;
 
 
   address?: string;
@@ -416,6 +418,9 @@ export interface Offer {
   endDate?: string;
   restaurantId?: string;
   branchId: string;
+  branchIds?: string[];
+  branchName?: string;
+  branchNames?: string[];
   status: "ACTIVE" | "DRAFT" | "EXPIRED";
   validityType?: "FULL_DAY" | "SCHEDULED_TIME";
   startTime?: string;

@@ -2,6 +2,9 @@ export interface OfferModel {
   id: string;
   restaurantId: string;
   branchId: string;
+  branchIds?: string[];
+  branchName?: string;
+  branchNames?: string[];
   title: string;
   description: string;
   banner: string;

@@ -14,6 +14,10 @@ export default function BranchManagerTablesPage() {
   const updateBookingStatus = useStore((state) => state.updateBookingStatus);
 
   const managerBranchId = user?.assignedBranchId || user?.branchId;
+  const branches = useStore((state) => state.branches);
+  const updateBranch = useStore((state) => state.updateBranch);
+  const assignedBranch = branches.find((b) => b.id === managerBranchId) || branches[0];
+
   const branchTables = tables.filter((t) => !managerBranchId || t.branchId === managerBranchId);
   const branchBookings = tableBookings.filter((b) => !managerBranchId || b.branchId === managerBranchId);
 
@@ -95,7 +99,27 @@ export default function BranchManagerTablesPage() {
         </div>
         
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Table Service ON/OFF Toggle */}
+          <div className="flex items-center gap-2 bg-slate-100 border border-slate-200/80 px-3 py-1.5 rounded-xl text-xs font-bold">
+            <span className="text-slate-700">Table Service:</span>
+            <button
+              type="button"
+              onClick={async () => {
+                if (!assignedBranch) return;
+                const nextVal = !(assignedBranch.tableBookingEnabled ?? true);
+                await updateBranch(assignedBranch.id, { tableBookingEnabled: nextVal });
+              }}
+              className={`px-3 py-1 rounded-full text-xs font-extrabold transition-all cursor-pointer ${
+                (assignedBranch?.tableBookingEnabled ?? true)
+                  ? "bg-emerald-600 text-white shadow-sm"
+                  : "bg-rose-600 text-white shadow-sm"
+              }`}
+            >
+              {(assignedBranch?.tableBookingEnabled ?? true) ? "ON" : "OFF"}
+            </button>
+          </div>
+
           <div className="bg-slate-100 p-1 rounded-xl flex items-center gap-1 text-xs">
             <button
               onClick={() => setActiveTab("TABLES")}

@@ -29,6 +29,7 @@ import { menuRepository } from "@/repositories/menuRepository";
 import { categoryRepository } from "@/repositories/categoryRepository";
 import { orderRepository } from "@/repositories/orderRepository";
 import { offerRepository } from "@/repositories/offerRepository";
+import { offerService } from "@/services/offerService";
 import { galleryRepository } from "@/repositories/galleryRepository";
 import { reviewRepository } from "@/repositories/reviewRepository";
 import { tableRepository } from "@/repositories/tableRepository";
@@ -128,7 +129,7 @@ export default function RestaurantDetailsPage() {
         const tblList = await tableRepository.getByBranch(firstBranchId);
         setTables(tblList);
 
-        const offList = await offerRepository.getByBranch(firstBranchId);
+        const offList = await offerRepository.getByRestaurant(restaurantId);
         setOffers(offList);
 
         const galList = await galleryRepository.getByBranch(firstBranchId);
@@ -147,6 +148,22 @@ export default function RestaurantDetailsPage() {
   useEffect(() => {
     loadRestaurantData();
   }, [restaurantId]);
+
+  // Real-time subscription to offers for all branches of this restaurant
+  useEffect(() => {
+    if (!restaurantId) return;
+    const unsub = offerService.subscribeToOffers((allOffers) => {
+      const filtered = allOffers.filter(
+        (o) =>
+          o.restaurantId === restaurantId ||
+          o.branchId === "all" ||
+          o.branchId === "ALL" ||
+          branches.some((b) => b.id === o.branchId || (o.branchIds && o.branchIds.includes(b.id)))
+      );
+      setOffers(filtered as any);
+    });
+    return () => unsub();
+  }, [restaurantId, branches]);
 
   // Real-time subscription to restaurant orders from Firestore
   useEffect(() => {

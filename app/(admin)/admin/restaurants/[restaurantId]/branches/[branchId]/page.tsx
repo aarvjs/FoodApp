@@ -251,7 +251,7 @@ export default function BranchDashboardPage() {
         </div>
       )}
 
-      {/* Tab 3: Tables */}
+      {/* Tab: Tables */}
       {activeTab === "tables" && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
           {tables.map((t) => (
@@ -263,6 +263,34 @@ export default function BranchDashboardPage() {
               <p className="text-slate-500">Capacity: <strong>{t.capacity} Persons</strong> ({t.type || "Indoor"})</p>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Tab: Settings */}
+      {activeTab === "settings" && (
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm max-w-xl space-y-4 text-xs">
+          <h3 className="font-bold text-slate-900 text-sm">Branch Settings & Service Controls</h3>
+          <div className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl">
+            <div>
+              <span className="font-bold text-slate-800 text-xs">Table Service / Table Booking</span>
+              <p className="text-[11px] text-slate-500">Enable or disable dine-in table reservations for {branch.name}</p>
+            </div>
+            <button
+              type="button"
+              onClick={async () => {
+                const nextVal = !(branch.tableBookingEnabled ?? true);
+                await branchRepository.update(branch.id, { tableBookingEnabled: nextVal });
+                setBranch({ ...branch, tableBookingEnabled: nextVal });
+              }}
+              className={`px-4 py-1.5 rounded-full text-xs font-extrabold transition-all cursor-pointer ${
+                (branch.tableBookingEnabled ?? true)
+                  ? "bg-emerald-600 text-white shadow-sm"
+                  : "bg-slate-200 text-slate-700 hover:bg-slate-300"
+              }`}
+            >
+              {(branch.tableBookingEnabled ?? true) ? "ON" : "OFF"}
+            </button>
+          </div>
         </div>
       )}
     </div>

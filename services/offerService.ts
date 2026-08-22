@@ -44,11 +44,17 @@ export const offerService = {
       callback([]);
       return () => {};
     }
-    const q = query(collection(db, COLLECTION_NAME), where("branchId", "==", branchId));
     return onSnapshot(
-      q,
+      collection(db, COLLECTION_NAME),
       (snap) => {
-        const items = snap.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() } as Offer));
+        const items = snap.docs
+          .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() } as Offer))
+          .filter((off) => {
+            if (!off.branchId && (!off.branchIds || off.branchIds.length === 0)) return true;
+            if (off.branchId === branchId || off.branchId === "ALL" || off.branchId === "all" || off.branchId === "") return true;
+            if (off.branchIds && (off.branchIds.includes(branchId) || off.branchIds.includes("ALL") || off.branchIds.includes("all"))) return true;
+            return false;
+          });
         callback(items);
       },
       (err) => {
@@ -73,6 +79,9 @@ export const offerService = {
       type: data.type || "FLAT_DISCOUNT",
       discountPercentage: data.discountPercentage || data.discount || 15,
       branchId: data.branchId || "ALL",
+      branchIds: data.branchIds || (data.branchId ? [data.branchId] : ["ALL"]),
+      branchName: data.branchName || "",
+      branchNames: data.branchNames || (data.branchName ? [data.branchName] : []),
       restaurantId: data.restaurantId || "",
       coupon: data.coupon || "FLAT15",
       discount: data.discount || data.discountPercentage || 15,

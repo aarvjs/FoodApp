@@ -158,9 +158,10 @@ export function MenuModule({ restaurantId, branches, categories, menuItems, onRe
       const selectedCat = categories.find((c) => c.id === formData.categoryId);
       const catName = selectedCat ? selectedCat.name : formData.categoryName;
 
-      const payload = {
+      const payload: any = {
         restaurantId,
         branchId: formData.branchId || branches[0]?.id || "", // STRICT MANDATORY OWNERSHIP
+        branchIds: [formData.branchId || branches[0]?.id || ""],
         categoryId: formData.categoryId,
         categoryName: catName,
         name: formData.name,
@@ -181,10 +182,15 @@ export function MenuModule({ restaurantId, branches, categories, menuItems, onRe
         ingredients: formData.ingredients.split(",").map((s) => s.trim()),
         customTags: formData.customTags.split(",").map((s) => s.trim()),
         customizations: customizationsList,
-        status: formData.status,
-        imageFile: mainImageFile || undefined,
-        imageFiles: galleryImageFiles.length > 0 ? galleryImageFiles : undefined
+        status: formData.status
       };
+
+      if (mainImageFile) {
+        payload.imageFile = mainImageFile;
+      }
+      if (galleryImageFiles.length > 0) {
+        payload.imageFiles = galleryImageFiles;
+      }
 
       if (editingItem) {
         await menuRepository.update(editingItem.id, payload);

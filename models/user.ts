@@ -7,6 +7,7 @@ export interface UserModel {
   role: UserRoleType;
   restaurantId?: string;
   branchId?: string;
+  branchName?: string;
   assignedBranchId?: string;
   assignedBranchName?: string;
   phone?: string;

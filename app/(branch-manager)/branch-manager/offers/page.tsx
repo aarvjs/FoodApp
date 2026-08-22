@@ -47,6 +47,14 @@ export default function BranchManagerOffersPage() {
     }
   }, [activeBranchId]);
 
+  useEffect(() => {
+    if (!activeBranchId) return;
+    const unsub = offerService.subscribeToBranchOffers(activeBranchId, (branchOffers) => {
+      setOffers(branchOffers);
+    });
+    return () => unsub();
+  }, [activeBranchId, setOffers]);
+
   const openCreateModal = () => {
     setEditingOffer(null);
     setFormData({
@@ -138,6 +146,8 @@ export default function BranchManagerOffersPage() {
         applicableDays: formData.applicableDays,
         excludedCategoryIds: formData.excludedCategoryIds,
         branchId: activeBranchId,
+        branchIds: [activeBranchId],
+        branchName: user?.branchName || user?.assignedBranchName || "Assigned Branch",
         restaurantId: user?.restaurantId || "",
         status: formData.status,
         isActive: formData.status === "ACTIVE"
@@ -217,6 +227,8 @@ export default function BranchManagerOffersPage() {
           const dVal = off.discountValue !== undefined ? off.discountValue : (off.discountPercentage || off.discount || 0);
           const statusObj = getStatusBadge(off);
 
+          const matchedBranchName = off.branchName || user?.branchName || user?.assignedBranchName || "Assigned Branch";
+
           const excludedNames = categories
             .filter((c) => (off.excludedCategoryIds || []).includes(c.id))
             .map((c) => c.name);
@@ -240,6 +252,11 @@ export default function BranchManagerOffersPage() {
               {off.description && <p className="text-xs text-slate-500">{off.description}</p>}
 
               <div className="text-xs space-y-1 bg-amber-50/50 p-3 rounded-xl border border-amber-100 font-medium text-slate-700">
+                <div className="flex justify-between items-center text-xs pb-1 border-b border-amber-200/60">
+                  <span className="font-bold text-slate-500">Branch:</span>
+                  <strong className="text-amber-900 font-extrabold">{matchedBranchName}</strong>
+                </div>
+
                 <div className="flex justify-between">
                   <span>Discount:</span>
                   <strong className="text-amber-700 font-bold">

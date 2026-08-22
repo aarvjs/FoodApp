@@ -43,6 +43,7 @@ export default function SuperAdminMenusPage() {
 
   // Form State
   const [formData, setFormData] = useState({
+    branchId: branches[0]?.id || "",
     name: "",
     description: "",
     fullDescription: "",
@@ -73,6 +74,7 @@ export default function SuperAdminMenusPage() {
     if (item) {
       setEditingItem(item);
       setFormData({
+        branchId: item.branchId || (item.branchIds && item.branchIds[0]) || branches[0]?.id || "",
         name: item.name || item.title || "",
         description: item.description || "",
         fullDescription: item.fullDescription || item.description || "",
@@ -96,6 +98,7 @@ export default function SuperAdminMenusPage() {
     } else {
       setEditingItem(null);
       setFormData({
+        branchId: branches[0]?.id || "",
         name: "",
         description: "",
         fullDescription: "",
@@ -141,6 +144,7 @@ export default function SuperAdminMenusPage() {
     setSubmitting(true);
 
     try {
+      const selectedBranchId = formData.branchId || branches[0]?.id || "";
       const payload: Partial<Product> & { imageFile?: File | string; imageFiles?: File[] } = {
         name: formData.name,
         title: formData.name,
@@ -165,9 +169,16 @@ export default function SuperAdminMenusPage() {
         customTags: formData.customTags.split(",").map((s) => s.trim()),
         customizations: customizationsList,
         status: formData.status,
-        imageFile: imageFile || undefined,
-        imageFiles: multipleFiles.length > 0 ? multipleFiles : undefined
+        branchId: selectedBranchId,
+        branchIds: [selectedBranchId]
       };
+
+      if (imageFile) {
+        payload.imageFile = imageFile;
+      }
+      if (multipleFiles.length > 0) {
+        payload.imageFiles = multipleFiles;
+      }
 
       if (editingItem) {
         await updateProduct(editingItem.id, payload);
@@ -417,6 +428,24 @@ export default function SuperAdminMenusPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+              {branches.length > 0 && (
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Target Branch *</label>
+                  <select
+                    value={formData.branchId}
+                    onChange={(e) => setFormData({ ...formData, branchId: e.target.value })}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold"
+                  >
+                    <option value="">Select Branch...</option>
+                    {branches.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name || "Branch"}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Product Title *</label>

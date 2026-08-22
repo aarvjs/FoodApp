@@ -16,6 +16,9 @@ export default function BranchManagerSettingsPage() {
   const [openingTime, setOpeningTime] = useState(assignedBranch?.openingTime || "10:00 AM");
   const [closingTime, setClosingTime] = useState(assignedBranch?.closingTime || "11:00 PM");
   const [phone, setPhone] = useState(assignedBranch?.phone || "");
+  const [tableBookingEnabled, setTableBookingEnabled] = useState<boolean>(
+    assignedBranch?.tableBookingEnabled ?? true
+  );
   const [saved, setSaved] = useState(false);
 
   const handleSave = (e: React.FormEvent) => {
@@ -25,7 +28,8 @@ export default function BranchManagerSettingsPage() {
         status,
         openingTime,
         closingTime,
-        phone
+        phone,
+        tableBookingEnabled,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -98,6 +102,25 @@ export default function BranchManagerSettingsPage() {
               onChange={(e) => setPhone(e.target.value)}
               className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl"
             />
+          </div>
+
+          {/* Table Service Toggle */}
+          <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl flex items-center justify-between">
+            <div>
+              <label className="block font-bold text-slate-800 text-xs">Table Service / Table Booking</label>
+              <p className="text-[11px] text-slate-500">Enable or disable dine-in table reservations for this branch</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setTableBookingEnabled(!tableBookingEnabled)}
+              className={`px-4 py-1.5 rounded-full text-xs font-extrabold transition-all cursor-pointer ${
+                tableBookingEnabled
+                  ? "bg-amber-500 text-slate-950 shadow-sm"
+                  : "bg-slate-200 text-slate-700 hover:bg-slate-300"
+              }`}
+            >
+              {tableBookingEnabled ? "ON" : "OFF"}
+            </button>
           </div>
 
           <div className="pt-2">

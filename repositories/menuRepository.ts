@@ -142,16 +142,28 @@ export const menuRepository = {
     const docRef = doc(db, COLLECTION_NAME, id);
     let payload: any = { ...updated, updatedAt: new Date().toISOString() };
 
+    if (updated.branchId) {
+      payload.branchId = updated.branchId;
+      payload.branchIds = [updated.branchId];
+    }
+
     if (updated.imageFile) {
       payload.image = await uploadImage(updated.imageFile, "menu_items");
-      delete payload.imageFile;
     }
+    delete payload.imageFile;
 
     if (updated.imageFiles && updated.imageFiles.length > 0) {
       const uploaded = await uploadMultipleImages(updated.imageFiles, "menu_items");
       payload.images = uploaded;
-      delete payload.imageFiles;
     }
+    delete payload.imageFiles;
+
+    // Sanitize payload for Firestore: remove any keys that evaluate to undefined
+    Object.keys(payload).forEach((key) => {
+      if (payload[key] === undefined) {
+        delete payload[key];
+      }
+    });
 
     await updateDoc(docRef, payload);
   },

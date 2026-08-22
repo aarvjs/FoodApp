@@ -5,6 +5,7 @@ import { Grid3X3, Plus, Edit3, Trash2, X, Loader2, QrCode, CheckCircle2 } from "
 import { TableModel } from "@/models/table";
 import { BranchModel } from "@/models/branch";
 import { tableRepository } from "@/repositories/tableRepository";
+import { branchRepository } from "@/repositories/branchRepository";
 import { Toast } from "@/components/ui/Toast";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
@@ -22,6 +23,7 @@ export function TablesModule({ restaurantId, branches, tables, onRefresh }: Tabl
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const [deletingTableId, setDeletingTableId] = useState<string | null>(null);
+  const [selectedBranchId, setSelectedBranchId] = useState<string>(branches[0]?.id || "");
 
   const [formData, setFormData] = useState({
     branchId: branches[0]?.id || "",
@@ -32,6 +34,9 @@ export function TablesModule({ restaurantId, branches, tables, onRefresh }: Tabl
     environment: "AC" as "AC" | "Non AC" | "Open Air",
     status: "AVAILABLE" as any
   });
+
+  const activeHeaderBranch = branches.find((b) => b.id === selectedBranchId) || branches[0];
+  const activeModalBranch = branches.find((b) => b.id === (formData.branchId || branches[0]?.id)) || branches[0];
 
   const handleOpenModal = (table?: TableModel) => {
     if (table) {
@@ -48,7 +53,7 @@ export function TablesModule({ restaurantId, branches, tables, onRefresh }: Tabl
     } else {
       setEditingTable(null);
       setFormData({
-        branchId: branches[0]?.id || "",
+        branchId: selectedBranchId || branches[0]?.id || "",
         tableNumber: `T-${Math.floor(100 + Math.random() * 900)}`,
         section: "Main Dining Floor",
         capacity: 4,
@@ -114,7 +119,7 @@ export function TablesModule({ restaurantId, branches, tables, onRefresh }: Tabl
         <Toast message={toastMessage} type="success" onClose={() => setToastMessage(null)} />
       )}
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
             <Grid3X3 className="w-5 h-5 text-emerald-600" /> Floor Tables & QR Codes
@@ -122,12 +127,48 @@ export function TablesModule({ restaurantId, branches, tables, onRefresh }: Tabl
           <p className="text-xs text-slate-500">Configure dining tables, seating capacity & reservation status</p>
         </div>
 
-        <button
-          onClick={() => handleOpenModal()}
-          className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-lg flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" /> Add Table
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          {branches.length > 0 && (
+            <div className="flex items-center gap-2 bg-slate-100 border border-slate-200 p-1.5 rounded-xl text-xs">
+              <span className="font-bold text-slate-700">Branch:</span>
+              <select
+                value={selectedBranchId}
+                onChange={(e) => setSelectedBranchId(e.target.value)}
+                className="bg-white border border-slate-300 rounded-lg px-2 py-1 font-bold text-slate-900 text-xs"
+              >
+                {branches.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name} ({(b.tableBookingEnabled ?? true) ? "Service ON" : "Service OFF"})
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!activeHeaderBranch) return;
+                  const nextVal = !(activeHeaderBranch.tableBookingEnabled ?? true);
+                  await branchRepository.update(activeHeaderBranch.id, { tableBookingEnabled: nextVal });
+                  setToastMessage(`Table Service ${nextVal ? 'Enabled' : 'Disabled'} for ${activeHeaderBranch.name}`);
+                  onRefresh();
+                }}
+                className={`px-3 py-1 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+                  (activeHeaderBranch?.tableBookingEnabled ?? true)
+                    ? "bg-emerald-600 text-white shadow-sm"
+                    : "bg-rose-600 text-white shadow-sm"
+                }`}
+              >
+                Table Service: {(activeHeaderBranch?.tableBookingEnabled ?? true) ? "ON" : "OFF"}
+              </button>
+            </div>
+          )}
+
+          <button
+            onClick={() => handleOpenModal()}
+            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-lg flex items-center gap-2 shrink-0"
+          >
+            <Plus className="w-4 h-4" /> Add Table
+          </button>
+        </div>
       </div>
 
       {/* Table Cards Grid */}
@@ -169,7 +210,7 @@ export function TablesModule({ restaurantId, branches, tables, onRefresh }: Tabl
 
             <form onSubmit={handleSubmit} className="space-y-3 text-xs">
               {!editingTable && branches.length > 0 && (
-                <div>
+                <div className="space-y-2">
                   <label className="block font-bold text-slate-700 mb-1">Target Branch *</label>
                   <select
                     value={formData.branchId}
@@ -179,10 +220,35 @@ export function TablesModule({ restaurantId, branches, tables, onRefresh }: Tabl
                     <option value="" className="text-slate-900 bg-white">Select Target Branch...</option>
                     {branches.map((b) => (
                       <option key={b.id} value={b.id} className="text-slate-900 bg-white font-bold">
-                        {b.name || "Branch"}
+                        {b.name || "Branch"} ({(b.tableBookingEnabled ?? true) ? "Table Service ON" : "Table Service OFF"})
                       </option>
                     ))}
                   </select>
+
+                  {/* Branch Table Service Toggle inside modal dropdown area */}
+                  {activeModalBranch && (
+                    <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
+                      <div>
+                        <span className="font-bold text-slate-800 text-[11px]">Table Service for {activeModalBranch.name}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const nextVal = !(activeModalBranch.tableBookingEnabled ?? true);
+                          await branchRepository.update(activeModalBranch.id, { tableBookingEnabled: nextVal });
+                          setToastMessage(`Table Service ${nextVal ? 'Enabled' : 'Disabled'} for ${activeModalBranch.name}`);
+                          onRefresh();
+                        }}
+                        className={`px-3 py-1 rounded-full text-[11px] font-extrabold transition-all cursor-pointer ${
+                          (activeModalBranch.tableBookingEnabled ?? true)
+                            ? "bg-emerald-600 text-white shadow-sm"
+                            : "bg-rose-600 text-white shadow-sm"
+                        }`}
+                      >
+                        {(activeModalBranch.tableBookingEnabled ?? true) ? "ON" : "OFF"}
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 

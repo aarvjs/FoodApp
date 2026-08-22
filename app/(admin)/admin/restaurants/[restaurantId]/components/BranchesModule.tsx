@@ -52,7 +52,8 @@ export function BranchesModule({ restaurantId, restaurantName, branches, onRefre
     status: "OPEN" as "OPEN" | "CLOSED" | "BUSY",
     managerName: "",
     managerEmail: "",
-    password: ""
+    password: "",
+    tableBookingEnabled: true
   });
 
   // Debounced location search effect (450ms)
@@ -103,7 +104,8 @@ export function BranchesModule({ restaurantId, restaurantName, branches, onRefre
         status: branch.status || "OPEN",
         managerName: branch.managerName || "",
         managerEmail: branch.managerEmail || "",
-        password: ""
+        password: "",
+        tableBookingEnabled: branch.tableBookingEnabled ?? true
       });
       setLocationSearchQuery(initialAddress);
       setSelectedLocationComponents({
@@ -133,7 +135,8 @@ export function BranchesModule({ restaurantId, restaurantName, branches, onRefre
         status: "OPEN",
         managerName: "Rahul Manager",
         managerEmail: `manager${Date.now().toString().slice(-4)}@spicykingdom.com`,
-        password: "ManagerPass#123"
+        password: "ManagerPass#123",
+        tableBookingEnabled: true
       });
       setLocationSearchQuery("Kidwai Nagar, Kanpur, Uttar Pradesh, India");
       setSelectedLocationComponents({
@@ -209,6 +212,7 @@ export function BranchesModule({ restaurantId, restaurantName, branches, onRefre
         openingTime: formData.openingTime,
         closingTime: formData.closingTime,
         status: formData.status,
+        tableBookingEnabled: formData.tableBookingEnabled,
         latitude: Number(formData.latitude),
         longitude: Number(formData.longitude),
         locationSource: formData.locationSource || "search",
@@ -287,8 +291,31 @@ export function BranchesModule({ restaurantId, restaurantName, branches, onRefre
               <p className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-slate-400" /> {branch.location?.formattedAddress}</p>
               <p>Max Radius: <strong className="text-emerald-700">{branch.maxRadiusConfigured ? `${branch.maximumDeliveryRadius ?? branch.deliveryRadiusKm} KM` : "Not Configured (Set in Delivery Charges Setup)"}</strong></p>
               <p>Manager: <strong className="text-slate-900">{branch.managerName}</strong> ({branch.managerEmail})</p>
-
               <p>Hours: <strong className="text-slate-900">{branch.openingTime} - {branch.closingTime}</strong></p>
+            </div>
+
+            {/* Table Service Toggle */}
+            <div className="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-200/80 rounded-xl text-xs">
+              <div>
+                <span className="font-bold text-slate-800">Table Service</span>
+                <p className="text-[10px] text-slate-500">Table booking for this branch</p>
+              </div>
+              <button
+                type="button"
+                onClick={async () => {
+                  const nextVal = !(branch.tableBookingEnabled ?? true);
+                  await branchRepository.update(branch.id, { tableBookingEnabled: nextVal });
+                  setToastMessage(`Table Service ${nextVal ? 'Enabled' : 'Disabled'} for ${branch.name}`);
+                  onRefresh();
+                }}
+                className={`px-3 py-1 rounded-full text-xs font-extrabold transition-all cursor-pointer ${
+                  (branch.tableBookingEnabled ?? true)
+                    ? "bg-emerald-600 text-white shadow-sm"
+                    : "bg-slate-200 text-slate-700 hover:bg-slate-300"
+                }`}
+              >
+                {(branch.tableBookingEnabled ?? true) ? "ON" : "OFF"}
+              </button>
             </div>
 
             <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
@@ -417,6 +444,25 @@ export function BranchesModule({ restaurantId, restaurantName, branches, onRefre
                 className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl"
               />
             </div>
+          </div>
+
+          {/* Table Service Toggle */}
+          <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl flex items-center justify-between">
+            <div>
+              <label className="block font-bold text-slate-800 text-xs">Table Service / Table Booking</label>
+              <p className="text-[10px] text-slate-500">Enable or disable dine-in table reservations for this branch</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setFormData({ ...formData, tableBookingEnabled: !formData.tableBookingEnabled })}
+              className={`px-3 py-1 rounded-full text-xs font-extrabold transition-all cursor-pointer ${
+                formData.tableBookingEnabled
+                  ? "bg-emerald-600 text-white shadow-sm"
+                  : "bg-slate-200 text-slate-700 hover:bg-slate-300"
+              }`}
+            >
+              {formData.tableBookingEnabled ? "ON" : "OFF"}
+            </button>
           </div>
 
           {/* Branch Manager Assignment */}

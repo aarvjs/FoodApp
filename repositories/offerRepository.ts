@@ -5,12 +5,31 @@ import { OfferModel } from "@/models/offer";
 const COLLECTION_NAME = "offers";
 
 export const offerRepository = {
+  async getByRestaurant(restaurantId: string): Promise<OfferModel[]> {
+    if (!restaurantId) return [];
+    try {
+      const snap = await getDocs(collection(db, COLLECTION_NAME));
+      return snap.docs
+        .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() } as OfferModel))
+        .filter((off) => off.restaurantId === restaurantId || !off.restaurantId);
+    } catch (e) {
+      console.warn("offerRepository.getByRestaurant error:", e);
+      return [];
+    }
+  },
+
   async getByBranch(branchId: string): Promise<OfferModel[]> {
     if (!branchId) return [];
     try {
-      const q = query(collection(db, COLLECTION_NAME), where("branchId", "==", branchId));
-      const snap = await getDocs(q);
-      return snap.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() } as OfferModel));
+      const snap = await getDocs(collection(db, COLLECTION_NAME));
+      return snap.docs
+        .map((docSnap) => ({ id: docSnap.id, ...docSnap.data() } as OfferModel))
+        .filter((off) => {
+          if (!off.branchId && (!off.branchIds || off.branchIds.length === 0)) return true;
+          if (off.branchId === branchId || off.branchId === "all" || off.branchId === "ALL" || off.branchId === "") return true;
+          if (off.branchIds && (off.branchIds.includes(branchId) || off.branchIds.includes("all") || off.branchIds.includes("ALL"))) return true;
+          return false;
+        });
     } catch (e) {
       console.warn("offerRepository.getByBranch error:", e);
       return [];
@@ -30,6 +49,9 @@ export const offerRepository = {
       id: docRef.id,
       restaurantId: data.restaurantId,
       branchId: data.branchId,
+      branchIds: data.branchIds || (data.branchId ? [data.branchId] : []),
+      branchName: data.branchName || "",
+      branchNames: data.branchNames || (data.branchName ? [data.branchName] : []),
       title: data.title || "Special Offer",
       description: data.description || "Limited time discount",
       banner: data.banner || "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=500&auto=format&fit=crop&q=80",

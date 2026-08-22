@@ -131,10 +131,16 @@ export function OffersModule({ restaurantId, branches, offers, onRefresh }: Offe
     setSubmitting(true);
 
     try {
+      const selectedBranch = branches.find((b) => b.id === formData.branchId);
+      const bName = selectedBranch ? selectedBranch.name : "All Branches";
+
       const isPct = formData.discountType === "PERCENTAGE";
       const payload: Partial<OfferModel> = {
         restaurantId,
         branchId: formData.branchId || defaultBranchId,
+        branchIds: formData.branchId ? [formData.branchId] : branches.map((b) => b.id),
+        branchName: bName,
+        branchNames: selectedBranch ? [selectedBranch.name] : branches.map((b) => b.name),
         title: formData.title,
         coupon: formData.coupon.toUpperCase().trim(),
         description: formData.description,
@@ -235,6 +241,8 @@ export function OffersModule({ restaurantId, branches, offers, onRefresh }: Offe
           const dVal = off.discountValue !== undefined ? off.discountValue : (off.discountPercentage || 0);
           const statusObj = getStatusBadge(off);
 
+          const matchedBranchName = off.branchName || branches.find((b) => b.id === off.branchId)?.name || (off.branchId === "all" || !off.branchId ? "All Branches" : "Branch");
+
           const excludedNames = categories
             .filter((c) => (off.excludedCategoryIds || []).includes(c.id))
             .map((c) => c.name);
@@ -254,6 +262,11 @@ export function OffersModule({ restaurantId, branches, offers, onRefresh }: Offe
               </div>
 
               <div className="text-slate-600 space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200/60 font-medium">
+                <div className="flex justify-between items-center text-xs pb-1 border-b border-slate-200/60">
+                  <span className="font-bold text-slate-500">Branch:</span>
+                  <strong className="text-emerald-800 font-extrabold">{matchedBranchName}</strong>
+                </div>
+
                 <div className="flex justify-between">
                   <span>Discount:</span>
                   <strong className="text-emerald-700 font-bold">

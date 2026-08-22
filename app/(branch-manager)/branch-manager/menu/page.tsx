@@ -149,9 +149,12 @@ export default function BranchManagerMenuPage() {
         branchId: user?.branchId || "",
         branchIds: user?.branchId ? [user.branchId] : [],
         restaurantId: user?.restaurantId || "",
-        status: "ACTIVE",
-        imageFile: imageFile || undefined
+        status: "ACTIVE"
       };
+
+      if (imageFile) {
+        payload.imageFile = imageFile;
+      }
 
       if (editingItem) {
         await updateProduct(editingItem.id, payload);
