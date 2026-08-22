@@ -18,7 +18,8 @@ import {
   ToggleLeft,
   ToggleRight,
   Package,
-  Utensils
+  Utensils,
+  AlertCircle
 } from "lucide-react";
 import { db } from "@/firebase/config";
 import { doc, updateDoc } from "firebase/firestore";
@@ -78,6 +79,11 @@ export const ComboProductCustomizationModal: React.FC<ComboProductCustomizationM
   const [isVariantModalOpen, setIsVariantModalOpen] = useState(false);
   const [editingVariantIndex, setEditingVariantIndex] = useState<number | null>(null);
   const [variantName, setVariantName] = useState("");
+  const [variantSelectionType, setVariantSelectionType] = useState<"single" | "multi">("single");
+  const [variantIsRequired, setVariantIsRequired] = useState<boolean>(true);
+  const [variantMinSelection, setVariantMinSelection] = useState<number>(1);
+  const [variantMaxSelection, setVariantMaxSelection] = useState<number>(1);
+  const [variantValidationError, setVariantValidationError] = useState<string | null>(null);
 
   // Variant Item Form Modal state (Level 2: Item / Product inside Size Variant)
   const [isVarItemModalOpen, setIsVarItemModalOpen] = useState(false);
@@ -85,6 +91,11 @@ export const ComboProductCustomizationModal: React.FC<ComboProductCustomizationM
   const [editingVarItemIndex, setEditingVarItemIndex] = useState<number | null>(null);
   const [varItemName, setVarItemName] = useState("");
   const [varItemDescription, setVarItemDescription] = useState("");
+  const [varItemSelectionType, setVarItemSelectionType] = useState<"single" | "multi">("single");
+  const [varItemIsRequired, setVarItemIsRequired] = useState<boolean>(true);
+  const [varItemMinSelection, setVarItemMinSelection] = useState<number>(1);
+  const [varItemMaxSelection, setVarItemMaxSelection] = useState<number>(1);
+  const [varItemValidationError, setVarItemValidationError] = useState<string | null>(null);
 
   // Variant Option Form Modal state (Level 3: Option / Extra inside Item)
   const [isVarOptionModalOpen, setIsVarOptionModalOpen] = useState(false);
@@ -145,6 +156,22 @@ export const ComboProductCustomizationModal: React.FC<ComboProductCustomizationM
     setExpandedItemIds((prev) => ({ ...prev, [itemId]: !prev[itemId] }));
   };
 
+  // Validation helper for selection rules
+  const validateSelectionRules = (
+    type: "single" | "multi",
+    required: boolean,
+    min: number,
+    max: number
+  ): string | null => {
+    if (isNaN(min) || min < 0) return "Minimum selection cannot be negative.";
+    if (isNaN(max) || max < 0) return "Maximum selection cannot be negative.";
+    if (min > max) return "Minimum selection cannot be greater than maximum selection.";
+    if (max < min) return "Maximum selection cannot be less than minimum selection.";
+    if (required && min < 1) return "Required selection must have a minimum selection of at least 1.";
+    if (type === "single" && max > 1) return "Single selection maximum limit cannot be greater than 1.";
+    return null;
+  };
+
   // ==========================================
   // VARIANT MODE TOGGLE
   // ==========================================
@@ -158,12 +185,22 @@ export const ComboProductCustomizationModal: React.FC<ComboProductCustomizationM
           id: `var-${Date.now()}-1`,
           name: "Small",
           isActive: true,
+          selectionType: "single",
+          isRequired: true,
+          required: true,
+          minSelection: 1,
+          maxSelection: 1,
           items: [
             {
               id: `vitem-${Date.now()}-1-1`,
               name: "Pizza",
               description: "Small Pizza",
               isActive: true,
+              selectionType: "single",
+              isRequired: true,
+              required: true,
+              minSelection: 1,
+              maxSelection: 1,
               options: [
                 { id: `vopt-${Date.now()}-1-1-1`, name: "Extra Cheese", additionalPrice: 20, isActive: true },
                 { id: `vopt-${Date.now()}-1-1-2`, name: "Ketchup", additionalPrice: 5, isActive: true }
@@ -175,12 +212,22 @@ export const ComboProductCustomizationModal: React.FC<ComboProductCustomizationM
           id: `var-${Date.now()}-2`,
           name: "Medium",
           isActive: true,
+          selectionType: "single",
+          isRequired: true,
+          required: true,
+          minSelection: 1,
+          maxSelection: 1,
           items: [
             {
               id: `vitem-${Date.now()}-2-1`,
               name: "Pizza",
               description: "Medium Pizza",
               isActive: true,
+              selectionType: "single",
+              isRequired: true,
+              required: true,
+              minSelection: 1,
+              maxSelection: 1,
               options: [
                 { id: `vopt-${Date.now()}-2-1-1`, name: "Extra Cheese", additionalPrice: 30, isActive: true },
                 { id: `vopt-${Date.now()}-2-1-2`, name: "Extra Topping", additionalPrice: 20, isActive: true }
@@ -192,12 +239,22 @@ export const ComboProductCustomizationModal: React.FC<ComboProductCustomizationM
           id: `var-${Date.now()}-3`,
           name: "Large",
           isActive: true,
+          selectionType: "single",
+          isRequired: true,
+          required: true,
+          minSelection: 1,
+          maxSelection: 1,
           items: [
             {
               id: `vitem-${Date.now()}-3-1`,
               name: "Pizza",
               description: "Large Pizza",
               isActive: true,
+              selectionType: "single",
+              isRequired: true,
+              required: true,
+              minSelection: 1,
+              maxSelection: 1,
               options: [
                 { id: `vopt-${Date.now()}-3-1-1`, name: "Extra Cheese", additionalPrice: 40, isActive: true },
                 { id: `vopt-${Date.now()}-3-1-2`, name: "Extra Topping", additionalPrice: 30, isActive: true },
@@ -226,12 +283,25 @@ export const ComboProductCustomizationModal: React.FC<ComboProductCustomizationM
   const handleOpenAddVariant = () => {
     setEditingVariantIndex(null);
     setVariantName("");
+    setVariantSelectionType("single");
+    setVariantIsRequired(true);
+    setVariantMinSelection(1);
+    setVariantMaxSelection(1);
+    setVariantValidationError(null);
     setIsVariantModalOpen(true);
   };
 
   const handleOpenEditVariant = (vIdx: number) => {
+    const targetVar = variants[vIdx];
+    const isReq = targetVar.isRequired ?? targetVar.required ?? true;
+    const selType = targetVar.selectionType === "multi" ? "multi" : "single";
     setEditingVariantIndex(vIdx);
-    setVariantName(variants[vIdx].name || "");
+    setVariantName(targetVar.name || "");
+    setVariantSelectionType(selType);
+    setVariantIsRequired(isReq);
+    setVariantMinSelection(targetVar.minSelection !== undefined ? Number(targetVar.minSelection) : (isReq ? 1 : 0));
+    setVariantMaxSelection(targetVar.maxSelection !== undefined ? Number(targetVar.maxSelection) : (selType === "multi" ? 5 : 1));
+    setVariantValidationError(null);
     setIsVariantModalOpen(true);
   };
 
@@ -239,11 +309,27 @@ export const ComboProductCustomizationModal: React.FC<ComboProductCustomizationM
     e.preventDefault();
     if (!variantName.trim()) return;
 
+    const validationErr = validateSelectionRules(
+      variantSelectionType,
+      variantIsRequired,
+      Number(variantMinSelection),
+      Number(variantMaxSelection)
+    );
+    if (validationErr) {
+      setVariantValidationError(validationErr);
+      return;
+    }
+
     let updatedList = [...variants];
     if (editingVariantIndex !== null) {
       updatedList[editingVariantIndex] = {
         ...updatedList[editingVariantIndex],
-        name: variantName.trim()
+        name: variantName.trim(),
+        selectionType: variantSelectionType,
+        isRequired: variantIsRequired,
+        required: variantIsRequired,
+        minSelection: Number(variantMinSelection),
+        maxSelection: Number(variantMaxSelection)
       };
     } else {
       const newVarId = `var-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
@@ -251,6 +337,11 @@ export const ComboProductCustomizationModal: React.FC<ComboProductCustomizationM
         id: newVarId,
         name: variantName.trim(),
         isActive: true,
+        selectionType: variantSelectionType,
+        isRequired: variantIsRequired,
+        required: variantIsRequired,
+        minSelection: Number(variantMinSelection),
+        maxSelection: Number(variantMaxSelection),
         items: []
       };
       updatedList.push(newVariant);
@@ -289,21 +380,44 @@ export const ComboProductCustomizationModal: React.FC<ComboProductCustomizationM
     setEditingVarItemIndex(null);
     setVarItemName("");
     setVarItemDescription("");
+    setVarItemSelectionType("single");
+    setVarItemIsRequired(true);
+    setVarItemMinSelection(1);
+    setVarItemMaxSelection(1);
+    setVarItemValidationError(null);
     setIsVarItemModalOpen(true);
   };
 
   const handleOpenEditVarItem = (vIdx: number, iIdx: number) => {
     const targetItem = (variants[vIdx].items || [])[iIdx];
+    const isReq = targetItem.isRequired ?? targetItem.required ?? true;
+    const selType = targetItem.selectionType === "multi" ? "multi" : "single";
     setTargetVariantIndexForItem(vIdx);
     setEditingVarItemIndex(iIdx);
     setVarItemName(targetItem.name || "");
     setVarItemDescription(targetItem.description || "");
+    setVarItemSelectionType(selType);
+    setVarItemIsRequired(isReq);
+    setVarItemMinSelection(targetItem.minSelection !== undefined ? Number(targetItem.minSelection) : (isReq ? 1 : 0));
+    setVarItemMaxSelection(targetItem.maxSelection !== undefined ? Number(targetItem.maxSelection) : (selType === "multi" ? 5 : 1));
+    setVarItemValidationError(null);
     setIsVarItemModalOpen(true);
   };
 
   const handleSaveVarItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (targetVariantIndexForItem === null || !varItemName.trim()) return;
+
+    const validationErr = validateSelectionRules(
+      varItemSelectionType,
+      varItemIsRequired,
+      Number(varItemMinSelection),
+      Number(varItemMaxSelection)
+    );
+    if (validationErr) {
+      setVarItemValidationError(validationErr);
+      return;
+    }
 
     const updatedVariants = [...variants];
     const targetVar = { ...updatedVariants[targetVariantIndexForItem] };
@@ -313,7 +427,12 @@ export const ComboProductCustomizationModal: React.FC<ComboProductCustomizationM
       currentItems[editingVarItemIndex] = {
         ...currentItems[editingVarItemIndex],
         name: varItemName.trim(),
-        description: varItemDescription.trim()
+        description: varItemDescription.trim(),
+        selectionType: varItemSelectionType,
+        isRequired: varItemIsRequired,
+        required: varItemIsRequired,
+        minSelection: Number(varItemMinSelection),
+        maxSelection: Number(varItemMaxSelection)
       };
     } else {
       const newVarItemId = `vitem-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
@@ -322,6 +441,11 @@ export const ComboProductCustomizationModal: React.FC<ComboProductCustomizationM
         name: varItemName.trim(),
         description: varItemDescription.trim(),
         isActive: true,
+        selectionType: varItemSelectionType,
+        isRequired: varItemIsRequired,
+        required: varItemIsRequired,
+        minSelection: Number(varItemMinSelection),
+        maxSelection: Number(varItemMaxSelection),
         options: []
       });
       setExpandedItemIds((prev) => ({ ...prev, [newVarItemId]: true }));
@@ -857,7 +981,7 @@ export const ComboProductCustomizationModal: React.FC<ComboProductCustomizationM
                             </div>
 
                             <div>
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 flex-wrap">
                                 <h4 className="text-base font-black text-slate-900">{variant.name}</h4>
                                 <span
                                   className={`px-2 py-0.5 text-[9.5px] font-black uppercase rounded-md ${
@@ -868,10 +992,32 @@ export const ComboProductCustomizationModal: React.FC<ComboProductCustomizationM
                                 >
                                   {variant.isActive !== false ? "Active Size" : "Disabled"}
                                 </span>
+                                <span
+                                  className={`px-2 py-0.5 text-[9.5px] font-black uppercase rounded-md ${
+                                    (variant.selectionType ?? "single") === "single"
+                                      ? "bg-blue-100 text-blue-800"
+                                      : "bg-purple-100 text-purple-800"
+                                  }`}
+                                >
+                                  {(variant.selectionType ?? "single") === "single" ? "Single Selection" : "Multiple Selection"}
+                                </span>
+                                <span
+                                  className={`px-2 py-0.5 text-[9.5px] font-black uppercase rounded-md ${
+                                    (variant.isRequired ?? variant.required ?? true)
+                                      ? "bg-rose-100 text-rose-800"
+                                      : "bg-slate-200 text-slate-700"
+                                  }`}
+                                >
+                                  {(variant.isRequired ?? variant.required ?? true) ? "Required" : "Optional"}
+                                </span>
                               </div>
 
-                              <div className="text-[11px] text-slate-500 mt-0.5 font-semibold">
-                                {itemsCount} Item{itemsCount === 1 ? "" : "s"} inside {variant.name}
+                              <div className="text-[11px] text-slate-500 mt-0.5 font-semibold flex items-center gap-2 flex-wrap">
+                                <span>Min: {variant.minSelection ?? ((variant.isRequired ?? variant.required ?? true) ? 1 : 0)}</span>
+                                <span>•</span>
+                                <span>Max: {variant.maxSelection ?? 1}</span>
+                                <span>•</span>
+                                <span>{itemsCount} Item{itemsCount === 1 ? "" : "s"} inside {variant.name}</span>
                               </div>
                             </div>
                           </div>
@@ -961,14 +1107,31 @@ export const ComboProductCustomizationModal: React.FC<ComboProductCustomizationM
                                           </div>
 
                                           <div>
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-2 flex-wrap">
                                               <h5 className="text-xs font-black text-slate-900">{item.name}</h5>
                                               <span
-                                                className={`px-1.5 py-0.2 text-[9px] font-black uppercase rounded ${
+                                                className={`px-1.5 py-0.5 text-[9px] font-black uppercase rounded ${
                                                   item.isActive !== false ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-600"
                                                 }`}
                                               >
                                                 {item.isActive !== false ? "Active Item" : "Disabled"}
+                                              </span>
+                                              <span
+                                                className={`px-1.5 py-0.5 text-[9px] font-black uppercase rounded ${
+                                                  (item.selectionType ?? "single") === "single" ? "bg-blue-100 text-blue-800" : "bg-purple-100 text-purple-800"
+                                                }`}
+                                              >
+                                                {(item.selectionType ?? "single") === "single" ? "Single Select" : "Multi Select"}
+                                              </span>
+                                              <span
+                                                className={`px-1.5 py-0.5 text-[9px] font-black uppercase rounded ${
+                                                  (item.isRequired ?? item.required ?? true) ? "bg-rose-100 text-rose-800" : "bg-slate-200 text-slate-700"
+                                                }`}
+                                              >
+                                                {(item.isRequired ?? item.required ?? true) ? "Required" : "Optional"}
+                                              </span>
+                                              <span className="text-[10px] text-slate-500 font-bold">
+                                                (Min: {item.minSelection ?? ((item.isRequired ?? item.required ?? true) ? 1 : 0)}, Max: {item.maxSelection ?? 1})
                                               </span>
                                             </div>
                                             {item.description ? (
@@ -1382,6 +1545,139 @@ export const ComboProductCustomizationModal: React.FC<ComboProductCustomizationM
                   </p>
                 </div>
 
+                {/* Selection Rules Section */}
+                <div className="space-y-3 p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-black text-slate-800 uppercase tracking-wide">
+                      Selection Rules
+                    </label>
+                    <span className="text-[10px] text-slate-400 font-semibold">Optional Configuration</span>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-[11px] font-bold text-slate-700">Selection Type</label>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setVariantSelectionType("single");
+                          setVariantMaxSelection(1);
+                          if (variantIsRequired) setVariantMinSelection(1);
+                          else setVariantMinSelection(0);
+                          setVariantValidationError(null);
+                        }}
+                        className={`flex-1 py-2 px-3 rounded-xl text-xs font-extrabold border transition-all cursor-pointer ${
+                          variantSelectionType === "single"
+                            ? "bg-blue-50 border-blue-500 text-blue-700 ring-2 ring-blue-500/20"
+                            : "bg-white border-slate-200 text-slate-600 hover:bg-slate-100"
+                        }`}
+                      >
+                        Single Selection
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setVariantSelectionType("multi");
+                          if (variantMaxSelection <= 1) setVariantMaxSelection(5);
+                          setVariantValidationError(null);
+                        }}
+                        className={`flex-1 py-2 px-3 rounded-xl text-xs font-extrabold border transition-all cursor-pointer ${
+                          variantSelectionType === "multi"
+                            ? "bg-purple-50 border-purple-500 text-purple-700 ring-2 ring-purple-500/20"
+                            : "bg-white border-slate-200 text-slate-600 hover:bg-slate-100"
+                        }`}
+                      >
+                        Multiple Selection
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-[11px] font-bold text-slate-700">Required / Optional</label>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setVariantIsRequired(true);
+                          if (variantMinSelection < 1) setVariantMinSelection(1);
+                          setVariantValidationError(null);
+                        }}
+                        className={`flex-1 py-2 px-3 rounded-xl text-xs font-extrabold border transition-all cursor-pointer ${
+                          variantIsRequired
+                            ? "bg-rose-50 border-rose-500 text-rose-700 ring-2 ring-rose-500/20"
+                            : "bg-white border-slate-200 text-slate-600 hover:bg-slate-100"
+                        }`}
+                      >
+                        Required (Yes)
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setVariantIsRequired(false);
+                          setVariantMinSelection(0);
+                          setVariantValidationError(null);
+                        }}
+                        className={`flex-1 py-2 px-3 rounded-xl text-xs font-extrabold border transition-all cursor-pointer ${
+                          !variantIsRequired
+                            ? "bg-emerald-50 border-emerald-500 text-emerald-700 ring-2 ring-emerald-500/20"
+                            : "bg-white border-slate-200 text-slate-600 hover:bg-slate-100"
+                        }`}
+                      >
+                        Optional (No)
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div className="space-y-1">
+                      <label className="block text-[11px] font-bold text-slate-700">Minimum Selection</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={variantMinSelection}
+                        onChange={(e) => {
+                          setVariantMinSelection(Number(e.target.value));
+                          setVariantValidationError(null);
+                        }}
+                        className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-amber-500 transition-all"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <label className="block text-[11px] font-bold text-slate-700">Maximum Selection</label>
+                        {variantSelectionType === "single" && (
+                          <span className="text-[9px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">Locked (1)</span>
+                        )}
+                      </div>
+                      <input
+                        type="number"
+                        min="0"
+                        disabled={variantSelectionType === "single"}
+                        value={variantSelectionType === "single" ? 1 : variantMaxSelection}
+                        onChange={(e) => {
+                          setVariantMaxSelection(Number(e.target.value));
+                          setVariantValidationError(null);
+                        }}
+                        className={`w-full px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                          variantSelectionType === "single"
+                            ? "bg-slate-100 text-slate-400 cursor-not-allowed border-slate-200"
+                            : "bg-white text-slate-800 border-slate-200 focus:ring-2 focus:ring-amber-500"
+                        }`}
+                      />
+                    </div>
+                  </div>
+
+                  {variantValidationError && (
+                    <div className="p-2 text-[11px] font-bold text-red-600 bg-red-50 border border-red-200 rounded-xl flex items-center gap-1.5">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0 text-red-500" />
+                      <span>{variantValidationError}</span>
+                    </div>
+                  )}
+                </div>
+
                 <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
                   <button
                     type="button"
@@ -1454,6 +1750,141 @@ export const ComboProductCustomizationModal: React.FC<ComboProductCustomizationM
                   />
                 </div>
 
+                {/* Selection Rules Section */}
+                <div className="space-y-3 p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-black text-slate-800 uppercase tracking-wide">
+                      Selection Rules
+                    </label>
+                    <span className="text-[10px] text-slate-400 font-semibold">Optional Configuration</span>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-[11px] font-bold text-slate-700">Selection Type</label>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setVarItemSelectionType("single");
+                          setVarItemMaxSelection(1);
+                          if (varItemIsRequired) setVarItemMinSelection(1);
+                          else setVarItemMinSelection(0);
+                          setVarItemValidationError(null);
+                        }}
+                        className={`flex-1 py-2 px-3 rounded-xl text-xs font-extrabold border transition-all cursor-pointer ${
+                          varItemSelectionType === "single"
+                            ? "bg-blue-50 border-blue-500 text-blue-700 ring-2 ring-blue-500/20"
+                            : "bg-white border-slate-200 text-slate-600 hover:bg-slate-100"
+                        }`}
+                      >
+                        Single Selection
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setVarItemSelectionType("multi");
+                          if (varItemMaxSelection <= 1) setVarItemMaxSelection(5);
+                          setVarItemValidationError(null);
+                        }}
+                        className={`flex-1 py-2 px-3 rounded-xl text-xs font-extrabold border transition-all cursor-pointer ${
+                          varItemSelectionType === "multi"
+                            ? "bg-purple-50 border-purple-500 text-purple-700 ring-2 ring-purple-500/20"
+                            : "bg-white border-slate-200 text-slate-600 hover:bg-slate-100"
+                        }`}
+                      >
+                        Multiple Selection
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-[11px] font-bold text-slate-700">Required / Optional</label>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setVarItemIsRequired(true);
+                          if (varItemMinSelection < 1) setVarItemMinSelection(1);
+                          if (varItemSelectionType === "single") setVarItemMaxSelection(1);
+                          setVarItemValidationError(null);
+                        }}
+                        className={`flex-1 py-2 px-3 rounded-xl text-xs font-extrabold border transition-all cursor-pointer ${
+                          varItemIsRequired
+                            ? "bg-rose-50 border-rose-500 text-rose-700 ring-2 ring-rose-500/20"
+                            : "bg-white border-slate-200 text-slate-600 hover:bg-slate-100"
+                        }`}
+                      >
+                        Required (Yes)
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setVarItemIsRequired(false);
+                          setVarItemMinSelection(0);
+                          if (varItemSelectionType === "single") setVarItemMaxSelection(1);
+                          setVarItemValidationError(null);
+                        }}
+                        className={`flex-1 py-2 px-3 rounded-xl text-xs font-extrabold border transition-all cursor-pointer ${
+                          !varItemIsRequired
+                            ? "bg-emerald-50 border-emerald-500 text-emerald-700 ring-2 ring-emerald-500/20"
+                            : "bg-white border-slate-200 text-slate-600 hover:bg-slate-100"
+                        }`}
+                      >
+                        Optional (No)
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div className="space-y-1">
+                      <label className="block text-[11px] font-bold text-slate-700">Minimum Selection</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={varItemMinSelection}
+                        onChange={(e) => {
+                          setVarItemMinSelection(Number(e.target.value));
+                          setVarItemValidationError(null);
+                        }}
+                        className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-amber-500 transition-all"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <label className="block text-[11px] font-bold text-slate-700">Maximum Selection</label>
+                        {varItemSelectionType === "single" && (
+                          <span className="text-[9px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">Locked (1)</span>
+                        )}
+                      </div>
+                      <input
+                        type="number"
+                        min="0"
+                        disabled={varItemSelectionType === "single"}
+                        value={varItemSelectionType === "single" ? 1 : varItemMaxSelection}
+                        onChange={(e) => {
+                          setVarItemMaxSelection(Number(e.target.value));
+                          setVarItemValidationError(null);
+                        }}
+                        className={`w-full px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                          varItemSelectionType === "single"
+                            ? "bg-slate-100 text-slate-400 cursor-not-allowed border-slate-200"
+                            : "bg-white text-slate-800 border-slate-200 focus:ring-2 focus:ring-amber-500"
+                        }`}
+                      />
+                    </div>
+                  </div>
+
+                  {varItemValidationError && (
+                    <div className="p-2 text-[11px] font-bold text-red-600 bg-red-50 border border-red-200 rounded-xl flex items-center gap-1.5">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0 text-red-500" />
+                      <span>{varItemValidationError}</span>
+                    </div>
+                  )}
+                </div>
+
                 <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
                   <button
                     type="button"
@@ -1480,78 +1911,102 @@ export const ComboProductCustomizationModal: React.FC<ComboProductCustomizationM
         {/* ---------------------------------------------------- */}
         {isVarOptionModalOpen &&
           targetVariantIndexForOption !== null &&
-          targetItemIndexForOption !== null && (
-            <div className="fixed inset-0 z-60 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
-              <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden">
-                <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
-                  <div>
-                    <h3 className="text-xs font-black text-slate-900">
-                      {editingVarOptionIndex !== null ? "Edit Option" : "Add Option to Item"}
-                    </h3>
-                    <p className="text-[10px] text-slate-500 font-semibold">
-                      Size: {variants[targetVariantIndexForOption]?.name} → Item:{" "}
-                      {(variants[targetVariantIndexForOption]?.items || [])[targetItemIndexForOption]?.name}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setIsVarOptionModalOpen(false)}
-                    className="w-7 h-7 rounded-full bg-slate-200/80 hover:bg-slate-300 text-slate-600 flex items-center justify-center cursor-pointer"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
+          targetItemIndexForOption !== null && (() => {
+            const parentItem = (variants[targetVariantIndexForOption]?.items || [])[targetItemIndexForOption];
+            const parentSelType = (parentItem?.selectionType ?? "single") === "single" ? "Single Selection" : "Multiple Selection";
+            const parentReq = (parentItem?.isRequired ?? parentItem?.required ?? true) ? "Yes (Required)" : "No (Optional)";
+            const parentMin = parentItem?.minSelection ?? ((parentItem?.isRequired ?? true) ? 1 : 0);
+            const parentMax = parentItem?.maxSelection ?? 1;
 
-                <form onSubmit={handleSaveVarOption} className="p-6 space-y-4">
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-slate-700">
-                      Option Name <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Extra Cheese, Ketchup, Coke, Sprite"
-                      value={varOptionName}
-                      onChange={(e) => setVarOptionName(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-slate-700">
-                      Additional Price (₹) <span className="text-slate-400 font-normal">(0 for free / included)</span>
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="1"
-                      required
-                      placeholder="20"
-                      value={varOptionPrice}
-                      onChange={(e) => setVarOptionPrice(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
-                    />
-                  </div>
-
-                  <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+            return (
+              <div className="fixed inset-0 z-60 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
+                <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden">
+                  <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+                    <div>
+                      <h3 className="text-xs font-black text-slate-900">
+                        {editingVarOptionIndex !== null ? "Edit Option" : "Add Option to Item"}
+                      </h3>
+                      <p className="text-[10px] text-slate-500 font-semibold">
+                        Size: {variants[targetVariantIndexForOption]?.name} → Item:{" "}
+                        {parentItem?.name}
+                      </p>
+                    </div>
                     <button
-                      type="button"
                       onClick={() => setIsVarOptionModalOpen(false)}
-                      className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                      className="w-7 h-7 rounded-full bg-slate-200/80 hover:bg-slate-300 text-slate-600 flex items-center justify-center cursor-pointer"
                     >
-                      Cancel
-                    </button>
-
-                    <button
-                      type="submit"
-                      className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-extrabold rounded-xl shadow transition-colors cursor-pointer"
-                    >
-                      {editingVarOptionIndex !== null ? "Save Option" : "Add Option"}
+                      <X className="w-3.5 h-3.5" />
                     </button>
                   </div>
-                </form>
+
+                  <form onSubmit={handleSaveVarOption} className="p-6 space-y-4">
+                    {/* Read-only Parent Item Selection Rules Banner */}
+                    <div className="p-3 bg-amber-50/80 border border-amber-200/80 rounded-2xl space-y-1 text-xs">
+                      <div className="text-[10px] font-black uppercase text-amber-900 tracking-wider">
+                        Parent Item Selection Rules
+                      </div>
+                      <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[11px] font-semibold text-slate-700">
+                        <div>Type: <span className="font-extrabold text-slate-900">{parentSelType}</span></div>
+                        <div>Required: <span className="font-extrabold text-slate-900">{parentReq}</span></div>
+                        <div>Minimum: <span className="font-extrabold text-slate-900">{parentMin}</span></div>
+                        <div>Maximum: <span className="font-extrabold text-slate-900">{parentMax}</span></div>
+                      </div>
+                      <p className="text-[10px] text-amber-800/80 font-medium italic pt-1">
+                        * Options belong to "{parentItem?.name}" and will be selected according to these rules.
+                      </p>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold text-slate-700">
+                        Option Name <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Extra Cheese, Ketchup, Coke, Sprite"
+                        value={varOptionName}
+                        onChange={(e) => setVarOptionName(e.target.value)}
+                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold text-slate-700">
+                        Additional Price (₹) <span className="text-slate-400 font-normal">(0 for free / included)</span>
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        required
+                        placeholder="20"
+                        value={varOptionPrice}
+                        onChange={(e) => setVarOptionPrice(e.target.value)}
+                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
+                      />
+                    </div>
+
+                    <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsVarOptionModalOpen(false)}
+                        className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+
+                      <button
+                        type="submit"
+                        className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-extrabold rounded-xl shadow transition-colors cursor-pointer"
+                      >
+                        {editingVarOptionIndex !== null ? "Save Option" : "Add Option"}
+                      </button>
+                    </div>
+                  </form>
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
         {/* ---------------------------------------------------- */}
         {/* SUB-MODAL 4: ADD / EDIT STANDARD CUSTOMIZATION GROUP */}
@@ -1676,16 +2131,26 @@ export const ComboProductCustomizationModal: React.FC<ComboProductCustomizationM
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-slate-700">
-                      Maximum Selection
-                    </label>
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-bold text-slate-700">
+                        Maximum Selection
+                      </label>
+                      {selectionType === "single" && (
+                        <span className="text-[9px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">Locked (1)</span>
+                      )}
+                    </div>
                     <input
                       type="number"
                       min="1"
                       max="20"
-                      value={maxSelection}
+                      disabled={selectionType === "single"}
+                      value={selectionType === "single" ? 1 : maxSelection}
                       onChange={(e) => setMaxSelection(Number(e.target.value))}
-                      className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
+                      className={`w-full px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
+                        selectionType === "single"
+                          ? "bg-slate-100 text-slate-400 cursor-not-allowed border-slate-200"
+                          : "bg-slate-50 text-slate-800 border-slate-200 focus:bg-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                      }`}
                     />
                   </div>
                 </div>
@@ -1714,77 +2179,101 @@ export const ComboProductCustomizationModal: React.FC<ComboProductCustomizationM
         {/* ---------------------------------------------------- */}
         {/* SUB-MODAL 5: ADD / EDIT STANDARD OPTION */}
         {/* ---------------------------------------------------- */}
-        {isOptionModalOpen && targetGroupIndex !== null && (
-          <div className="fixed inset-0 z-60 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
-            <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden">
-              <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
-                <div>
-                  <h3 className="text-xs font-black text-slate-900">
-                    {editingOptionIndex !== null ? "Edit Option" : "Add Option"}
-                  </h3>
-                  <p className="text-[10px] text-slate-500 font-semibold">
-                    Inside: {groups[targetGroupIndex]?.title}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setIsOptionModalOpen(false)}
-                  className="w-7 h-7 rounded-full bg-slate-200/80 hover:bg-slate-300 text-slate-600 flex items-center justify-center cursor-pointer"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
+        {isOptionModalOpen && targetGroupIndex !== null && (() => {
+          const parentGroup = groups[targetGroupIndex];
+          const parentSelType = (parentGroup?.selectionType ?? "single") === "single" ? "Single Selection" : "Multiple Selection";
+          const parentReq = parentGroup?.isRequired ? "Yes (Required)" : "No (Optional)";
+          const parentMin = parentGroup?.minSelection ?? (parentGroup?.isRequired ? 1 : 0);
+          const parentMax = parentGroup?.maxSelection ?? 1;
 
-              <form onSubmit={handleSaveOption} className="p-6 space-y-4">
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-slate-700">
-                    Option Name <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Onion Pizza [Reg], Extra Cheese, Ketchup x 2"
-                    value={optionName}
-                    onChange={(e) => setOptionName(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-slate-700">
-                    Additional Price (₹) <span className="text-slate-400 font-normal">(0 for free / included)</span>
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="1"
-                    required
-                    placeholder="0"
-                    value={optionPrice}
-                    onChange={(e) => setOptionPrice(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
-                  />
-                </div>
-
-                <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+          return (
+            <div className="fixed inset-0 z-60 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
+              <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden">
+                <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xs font-black text-slate-900">
+                      {editingOptionIndex !== null ? "Edit Option" : "Add Option"}
+                    </h3>
+                    <p className="text-[10px] text-slate-500 font-semibold">
+                      Inside: {parentGroup?.title}
+                    </p>
+                  </div>
                   <button
-                    type="button"
                     onClick={() => setIsOptionModalOpen(false)}
-                    className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                    className="w-7 h-7 rounded-full bg-slate-200/80 hover:bg-slate-300 text-slate-600 flex items-center justify-center cursor-pointer"
                   >
-                    Cancel
-                  </button>
-
-                  <button
-                    type="submit"
-                    className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-extrabold rounded-xl shadow transition-colors cursor-pointer"
-                  >
-                    {editingOptionIndex !== null ? "Save Option" : "Add Option"}
+                    <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
-              </form>
+
+                <form onSubmit={handleSaveOption} className="p-6 space-y-4">
+                  {/* Read-only Parent Group Selection Rules Banner */}
+                  <div className="p-3 bg-blue-50/80 border border-blue-200/80 rounded-2xl space-y-1 text-xs">
+                    <div className="text-[10px] font-black uppercase text-blue-900 tracking-wider">
+                      Parent Option Group Rules
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[11px] font-semibold text-slate-700">
+                      <div>Type: <span className="font-extrabold text-slate-900">{parentSelType}</span></div>
+                      <div>Required: <span className="font-extrabold text-slate-900">{parentReq}</span></div>
+                      <div>Minimum: <span className="font-extrabold text-slate-900">{parentMin}</span></div>
+                      <div>Maximum: <span className="font-extrabold text-slate-900">{parentMax}</span></div>
+                    </div>
+                    <p className="text-[10px] text-blue-800/80 font-medium italic pt-1">
+                      * Options belong to group "{parentGroup?.title}" and will be selected according to these rules.
+                    </p>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-slate-700">
+                      Option Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Onion Pizza [Reg], Extra Cheese, Ketchup x 2"
+                      value={optionName}
+                      onChange={(e) => setOptionName(e.target.value)}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-slate-700">
+                      Additional Price (₹) <span className="text-slate-400 font-normal">(0 for free / included)</span>
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      required
+                      placeholder="0"
+                      value={optionPrice}
+                      onChange={(e) => setOptionPrice(e.target.value)}
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
+                    />
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsOptionModalOpen(false)}
+                      className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+
+                    <button
+                      type="submit"
+                      className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-extrabold rounded-xl shadow transition-colors cursor-pointer"
+                    >
+                      {editingOptionIndex !== null ? "Save Option" : "Add Option"}
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
       </div>
     </div>
   );

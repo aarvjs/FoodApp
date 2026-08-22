@@ -61,8 +61,11 @@ export interface OrderModel {
   tax: number;
   deliveryFee: number;
   totalAmount: number;
-  paymentStatus: "PAID" | "PENDING" | "REFUNDED";
-  paymentMethod: "UPI" | "CREDIT_CARD" | "CASH_ON_DELIVERY";
+  paymentStatus: "PAID" | "PENDING" | "REFUNDED" | "SUCCESS" | "COD_PENDING" | string;
+  paymentMethod: "UPI" | "CREDIT_CARD" | "CASH_ON_DELIVERY" | "ONLINE" | "COD" | string;
+  paymentGateway?: string;
+  transactionId?: string;
+  paidAt?: string;
   orderType: OrderTypeFormat;
   status: OrderStatusType;
   estimatedPrepMinutes?: number;

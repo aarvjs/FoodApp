@@ -105,22 +105,34 @@ export function normalizeComboItemData(data: any): ComboItem {
   const rawVariants = Array.isArray(data.variants) ? data.variants : [];
   const normalizedVariants: ComboItemVariant[] = rawVariants.map((v: any, vIdx: number) => {
     const rawItems = Array.isArray(v.items) ? v.items : [];
-    let normalizedItems: ComboVariantItem[] = rawItems.map((item: any, iIdx: number) => ({
-      id: item.id || `vitem-${Date.now()}-${iIdx}`,
-      name: (item.name || `Item ${iIdx + 1}`).trim(),
-      description: (item.description || "").trim(),
-      isActive: item.isActive !== false,
-      displayOrder: item.displayOrder !== undefined ? Number(item.displayOrder) : iIdx,
-      options: Array.isArray(item.options)
-        ? item.options.map((opt: any, oIdx: number) => ({
-            id: opt.id || `vopt-${Date.now()}-${oIdx}`,
-            name: (opt.name || "").trim(),
-            additionalPrice: Number(opt.additionalPrice ?? opt.price) || 0,
-            isActive: opt.isActive !== false && opt.isAvailable !== false,
-            displayOrder: opt.displayOrder !== undefined ? Number(opt.displayOrder) : oIdx
-          }))
-        : []
-    }));
+    let normalizedItems: ComboVariantItem[] = rawItems.map((item: any, iIdx: number) => {
+      const itemSelType: "single" | "multi" = item.selectionType === "multi" ? "multi" : "single";
+      const itemIsReq = item.isRequired ?? item.required ?? true;
+      const itemMin = item.minSelection !== undefined ? Number(item.minSelection) : (itemIsReq ? 1 : 0);
+      const itemMax = item.maxSelection !== undefined ? Number(item.maxSelection) : (itemSelType === "single" ? 1 : 5);
+
+      return {
+        id: item.id || `vitem-${Date.now()}-${iIdx}`,
+        name: (item.name || `Item ${iIdx + 1}`).trim(),
+        description: (item.description || "").trim(),
+        isActive: item.isActive !== false,
+        displayOrder: item.displayOrder !== undefined ? Number(item.displayOrder) : iIdx,
+        selectionType: itemSelType,
+        isRequired: itemIsReq,
+        required: itemIsReq,
+        minSelection: itemMin,
+        maxSelection: itemMax,
+        options: Array.isArray(item.options)
+          ? item.options.map((opt: any, oIdx: number) => ({
+              id: opt.id || `vopt-${Date.now()}-${oIdx}`,
+              name: (opt.name || "").trim(),
+              additionalPrice: Number(opt.additionalPrice ?? opt.price) || 0,
+              isActive: opt.isActive !== false && opt.isAvailable !== false,
+              displayOrder: opt.displayOrder !== undefined ? Number(opt.displayOrder) : oIdx
+            }))
+          : []
+      };
+    });
 
     const legacyOptions = Array.isArray(v.options)
       ? v.options.map((opt: any, oIdx: number) => ({
@@ -140,16 +152,31 @@ export function normalizeComboItemData(data: any): ComboItem {
           description: "",
           isActive: true,
           displayOrder: 0,
+          selectionType: "single",
+          isRequired: true,
+          required: true,
+          minSelection: 1,
+          maxSelection: 1,
           options: legacyOptions
         }
       ];
     }
+
+    const varSelType: "single" | "multi" = v.selectionType === "multi" ? "multi" : "single";
+    const varIsReq = v.isRequired ?? v.required ?? true;
+    const varMin = v.minSelection !== undefined ? Number(v.minSelection) : (varIsReq ? 1 : 0);
+    const varMax = v.maxSelection !== undefined ? Number(v.maxSelection) : (varSelType === "single" ? 1 : 5);
 
     return {
       id: v.id || `var-${Date.now()}-${vIdx}`,
       name: (v.name || `Variant ${vIdx + 1}`).trim(),
       isActive: v.isActive !== false,
       displayOrder: v.displayOrder !== undefined ? Number(v.displayOrder) : vIdx,
+      selectionType: varSelType,
+      isRequired: varIsReq,
+      required: varIsReq,
+      minSelection: varMin,
+      maxSelection: varMax,
       items: normalizedItems,
       options: legacyOptions
     };

@@ -1,8 +1,9 @@
 "use client";
 
 import React from "react";
-import { Bell, ShieldCheck, Store, Menu } from "lucide-react";
+import { ShieldCheck, Store, Menu } from "lucide-react";
 import { useStore } from "@/lib/store/useStore";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 interface AdminTopbarProps {
   onMenuClick?: () => void;
@@ -69,10 +70,7 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({ onMenuClick }) => {
       {/* Right Controls */}
       <div className="flex items-center gap-2 sm:gap-4 shrink-0">
         {/* Notification Bell */}
-        <button className="p-1.5 sm:p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl relative transition-colors">
-          <Bell className="w-4 sm:w-5 h-4 sm:h-5" />
-          <span className="absolute top-1 sm:top-1.5 right-1 sm:right-1.5 w-2 h-2 bg-emerald-500 rounded-full ring-2 ring-white"></span>
-        </button>
+        <NotificationBell role="admin" />
 
         {/* User Card */}
         <div className="flex items-center gap-2.5 pl-2 sm:pl-3 border-l border-slate-200">

@@ -8,6 +8,8 @@ import { useFirestoreRealtime } from "@/hooks/useFirestoreRealtime";
 import { useAuth } from "@/providers/AuthProvider";
 import { Loader2 } from "lucide-react";
 
+import { OrderNotificationProvider } from "@/providers/OrderNotificationContext";
+
 export default function AdminLayout({
   children
 }: {
@@ -59,14 +61,16 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="min-h-screen flex bg-slate-50 font-sans text-slate-900 antialiased overflow-x-hidden">
-      <AdminSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-      <div className="flex-1 flex flex-col min-w-0">
-        <AdminTopbar onMenuClick={() => setIsSidebarOpen(true)} />
-        <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-y-auto">
-          {children}
-        </main>
+    <OrderNotificationProvider role="admin">
+      <div className="min-h-screen flex bg-slate-50 font-sans text-slate-900 antialiased overflow-x-hidden">
+        <AdminSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+        <div className="flex-1 flex flex-col min-w-0">
+          <AdminTopbar onMenuClick={() => setIsSidebarOpen(true)} />
+          <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-y-auto">
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+    </OrderNotificationProvider>
   );
 }

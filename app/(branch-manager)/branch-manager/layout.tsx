@@ -8,6 +8,8 @@ import { useFirestoreRealtime } from "@/hooks/useFirestoreRealtime";
 import { useAuth } from "@/providers/AuthProvider";
 import { Loader2 } from "lucide-react";
 
+import { OrderNotificationProvider } from "@/providers/OrderNotificationContext";
+
 export default function BranchManagerLayout({
   children
 }: {
@@ -61,14 +63,16 @@ export default function BranchManagerLayout({
   }
 
   return (
-    <div className="min-h-screen flex bg-slate-50 font-sans text-slate-900 antialiased overflow-x-hidden">
-      <BranchManagerSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-      <div className="flex-1 flex flex-col min-w-0">
-        <BranchManagerTopbar onMenuClick={() => setIsSidebarOpen(true)} />
-        <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-y-auto">
-          {children}
-        </main>
+    <OrderNotificationProvider role="branchManager">
+      <div className="min-h-screen flex bg-slate-50 font-sans text-slate-900 antialiased overflow-x-hidden">
+        <BranchManagerSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+        <div className="flex-1 flex flex-col min-w-0">
+          <BranchManagerTopbar onMenuClick={() => setIsSidebarOpen(true)} />
+          <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-y-auto">
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+    </OrderNotificationProvider>
   );
 }

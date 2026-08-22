@@ -397,7 +397,8 @@ export default function BranchManagerOrdersPage() {
                       <span className="text-amber-600">₹{ord.totalAmount}</span>
                     </div>
                     <div className="pt-1 border-t border-slate-200/60 text-[11px] space-y-0.5 text-slate-600">
-                      <p>Payment: <strong className="text-slate-800">{ord.paymentMethod} ({ord.paymentStatus})</strong></p>
+                      <p>Payment: <strong className="text-slate-800">{ord.paymentGateway ? `${ord.paymentGateway} (${ord.paymentMethod})` : ord.paymentMethod} • <span className={ord.paymentStatus === 'SUCCESS' || ord.paymentStatus === 'PAID' ? 'text-emerald-600' : 'text-amber-600'}>{ord.paymentStatus}</span></strong></p>
+                      {ord.transactionId && <p className="text-[10px] text-slate-500 font-mono">Txn ID: {ord.transactionId}</p>}
                       {ord.customerAddress && <p className="truncate">Address: <strong>{ord.customerAddress}</strong></p>}
                       <p className="text-[10px] text-slate-400">Time: {ord.createdAt ? new Date(ord.createdAt).toLocaleString() : 'N/A'}</p>
                     </div>

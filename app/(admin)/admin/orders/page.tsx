@@ -248,9 +248,14 @@ export default function SuperAdminOrdersPage() {
                     <span>Total Amount</span>
                     <span className="text-emerald-600">₹{ord.totalAmount}</span>
                   </div>
-                  <div className="flex justify-between text-[11px] text-slate-500">
-                    <span>Payment: {ord.paymentMethod} ({ord.paymentStatus})</span>
-                    <span>{new Date(ord.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                  <div className="flex flex-col text-[11px] text-slate-500 gap-0.5">
+                    <div className="flex justify-between">
+                      <span>Payment: {ord.paymentGateway ? `${ord.paymentGateway} (${ord.paymentMethod})` : ord.paymentMethod} • <strong className={ord.paymentStatus === 'SUCCESS' || ord.paymentStatus === 'PAID' ? 'text-emerald-600' : 'text-amber-600'}>{ord.paymentStatus}</strong></span>
+                      <span>{new Date(ord.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    </div>
+                    {ord.transactionId && (
+                      <p className="text-[10px] text-slate-500 font-mono">Txn ID: {ord.transactionId}</p>
+                    )}
                   </div>
                   {ord.customerAddress && (
                     <p className="text-[11px] text-slate-600 pt-1 border-t border-slate-200/60 truncate">

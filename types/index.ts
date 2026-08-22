@@ -190,6 +190,11 @@ export interface ComboVariantItem {
   description?: string;
   isActive: boolean;
   displayOrder?: number;
+  selectionType?: "single" | "multi";
+  isRequired?: boolean;
+  required?: boolean;
+  minSelection?: number;
+  maxSelection?: number;
   options: ComboVariantOption[];
 }
 
@@ -198,6 +203,11 @@ export interface ComboItemVariant {
   name: string;
   isActive: boolean;
   displayOrder?: number;
+  selectionType?: "single" | "multi";
+  isRequired?: boolean;
+  required?: boolean;
+  minSelection?: number;
+  maxSelection?: number;
   items?: ComboVariantItem[];
   options?: ComboVariantOption[];
 }
@@ -340,8 +350,11 @@ export interface Order {
   tax: number;
   deliveryFee: number;
   totalAmount: number;
-  paymentStatus: "PAID" | "PENDING" | "REFUNDED";
-  paymentMethod: "UPI" | "CREDIT_CARD" | "CASH_ON_DELIVERY";
+  paymentStatus: "PAID" | "PENDING" | "REFUNDED" | "SUCCESS" | "COD_PENDING" | string;
+  paymentMethod: "UPI" | "CREDIT_CARD" | "CASH_ON_DELIVERY" | "ONLINE" | "COD" | string;
+  paymentGateway?: string;
+  transactionId?: string;
+  paidAt?: string;
   orderType: OrderType;
   status: OrderStatus;
   estimatedPrepMinutes?: number;
