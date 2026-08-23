@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import { ShoppingBag, Search, Filter, Clock, CheckCircle2, ChevronRight, Truck, PackageCheck, AlertCircle, XCircle, Trash2, Loader2 } from "lucide-react";
+import { ShoppingBag, Search, Filter, Clock, CheckCircle2, ChevronRight, Truck, PackageCheck, AlertCircle, XCircle, Trash2, Loader2, FileText, Printer } from "lucide-react";
 import { useStore } from "@/lib/store/useStore";
 import { OrderStatus } from "@/types";
+import { OrderInvoiceModal } from "@/components/invoice/OrderInvoiceModal";
 
 const statusSteps: OrderStatus[] = ["PENDING", "ACCEPTED", "PREPARING", "READY", "OUT_FOR_DELIVERY", "DELIVERED", "REJECTED", "CANCELLED"];
 
@@ -22,9 +23,17 @@ export default function SuperAdminOrdersPage() {
   const updateOrderStatus = useStore((state) => state.updateOrderStatus);
   const cancelOrder = useStore((state) => state.cancelOrder);
   const deleteOrderStore = useStore((state) => state.deleteOrder);
+  const bulkDeleteOrdersStore = useStore((state) => state.bulkDeleteOrders);
 
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
   const [filterBranch, setFilterBranch] = useState<string>("ALL");
+
+  // Bulk Selection & Deletion State
+  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState<boolean>(false);
+
+  // Invoice Modal State
+  const [invoiceModalOrder, setInvoiceModalOrder] = useState<any | null>(null);
 
   // Admin Cancel Modal State
   const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(null);
@@ -42,6 +51,42 @@ export default function SuperAdminOrdersPage() {
     const matchBranch = filterBranch === "ALL" || o.branchId === filterBranch;
     return matchStatus && matchBranch;
   });
+
+  // History orders eligible for bulk deletion ONLY
+  const eligibleHistoryOrders = filteredOrders.filter(
+    (o) => o.status === "DELIVERED" || o.status === "CANCELLED" || o.status === "REJECTED"
+  );
+  const isAllHistorySelected =
+    eligibleHistoryOrders.length > 0 &&
+    eligibleHistoryOrders.every((o) => selectedOrderIds.includes(o.id));
+
+  const toggleSelectOrder = (id: string) => {
+    setSelectedOrderIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAllHistory = () => {
+    if (isAllHistorySelected) {
+      setSelectedOrderIds([]);
+    } else {
+      setSelectedOrderIds(eligibleHistoryOrders.map((o) => o.id));
+    }
+  };
+
+  const handleConfirmBulkDelete = async () => {
+    if (selectedOrderIds.length === 0) return;
+    setSubmitting(true);
+    try {
+      await bulkDeleteOrdersStore(selectedOrderIds);
+      setSelectedOrderIds([]);
+      setShowBulkDeleteModal(false);
+    } catch (err: any) {
+      alert("Failed to delete selected order history: " + err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const handleStatusChange = async (orderId: string, currentStatus: string, newStatus: OrderStatus) => {
     if (currentStatus === "CANCELLED") {
@@ -126,27 +171,95 @@ export default function SuperAdminOrdersPage() {
         </div>
       </div>
 
+      {/* Bulk History Deletion Action Bar */}
+      {eligibleHistoryOrders.length > 0 && (
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-3.5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2 cursor-pointer select-none text-xs font-bold text-slate-700">
+              <input
+                type="checkbox"
+                checked={isAllHistorySelected}
+                onChange={toggleSelectAllHistory}
+                className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+              />
+              Select All History Records ({eligibleHistoryOrders.length})
+            </label>
+            <span className="text-xs text-slate-400">|</span>
+            <span className="text-xs font-bold text-slate-500">
+              {selectedOrderIds.length} Selected
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {selectedOrderIds.length > 0 && (
+              <button
+                onClick={() => setShowBulkDeleteModal(true)}
+                className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow flex items-center gap-1.5 transition-all"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Delete Selected ({selectedOrderIds.length})
+              </button>
+            )}
+
+            <button
+              onClick={() => {
+                setSelectedOrderIds(eligibleHistoryOrders.map((o) => o.id));
+                setShowBulkDeleteModal(true);
+              }}
+              className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 flex items-center gap-1.5 transition-all"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-slate-500" /> Delete All Completed History
+            </button>
+          </div>
+        </div>
+      )}
+
+
       {/* Orders List */}
       <div className="space-y-4">
         {filteredOrders.map((ord) => {
           const isCancelled = ord.status === "CANCELLED";
           const isCancellable = ord.status !== "DELIVERED" && ord.status !== "CANCELLED" && ord.status !== "REJECTED";
+          const isHistoryOrder = ord.status === "DELIVERED" || ord.status === "CANCELLED" || ord.status === "REJECTED";
+          const isSelected = selectedOrderIds.includes(ord.id);
 
           return (
-            <div key={ord.id} className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow space-y-4">
+            <div
+              key={ord.id}
+              className={`bg-white border rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-all space-y-4 ${
+                isSelected ? "border-emerald-500 ring-1 ring-emerald-500 bg-emerald-50/20" : "border-slate-200/80"
+              }`}
+            >
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-mono font-black text-slate-900 text-sm">{ord.orderNumber}</span>
-                    <span className="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md font-medium">{ord.orderType}</span>
-                    <span className="text-xs px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-md font-bold">{ord.branchName}</span>
+                <div className="flex items-center gap-3">
+                  {isHistoryOrder && (
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => toggleSelectOrder(ord.id)}
+                      className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer shrink-0"
+                    />
+                  )}
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-mono font-black text-slate-900 text-sm">{ord.orderNumber}</span>
+                      <span className="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md font-medium">{ord.orderType}</span>
+                      <span className="text-xs px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-md font-bold">{ord.branchName}</span>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Customer: <strong className="text-slate-800">{ord.customerName}</strong> ({ord.customerPhone})
+                    </p>
                   </div>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Customer: <strong className="text-slate-800">{ord.customerName}</strong> ({ord.customerPhone})
-                  </p>
                 </div>
 
-                <div className="flex items-center gap-2">
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={() => setInvoiceModalOrder(ord)}
+                    className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl flex items-center gap-1 transition-all shadow-xs"
+                  >
+                    <FileText className="w-3.5 h-3.5" /> View Bill
+                  </button>
+
                   {!isCancelled ? (
                     <>
                       <span className="text-xs text-slate-400 font-medium">Status:</span>
@@ -190,6 +303,7 @@ export default function SuperAdminOrdersPage() {
                   )}
                 </div>
               </div>
+
 
               {/* Items Summary */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
@@ -397,6 +511,60 @@ export default function SuperAdminOrdersPage() {
           </div>
         </div>
       )}
+
+      {/* Bulk Delete Confirmation Modal */}
+      {showBulkDeleteModal && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-100 space-y-4">
+            <div className="flex items-center gap-3 text-rose-600">
+              <div className="w-10 h-10 rounded-full bg-rose-50 flex items-center justify-center">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-900">Delete Selected Order History</h3>
+                <p className="text-xs text-slate-500 font-mono">
+                  {selectedOrderIds.length} Order History Records Selected
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600">
+              Are you sure you want to permanently delete these <strong>{selectedOrderIds.length}</strong> history records? This action cannot be undone. Active/ongoing orders will remain untouched.
+            </p>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setShowBulkDeleteModal(false)}
+                className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-200"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmBulkDelete}
+                disabled={submitting}
+                className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow flex items-center gap-1.5 disabled:opacity-50"
+              >
+                {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                Delete {selectedOrderIds.length} Records
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Order Invoice Modal */}
+      {invoiceModalOrder && (
+        <OrderInvoiceModal
+          order={invoiceModalOrder}
+          branch={branches.find((b) => b.id === invoiceModalOrder.branchId)}
+          onClose={() => setInvoiceModalOrder(null)}
+        />
+      )}
     </div>
   );
 }
+
+
+

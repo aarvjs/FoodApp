@@ -58,7 +58,9 @@ export interface Restaurant {
   coverImage?: string;
   cuisineType: string[];
   gstNumber: string;
+  fssaiNumber?: string;
   phone: string;
+
   email: string;
   address?: string;
   city?: string;
@@ -102,6 +104,9 @@ export interface Branch {
   taxPercentage?: number;
   gstPercentage?: number;
   tableBookingEnabled?: boolean;
+  fssaiNumber?: string;
+  fssai?: string;
+
 
 
   address?: string;

@@ -9,13 +9,18 @@ export default function AdminSettingsPage() {
   const [platformName, setPlatformName] = useState("BingeBite Admin");
   const [supportEmail, setSupportEmail] = useState("support@bingebite.com");
   const [supportPhone, setSupportPhone] = useState("+91 9876543210");
+  const [fssaiNumber, setFssaiNumber] = useState("");
   const [saved, setSaved] = useState(false);
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem("global_fssai_number", fssaiNumber);
+    }
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
+
 
   return (
     <div className="space-y-6">
@@ -63,6 +68,19 @@ export default function AdminSettingsPage() {
               className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium"
             />
           </div>
+
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">Global Default FSSAI License Number</label>
+            <input
+              type="text"
+              placeholder="e.g. 10021000000123 (Leave empty if unavailable)"
+              value={fssaiNumber}
+              onChange={(e) => setFssaiNumber(e.target.value)}
+              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono"
+            />
+            <p className="text-[11px] text-slate-500 mt-1">Platform-wide FSSAI fallback if a specific branch does not have its own FSSAI number configured.</p>
+          </div>
+
 
           <div className="pt-2">
             <button

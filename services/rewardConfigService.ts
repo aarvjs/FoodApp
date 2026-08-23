@@ -16,25 +16,35 @@ export const rewardConfigService = {
       return { isValid: false, error: "Branch ID is required." };
     }
 
-    const minAmount = data.minimumOrderAmount !== undefined ? Number(data.minimumOrderAmount) : NaN;
-    const points = data.rewardPoints !== undefined ? Number(data.rewardPoints) : NaN;
-
-    if (isNaN(minAmount) || minAmount < 0) {
+    const pointVal = data.pointValue !== undefined ? Number(data.pointValue) : 0.25;
+    if (isNaN(pointVal) || pointVal <= 0) {
       return {
         isValid: false,
-        error: "Minimum order amount must be a valid number greater than or equal to ₹0."
+        error: "Point value must be a valid positive monetary number (e.g. ₹0.25)."
       };
     }
 
-    if (isNaN(points) || points < 0) {
-      return {
-        isValid: false,
-        error: "Reward points must be a valid non-negative number."
-      };
+    if (Array.isArray(data.slabs)) {
+      for (let i = 0; i < data.slabs.length; i++) {
+        const slab = data.slabs[i];
+        if (isNaN(Number(slab.minAmount)) || Number(slab.minAmount) < 0) {
+          return {
+            isValid: false,
+            error: `Slab #${i + 1} has an invalid minimum order amount.`
+          };
+        }
+        if (isNaN(Number(slab.rewardPoints)) || Number(slab.rewardPoints) < 0) {
+          return {
+            isValid: false,
+            error: `Slab #${i + 1} has an invalid reward points value.`
+          };
+        }
+      }
     }
 
     return { isValid: true };
   },
+
 
   async saveRewardConfig(
     data: Partial<RewardConfig>,

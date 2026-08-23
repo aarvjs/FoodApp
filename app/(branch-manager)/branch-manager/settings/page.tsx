@@ -16,6 +16,7 @@ export default function BranchManagerSettingsPage() {
   const [openingTime, setOpeningTime] = useState(assignedBranch?.openingTime || "10:00 AM");
   const [closingTime, setClosingTime] = useState(assignedBranch?.closingTime || "11:00 PM");
   const [phone, setPhone] = useState(assignedBranch?.phone || "");
+  const [fssaiNumber, setFssaiNumber] = useState(assignedBranch?.fssaiNumber || assignedBranch?.fssai || "");
   const [tableBookingEnabled, setTableBookingEnabled] = useState<boolean>(
     assignedBranch?.tableBookingEnabled ?? true
   );
@@ -29,12 +30,15 @@ export default function BranchManagerSettingsPage() {
         openingTime,
         closingTime,
         phone,
+        fssaiNumber,
+        fssai: fssaiNumber,
         tableBookingEnabled,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     }
   };
+
 
   return (
     <div className="space-y-6">
@@ -103,6 +107,19 @@ export default function BranchManagerSettingsPage() {
               className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl"
             />
           </div>
+
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">Branch FSSAI License Number</label>
+            <input
+              type="text"
+              placeholder="e.g. 10021000000123 (Leave empty if unavailable)"
+              value={fssaiNumber}
+              onChange={(e) => setFssaiNumber(e.target.value)}
+              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono"
+            />
+            <p className="text-[11px] text-slate-500 mt-1">This number will automatically print on tax invoices generated for this branch.</p>
+          </div>
+
 
           {/* Table Service Toggle */}
           <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl flex items-center justify-between">

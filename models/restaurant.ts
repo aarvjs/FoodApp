@@ -26,7 +26,9 @@ export interface RestaurantModel {
   banner: string;
   cuisineType: string[];
   gstNumber: string;
+  fssaiNumber?: string;
   phone: string;
+
   email: string;
   openingTime: string;
   closingTime: string;

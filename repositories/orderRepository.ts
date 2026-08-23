@@ -249,12 +249,14 @@ export const orderRepository = {
             items: orderData.items,
             status: 'DELIVERED'
           }).catch((err: any) => console.warn('Reward points auto-crediting notice:', err));
-        } else if (status === 'REJECTED') {
-          title = 'Order Rejected ❌';
-          body = `Order #${orderNum} was rejected. Reason: ${rejectionReason || 'Kitchen busy'}`;
-        } else if (status === 'CANCELLED') {
+        } else if (status === 'CANCELLED' || status === 'REJECTED') {
           title = 'Order Cancelled ⚠️';
           body = `Order #${orderNum} has been cancelled.`;
+
+          // Reverse any earned or redeemed points safely
+          rewardConfigRepository.reversePointsForOrder(id, orderNum, customerId).catch((err: any) =>
+            console.warn('Reward points reversal notice:', err)
+          );
         }
 
         const notifRef = doc(collection(db, "notifications"));
@@ -311,14 +313,20 @@ export const orderRepository = {
 
     await updateDoc(docRef, payload);
 
+    const custId = orderData.customerId || orderData.userId;
+    const orderNum = orderData.orderNumber || id;
+
+    // Safely trigger point reversal / restoration
+    rewardConfigRepository.reversePointsForOrder(id, orderNum, custId).catch((err: any) =>
+      console.warn('Reward points reversal notice:', err)
+    );
+
     try {
-      const customerId = orderData.customerId || orderData.userId;
-      const orderNum = orderData.orderNumber || id;
-      if (customerId) {
+      if (custId) {
         const notifRef = doc(collection(db, "notifications"));
         await setDoc(notifRef, {
           id: notifRef.id,
-          userId: customerId,
+          userId: custId,
           orderId: id,
           title: "Order Cancelled ⚠️",
           body: `Order #${orderNum} has been cancelled by ${cancelledBy.replace(/_/g, " ")}. Reason: ${cancellationReason}`,
@@ -334,6 +342,7 @@ export const orderRepository = {
     return { success: true };
   },
 
+
   async deleteOrder(id: string): Promise<{ success: boolean; message?: string }> {
     const docRef = doc(db, COLLECTION_NAME, id);
     const snap = await getDoc(docRef);
@@ -341,10 +350,33 @@ export const orderRepository = {
       return { success: false, message: "Order not found." };
     }
     const currentData = snap.data();
-    if ((currentData.status || "").toUpperCase() !== "CANCELLED") {
-      return { success: false, message: "Only cancelled orders can be deleted." };
+    const status = (currentData.status || "").toUpperCase();
+    if (status !== "CANCELLED" && status !== "DELIVERED" && status !== "REJECTED") {
+      return { success: false, message: "Only completed, cancelled, or rejected history orders can be deleted." };
     }
     await deleteDoc(docRef);
     return { success: true };
+  },
+
+  async bulkDeleteOrders(ids: string[]): Promise<{ success: boolean; count: number }> {
+    if (!ids || ids.length === 0) return { success: true, count: 0 };
+    let deletedCount = 0;
+    for (const id of ids) {
+      try {
+        const docRef = doc(db, COLLECTION_NAME, id);
+        const snap = await getDoc(docRef);
+        if (snap.exists()) {
+          const status = (snap.data().status || "").toUpperCase();
+          if (status === "CANCELLED" || status === "DELIVERED" || status === "REJECTED") {
+            await deleteDoc(docRef);
+            deletedCount++;
+          }
+        }
+      } catch (e) {
+        console.warn(`Failed to bulk delete order ${id}:`, e);
+      }
+    }
+    return { success: true, count: deletedCount };
   }
 };
+

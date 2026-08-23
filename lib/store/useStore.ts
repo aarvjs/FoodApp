@@ -90,6 +90,8 @@ interface AppState {
   updateOrderStatus: (id: string, status: OrderStatus, prepTime?: number, rejectionReason?: string) => Promise<void>;
   cancelOrder: (id: string, cancelledBy: string, cancellationReason: string, cancellationNote?: string) => Promise<{ success: boolean; message?: string }>;
   deleteOrder: (id: string) => Promise<void>;
+  bulkDeleteOrders: (ids: string[]) => Promise<{ success: boolean; count: number }>;
+
 
   coupons: Coupon[];
   setCoupons: (coupons: Coupon[]) => void;
@@ -327,6 +329,16 @@ export const useStore = create<AppState>()(
           throw new Error(result.message || "Failed to delete order.");
         }
       },
+      bulkDeleteOrders: async (ids) => {
+        const result = await orderService.bulkDeleteOrders(ids);
+        if (result.success && result.count > 0) {
+          set((state) => ({
+            orders: state.orders.filter((o) => !ids.includes(o.id))
+          }));
+        }
+        return result;
+      },
+
 
       // Coupons & Offers
       coupons: [],

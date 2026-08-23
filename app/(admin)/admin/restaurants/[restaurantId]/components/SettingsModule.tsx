@@ -22,6 +22,7 @@ export function SettingsModule({ restaurant, onRefresh }: SettingsModuleProps) {
 
   const [formData, setFormData] = useState({
     gstNumber: restaurant.gstNumber || "09ABCDE1234F1Z5",
+    fssaiNumber: restaurant.fssaiNumber || "",
     taxPercentage: 5,
     packagingCharge: 15,
     deliveryCharges: restaurant.deliveryCharges || 40,
@@ -36,10 +37,11 @@ export function SettingsModule({ restaurant, onRefresh }: SettingsModuleProps) {
     try {
       await restaurantRepository.update(restaurant.id, {
         gstNumber: formData.gstNumber,
+        fssaiNumber: formData.fssaiNumber,
         deliveryCharges: Number(formData.deliveryCharges),
         minimumOrder: Number(formData.minimumOrder)
       });
-      setToastMessage("Restaurant financial settings updated!");
+      setToastMessage("Restaurant financial settings & FSSAI updated!");
       onRefresh();
     } catch (err: any) {
       alert("Failed to save settings: " + err.message);
@@ -47,6 +49,7 @@ export function SettingsModule({ restaurant, onRefresh }: SettingsModuleProps) {
       setSubmitting(false);
     }
   };
+
 
   const handleDeleteRestaurant = async () => {
     setSubmitting(true);
@@ -74,15 +77,28 @@ export function SettingsModule({ restaurant, onRefresh }: SettingsModuleProps) {
       </div>
 
       <form onSubmit={handleSubmit} className="bg-white border border-slate-200/80 rounded-3xl p-6 space-y-5 shadow-sm">
-        <div className="max-w-md">
-          <label className="block font-bold text-slate-700 mb-1">GST Tax Number</label>
-          <input
-            type="text"
-            value={formData.gstNumber}
-            onChange={(e) => setFormData({ ...formData, gstNumber: e.target.value })}
-            className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono uppercase"
-          />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">GST Tax Number</label>
+            <input
+              type="text"
+              value={formData.gstNumber}
+              onChange={(e) => setFormData({ ...formData, gstNumber: e.target.value })}
+              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono uppercase"
+            />
+          </div>
+          <div>
+            <label className="block font-bold text-slate-700 mb-1">FSSAI License Number</label>
+            <input
+              type="text"
+              placeholder="e.g. 10021000000123"
+              value={formData.fssaiNumber}
+              onChange={(e) => setFormData({ ...formData, fssaiNumber: e.target.value })}
+              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono"
+            />
+          </div>
         </div>
+
 
 
         <div className="p-4 bg-emerald-50/60 border border-emerald-200/80 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">

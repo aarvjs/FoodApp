@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import { ShoppingBag, Clock, CheckCircle2, Truck, PackageCheck, AlertCircle, ChevronRight, XCircle, Check, Trash2, Loader2, MessageSquare } from "lucide-react";
+import { ShoppingBag, Clock, CheckCircle2, Truck, PackageCheck, AlertCircle, ChevronRight, XCircle, Check, Trash2, Loader2, MessageSquare, FileText, Printer } from "lucide-react";
 import { useStore } from "@/lib/store/useStore";
 import { OrderStatus } from "@/types";
+import { OrderInvoiceModal } from "@/components/invoice/OrderInvoiceModal";
 
 const tabs: { label: string; value: string }[] = [
   { label: "All Orders", value: "ALL" },
@@ -32,6 +33,7 @@ export default function BranchManagerOrdersPage() {
   const updateOrderStatus = useStore((state) => state.updateOrderStatus);
   const cancelOrderStore = useStore((state) => state.cancelOrder);
   const deleteOrderStore = useStore((state) => state.deleteOrder);
+  const bulkDeleteOrdersStore = useStore((state) => state.bulkDeleteOrders);
 
   const managerBranchId = user?.assignedBranchId || user?.branchId;
   const assignedBranch = branches.find((b) => b.id === managerBranchId);
@@ -41,6 +43,13 @@ export default function BranchManagerOrdersPage() {
   });
 
   const [activeTab, setActiveTab] = useState("ALL");
+
+  // Bulk Selection & Deletion State
+  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState<boolean>(false);
+
+  // Invoice Modal State
+  const [invoiceModalOrder, setInvoiceModalOrder] = useState<any | null>(null);
 
   // Accept Order Modal
   const [acceptingOrderId, setAcceptingOrderId] = useState<string | null>(null);
@@ -67,6 +76,43 @@ export default function BranchManagerOrdersPage() {
     if (activeTab === "REJECTED") return o.status === "REJECTED" || o.status === "CANCELLED";
     return o.status === activeTab;
   });
+
+  // History orders eligible for bulk deletion ONLY
+  const eligibleHistoryOrders = filteredOrders.filter(
+    (o) => o.status === "DELIVERED" || o.status === "CANCELLED" || o.status === "REJECTED"
+  );
+  const isAllHistorySelected =
+    eligibleHistoryOrders.length > 0 &&
+    eligibleHistoryOrders.every((o) => selectedOrderIds.includes(o.id));
+
+  const toggleSelectOrder = (id: string) => {
+    setSelectedOrderIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAllHistory = () => {
+    if (isAllHistorySelected) {
+      setSelectedOrderIds([]);
+    } else {
+      setSelectedOrderIds(eligibleHistoryOrders.map((o) => o.id));
+    }
+  };
+
+  const handleConfirmBulkDelete = async () => {
+    if (selectedOrderIds.length === 0) return;
+    setSubmitting(true);
+    try {
+      await bulkDeleteOrdersStore(selectedOrderIds);
+      setSelectedOrderIds([]);
+      setShowBulkDeleteModal(false);
+    } catch (err: any) {
+      alert("Failed to delete selected order history: " + err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
 
   const handleUpdateStatus = async (orderId: string, nextStatus: OrderStatus) => {
     try {
@@ -197,6 +243,49 @@ export default function BranchManagerOrdersPage() {
         })}
       </div>
 
+      {/* Bulk History Deletion Action Bar */}
+      {eligibleHistoryOrders.length > 0 && (
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-3.5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2 cursor-pointer select-none text-xs font-bold text-slate-700">
+              <input
+                type="checkbox"
+                checked={isAllHistorySelected}
+                onChange={toggleSelectAllHistory}
+                className="w-4 h-4 rounded border-slate-300 text-amber-600 focus:ring-amber-500"
+              />
+              Select All History Records ({eligibleHistoryOrders.length})
+            </label>
+            <span className="text-xs text-slate-400">|</span>
+            <span className="text-xs font-bold text-slate-500">
+              {selectedOrderIds.length} Selected
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {selectedOrderIds.length > 0 && (
+              <button
+                onClick={() => setShowBulkDeleteModal(true)}
+                className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow flex items-center gap-1.5 transition-all"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Delete Selected ({selectedOrderIds.length})
+              </button>
+            )}
+
+            <button
+              onClick={() => {
+                setSelectedOrderIds(eligibleHistoryOrders.map((o) => o.id));
+                setShowBulkDeleteModal(true);
+              }}
+              className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 flex items-center gap-1.5 transition-all"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-slate-500" /> Delete All Branch History
+            </button>
+          </div>
+        </div>
+      )}
+
+
       {/* Order Cards List */}
       <div className="space-y-4">
         {filteredOrders.length === 0 ? (
@@ -208,33 +297,58 @@ export default function BranchManagerOrdersPage() {
             const isCancelled = ord.status === "CANCELLED";
             const nextStatus = isCancelled ? null : getNextStatus(ord.status);
             const isCancellable = ord.status !== "DELIVERED" && ord.status !== "CANCELLED" && ord.status !== "REJECTED";
+            const isHistoryOrder = ord.status === "DELIVERED" || ord.status === "CANCELLED" || ord.status === "REJECTED";
+            const isSelected = selectedOrderIds.includes(ord.id);
 
             return (
-              <div key={ord.id} className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm space-y-4">
+              <div
+                key={ord.id}
+                className={`bg-white border rounded-2xl p-5 shadow-sm space-y-4 transition-all ${
+                  isSelected ? "border-amber-500 ring-1 ring-amber-500 bg-amber-50/20" : "border-slate-200/80"
+                }`}
+              >
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-mono font-black text-slate-900 text-sm">{ord.orderNumber}</span>
-                      <span className={`px-2.5 py-0.5 text-[10px] font-extrabold rounded-full uppercase ${
-                        ord.status === "DELIVERED" ? "bg-emerald-100 text-emerald-800" :
-                        ord.status === "REJECTED" || ord.status === "CANCELLED" ? "bg-rose-100 text-rose-800" :
-                        "bg-amber-100 text-amber-900"
-                      }`}>
-                        {ord.status.replace(/_/g, " ")}
-                      </span>
-                      {ord.estimatedPrepMinutes && (
-                        <span className="px-2 py-0.5 bg-slate-100 text-slate-700 text-[10px] font-mono font-bold rounded">
-                          ⏱ {ord.estimatedPrepMinutes} Mins Prep
+                  <div className="flex items-center gap-3">
+                    {isHistoryOrder && (
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleSelectOrder(ord.id)}
+                        className="w-4 h-4 rounded border-slate-300 text-amber-600 focus:ring-amber-500 cursor-pointer shrink-0"
+                      />
+                    )}
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-mono font-black text-slate-900 text-sm">{ord.orderNumber}</span>
+                        <span className={`px-2.5 py-0.5 text-[10px] font-extrabold rounded-full uppercase ${
+                          ord.status === "DELIVERED" ? "bg-emerald-100 text-emerald-800" :
+                          ord.status === "REJECTED" || ord.status === "CANCELLED" ? "bg-rose-100 text-rose-800" :
+                          "bg-amber-100 text-amber-900"
+                        }`}>
+                          {ord.status.replace(/_/g, " ")}
                         </span>
-                      )}
+                        {ord.estimatedPrepMinutes && (
+                          <span className="px-2 py-0.5 bg-slate-100 text-slate-700 text-[10px] font-mono font-bold rounded">
+                            ⏱ {ord.estimatedPrepMinutes} Mins Prep
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1">
+                        Customer: <strong>{ord.customerName}</strong> ({ord.customerPhone})
+                      </p>
                     </div>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Customer: <strong>{ord.customerName}</strong> ({ord.customerPhone})
-                    </p>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      onClick={() => setInvoiceModalOrder(ord)}
+                      className="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl flex items-center gap-1.5 transition-all shadow-xs"
+                    >
+                      <FileText className="w-4 h-4" /> View Bill
+                    </button>
+
                     {/* Actions for PENDING orders: Accept vs Reject */}
+
                     {ord.status === "PENDING" && (
                       <>
                         <button
@@ -641,6 +755,60 @@ export default function BranchManagerOrdersPage() {
           </div>
         </div>
       )}
+
+      {/* Bulk Delete Confirmation Modal */}
+      {showBulkDeleteModal && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-100 space-y-4">
+            <div className="flex items-center gap-3 text-rose-600">
+              <div className="w-10 h-10 rounded-full bg-rose-50 flex items-center justify-center">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-900">Delete Branch Order History</h3>
+                <p className="text-xs text-slate-500 font-mono">
+                  {selectedOrderIds.length} Order History Records Selected
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600">
+              Are you sure you want to permanently delete these <strong>{selectedOrderIds.length}</strong> history records for {assignedBranch?.name || "your branch"}? This action cannot be undone. Active/ongoing orders will remain untouched.
+            </p>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setShowBulkDeleteModal(false)}
+                className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-200"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmBulkDelete}
+                disabled={submitting}
+                className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow flex items-center gap-1.5 disabled:opacity-50"
+              >
+                {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                Delete {selectedOrderIds.length} Records
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Order Invoice Modal */}
+      {invoiceModalOrder && (
+        <OrderInvoiceModal
+          order={invoiceModalOrder}
+          branch={assignedBranch || branches.find((b) => b.id === invoiceModalOrder.branchId)}
+          onClose={() => setInvoiceModalOrder(null)}
+        />
+      )}
     </div>
   );
 }
+
+
+

@@ -251,10 +251,34 @@ export const orderService = {
       return { success: false, message: "Order not found." };
     }
     const currentData = snap.data();
-    if ((currentData.status || "").toUpperCase() !== "CANCELLED") {
-      return { success: false, message: "Only cancelled orders can be deleted." };
+    const status = (currentData.status || "").toUpperCase();
+    if (status !== "CANCELLED" && status !== "DELIVERED" && status !== "REJECTED") {
+      return { success: false, message: "Only completed, cancelled, or rejected history orders can be deleted." };
     }
     await deleteDoc(docRef);
     return { success: true };
+  },
+
+  bulkDeleteOrders: async (ids: string[]): Promise<{ success: boolean; count: number }> => {
+    if (!ids || ids.length === 0) return { success: true, count: 0 };
+    let deletedCount = 0;
+    for (const id of ids) {
+      try {
+        const docRef = doc(db, COLLECTION_NAME, id);
+        const snap = await getDoc(docRef);
+        if (snap.exists()) {
+          const status = (snap.data().status || "").toUpperCase();
+          if (status === "CANCELLED" || status === "DELIVERED" || status === "REJECTED") {
+            await deleteDoc(docRef);
+            deletedCount++;
+          }
+        }
+      } catch (e) {
+        console.warn(`Failed to bulk delete order ${id}:`, e);
+      }
+    }
+    return { success: true, count: deletedCount };
   }
 };
+
+
