@@ -16,6 +16,7 @@ export default function BranchManagerSettingsPage() {
   const [openingTime, setOpeningTime] = useState(assignedBranch?.openingTime || "10:00 AM");
   const [closingTime, setClosingTime] = useState(assignedBranch?.closingTime || "11:00 PM");
   const [phone, setPhone] = useState(assignedBranch?.phone || "");
+  const [description, setDescription] = useState(assignedBranch?.description || "");
   const [fssaiNumber, setFssaiNumber] = useState(assignedBranch?.fssaiNumber || assignedBranch?.fssai || "");
   const [tableBookingEnabled, setTableBookingEnabled] = useState<boolean>(
     assignedBranch?.tableBookingEnabled ?? true
@@ -30,6 +31,7 @@ export default function BranchManagerSettingsPage() {
         openingTime,
         closingTime,
         phone,
+        description,
         fssaiNumber,
         fssai: fssaiNumber,
         tableBookingEnabled,
@@ -38,6 +40,7 @@ export default function BranchManagerSettingsPage() {
       setTimeout(() => setSaved(false), 2000);
     }
   };
+
 
 
   return (
@@ -99,6 +102,17 @@ export default function BranchManagerSettingsPage() {
           </div>
 
           <div>
+            <label className="block font-bold text-slate-700 mb-1">Branch Description</label>
+            <textarea
+              rows={2}
+              placeholder="e.g. Premium dining & fast delivery outlet serving fresh authentic dishes."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl resize-none"
+            />
+          </div>
+
+          <div>
             <label className="block font-bold text-slate-700 mb-1">Branch Phone Line</label>
             <input
               type="text"
@@ -107,6 +121,7 @@ export default function BranchManagerSettingsPage() {
               className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl"
             />
           </div>
+
 
           <div>
             <label className="block font-bold text-slate-700 mb-1">Branch FSSAI License Number</label>

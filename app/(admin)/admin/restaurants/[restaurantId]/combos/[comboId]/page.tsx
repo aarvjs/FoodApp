@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Plus, Edit3, Trash2, Package, Sparkles, Star, Loader2, Sliders } from "lucide-react";
 import { Combo, ComboItem, CustomizationGroup } from "@/types";
 import {
+  subscribeToSingleCombo,
   subscribeToCombos,
   subscribeToComboItems,
   updateCombo,
@@ -13,6 +14,7 @@ import {
   deleteComboItem,
   toggleAvailability
 } from "@/services/comboService";
+
 import { ComboItemModal } from "@/components/combos/ComboItemModal";
 import { ComboModal } from "@/components/combos/ComboModal";
 import { ComboProductCustomizationModal } from "@/components/combos/ComboProductCustomizationModal";
@@ -36,11 +38,11 @@ export default function AdminComboDetailPage() {
   useEffect(() => {
     if (!comboId) return;
 
-    // Stream combo categories to locate this specific combo
-    const unsubscribeCombos = subscribeToCombos((combosList: Combo[]) => {
-      const found = combosList.find((c: Combo) => c.id === comboId);
-      if (found) {
-        setCombo(found);
+    // Stream single combo document directly
+    const unsubscribeCombo = subscribeToSingleCombo(comboId, (fetchedCombo: Combo | null) => {
+      setCombo(fetchedCombo);
+      if (!fetchedCombo) {
+        setLoading(false);
       }
     });
 
@@ -62,10 +64,11 @@ export default function AdminComboDetailPage() {
     );
 
     return () => {
-      if (typeof unsubscribeCombos === "function") unsubscribeCombos();
+      if (typeof unsubscribeCombo === "function") unsubscribeCombo();
       if (typeof unsubscribeItems === "function") unsubscribeItems();
     };
   }, [comboId]);
+
 
   const handleBack = () => {
     if (restaurantId) {

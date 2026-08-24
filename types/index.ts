@@ -84,6 +84,26 @@ export interface Restaurant {
   updatedAt?: string;
 }
 
+export interface SliderImageItem {
+  id: string;
+  url: string;
+  active: boolean;
+  order: number;
+}
+
+export interface HomeHeroSliderItem {
+  id: string;
+  url: string;
+  title: string;
+  description: string;
+  buttonText: string;
+  actionType: "ORDER_NOW" | "EXPLORE_MENU" | "GRAB_DEAL";
+  targetRestaurantId?: string;
+  targetBranchId?: string;
+  active: boolean;
+  order: number;
+}
+
 export interface Branch {
   id: string;
   branchId?: string;
@@ -106,6 +126,14 @@ export interface Branch {
   tableBookingEnabled?: boolean;
   fssaiNumber?: string;
   fssai?: string;
+  description?: string;
+  sliderImages?: SliderImageItem[];
+  homeHeroSliders?: HomeHeroSliderItem[];
+  bannerUrl?: string;
+
+
+
+
 
 
 

@@ -18,6 +18,7 @@ import {
   Building2,
   Truck,
   Coins,
+  Palette,
   X
 } from "lucide-react";
 import { useStore } from "@/lib/store/useStore";
@@ -34,9 +35,11 @@ const branchManagerNavItems = [
   { name: "Delivery Charges", href: "/branch-manager/delivery-charges", icon: Truck },
   { name: "Reward Points", href: "/branch-manager/reward-points", icon: Coins },
   { name: "Promotions & Offers", href: "/branch-manager/offers", icon: Tag },
+  { name: "Theme Settings", href: "/branch-manager/theme-settings", icon: Palette },
   { name: "My Profile", href: "/branch-manager/profile", icon: User },
   { name: "Branch Settings", href: "/branch-manager/settings", icon: Settings }
 ];
+
 
 
 

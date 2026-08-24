@@ -4,22 +4,27 @@ import React, { useState, useEffect } from "react";
 import { X, Upload, Sparkles, Loader2, Check } from "lucide-react";
 import { Combo } from "@/types";
 import { uploadImage } from "@/services/storageService";
+import { useStore } from "@/lib/store/useStore";
 
 interface ComboModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (data: Partial<Combo> & { imageFile?: File | string }) => Promise<void>;
   comboToEdit?: Combo | null;
+  currentBranchId?: string;
 }
 
 export const ComboModal: React.FC<ComboModalProps> = ({
   isOpen,
   onClose,
   onSave,
-  comboToEdit
+  comboToEdit,
+  currentBranchId
 }) => {
+  const branches = useStore((state) => state.branches);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [targetBranchId, setTargetBranchId] = useState<string>("all");
   const [isActive, setIsActive] = useState(true);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
@@ -32,15 +37,18 @@ export const ComboModal: React.FC<ComboModalProps> = ({
       setDescription(comboToEdit.description || "");
       setIsActive(comboToEdit.isActive ?? comboToEdit.isAvailable ?? true);
       setImagePreview(comboToEdit.image || "");
+      setTargetBranchId(comboToEdit.branchId || (comboToEdit.branchIds && comboToEdit.branchIds[0]) || currentBranchId || "all");
     } else {
       setName("");
       setDescription("");
       setIsActive(true);
       setImagePreview("");
+      setTargetBranchId(currentBranchId || "all");
     }
     setImageFile(null);
     setErrorMessage(null);
-  }, [comboToEdit, isOpen]);
+  }, [comboToEdit, isOpen, currentBranchId]);
+
 
   if (!isOpen) return null;
 
@@ -79,6 +87,8 @@ export const ComboModal: React.FC<ComboModalProps> = ({
         isActive: isActive,
         isAvailable: isActive,
         image: finalImageUrl,
+        branchId: targetBranchId,
+        branchIds: targetBranchId === "all" ? ["all"] : [targetBranchId],
         imageFile: imageFile || undefined
       });
 
@@ -139,7 +149,34 @@ export const ComboModal: React.FC<ComboModalProps> = ({
             />
           </div>
 
-          {/* 2. Combo Image / Banner */}
+          {/* 2. Target Branch Visibility */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-slate-700">
+              Target Branch Visibility <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={targetBranchId}
+              onChange={(e) => setTargetBranchId(e.target.value)}
+              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all cursor-pointer"
+            >
+              <option value="all">🌟 All Branches (Global Combo)</option>
+              {branches && branches.length > 0 &&
+                branches.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    📍 {b.name} ({b.location?.city || b.address || b.restaurantName || "Branch Outlet"})
+                  </option>
+
+                ))}
+            </select>
+            <p className="text-[11px] text-slate-500">
+              {targetBranchId === "all"
+                ? "This combo deal will be displayed across ALL branches in the Customer App."
+                : "This combo will ONLY be displayed to customers matching this specific branch in the Customer App."}
+            </p>
+          </div>
+
+          {/* 3. Combo Image / Banner */}
+
           <div className="space-y-2">
             <label className="block text-xs font-bold text-slate-700">
               Combo Image / Banner <span className="text-red-500">*</span>

@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   Truck,
   Coins,
+  Palette,
   X
 } from "lucide-react";
 import { useStore } from "@/lib/store/useStore";
@@ -24,6 +25,7 @@ import { authService } from "@/services/authService";
 const adminNavItems = [
   { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
   { name: "Restaurants", href: "/admin/restaurants", icon: Store },
+  { name: "Theme Settings", href: "/admin/theme-settings", icon: Palette },
   { name: "Orders", href: "/admin/orders", icon: ShoppingBag },
   { name: "Delivery Charges", href: "/admin/delivery-charges", icon: Truck },
   { name: "Reward Points", href: "/admin/reward-points", icon: Coins },
@@ -32,6 +34,7 @@ const adminNavItems = [
   { name: "Users & Managers", href: "/admin/branch-managers", icon: UserCheck },
   { name: "Settings", href: "/admin/settings", icon: Settings }
 ];
+
 
 
 

@@ -39,6 +39,28 @@ export const getCombos = async (): Promise<Combo[]> => {
   }
 };
 
+export const subscribeToSingleCombo = (comboId: string, callback: (combo: Combo | null) => void, onError?: (err: any) => void) => {
+  if (!comboId) {
+    callback(null);
+    return () => {};
+  }
+  const docRef = doc(db, COMBOS_COLLECTION, comboId);
+  return onSnapshot(
+    docRef,
+    (snap) => {
+      if (snap.exists()) {
+        callback(normalizeComboData({ id: snap.id, ...snap.data() }));
+      } else {
+        callback(null);
+      }
+    },
+    (err) => {
+      console.warn("Firestore Snapshot Notice (singleCombo):", err.message);
+      if (onError) onError(err);
+    }
+  );
+};
+
 export const subscribeToCombos = (callback: (combos: Combo[]) => void, onError?: (err: any) => void) => {
   const q = query(collection(db, COMBOS_COLLECTION), orderBy("createdAt", "desc"));
   return onSnapshot(
@@ -53,6 +75,7 @@ export const subscribeToCombos = (callback: (combos: Combo[]) => void, onError?:
     }
   );
 };
+
 
 export const subscribeToBranchCombos = (branchId: string, callback: (combos: Combo[]) => void, onError?: (err: any) => void) => {
   const q = query(collection(db, COMBOS_COLLECTION));

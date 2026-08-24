@@ -167,17 +167,20 @@ export const orderService = {
           body = `Order #${orderNum} has been cancelled.`;
         }
 
-        const notifRef = doc(collection(db, "notifications"));
+        const notifDocId = `notif_${id}_${status}`;
+        const notifRef = doc(db, "notifications", notifDocId);
         await setDoc(notifRef, {
-          id: notifRef.id,
+          id: notifDocId,
           userId: customerId,
           orderId: id,
           title,
           body,
+          status,
           type: 'delivery',
           read: false,
           createdAt: new Date().toISOString()
         });
+
       }
     } catch (e) {
       console.warn("Failed to create notification document:", e);
