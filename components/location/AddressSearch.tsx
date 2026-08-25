@@ -1,33 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Search, MapPin, Loader2, Check, Navigation, AlertCircle, X } from "lucide-react";
+import { Search, MapPin, Loader2, Check, Navigation, AlertCircle, X, Globe } from "lucide-react";
 import { AddressLocation } from "@/types";
-
-interface NominatimResult {
-  place_id: number;
-  licence: string;
-  osm_type: string;
-  osm_id: number;
-  boundingbox: string[];
-  lat: string;
-  lon: string;
-  display_name: string;
-  class: string;
-  type: string;
-  importance: number;
-  address?: {
-    road?: string;
-    suburb?: string;
-    city?: string;
-    town?: string;
-    village?: string;
-    county?: string;
-    state?: string;
-    postcode?: string;
-    country?: string;
-  };
-}
+import { locationService, LocationSuggestion } from "@/services/locationService";
 
 interface AddressSearchProps {
   value?: AddressLocation;
@@ -39,18 +15,19 @@ interface AddressSearchProps {
 export const AddressSearch: React.FC<AddressSearchProps> = ({
   value,
   onChange,
-  placeholder = "Search location (e.g. Kanpur, Civil Lines)...",
+  placeholder = "Search location (e.g. Raniya Kanpur Dehat, Civil Lines)...",
   required = false
 }) => {
   const [query, setQuery] = useState(value?.formattedAddress || value?.address || "");
-  const [suggestions, setSuggestions] = useState<NominatimResult[]>([]);
+  const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDetailsLoading, setIsDetailsLoading] = useState(false);
   const [isGpsLoading, setIsGpsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<AddressLocation | null>(value || null);
   const [gpsError, setGpsError] = useState<string | null>(null);
 
-  // Dedicated string inputs for Latitude and Longitude to allow free typing & editing
+  // Dedicated string inputs for Latitude and Longitude for manual coordinate editing
   const [latInput, setLatInput] = useState<string>(
     value?.latitude !== undefined ? String(value.latitude) : ""
   );
@@ -70,7 +47,7 @@ export const AddressSearch: React.FC<AddressSearchProps> = ({
     }
   }, [value]);
 
-  // Click outside to close suggestion dropdown
+  // Click outside listener to close suggestion dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -81,9 +58,9 @@ export const AddressSearch: React.FC<AddressSearchProps> = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Debounced search fetching from Nominatim API
+  // Debounced address search using Google Places Autocomplete (with OSM fallback)
   useEffect(() => {
-    if (!query || query.trim().length < 3 || !isOpen) {
+    if (!query || query.trim().length < 2 || !isOpen) {
       setSuggestions([]);
       return;
     }
@@ -91,76 +68,91 @@ export const AddressSearch: React.FC<AddressSearchProps> = ({
     const timer = setTimeout(async () => {
       setIsLoading(true);
       try {
-        const response = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-            query
-          )}&addressdetails=1&limit=5&countrycodes=in`,
-          {
-            headers: {
-              "Accept-Language": "en"
-            }
-          }
-        );
-        if (response.ok) {
-          const data: NominatimResult[] = await response.json();
-          setSuggestions(data);
-        }
+        const results = await locationService.searchLocations(query);
+        setSuggestions(results);
       } catch (err) {
-        console.error("[Search] Location search error:", err);
+        console.error("[AddressSearch] Location search error:", err);
       } finally {
         setIsLoading(false);
       }
-    }, 400);
+    }, 350);
 
     return () => clearTimeout(timer);
   }, [query, isOpen]);
 
-  const handleSelect = (item: NominatimResult) => {
+  const handleSelectSuggestion = async (item: LocationSuggestion) => {
     setGpsError(null);
-    const addr = item.address || {};
-    const city = addr.city || addr.town || addr.village || addr.county || "";
-    const state = addr.state || "";
-    const pincode = addr.postcode || "";
-    const lat = parseFloat(item.lat);
-    const lng = parseFloat(item.lon);
+    setIsDetailsLoading(true);
 
-    console.log("[Search]");
-    console.log("Address selected:", item.display_name);
-    console.log("Latitude:", lat);
-    console.log("Longitude:", lng);
+    try {
+      let finalLat = item.latitude;
+      let finalLng = item.longitude;
+      let formattedAddr = item.formattedAddress;
+      let city = item.locationComponents.city;
+      let state = item.locationComponents.state;
+      let pincode = item.locationComponents.postalCode;
+      let country = item.locationComponents.country;
+      let district = item.locationComponents.district;
+      let subLocality = item.locationComponents.subLocality;
+      let locality = item.locationComponents.locality;
+      let street = item.locationComponents.street;
 
-    setLatInput(String(lat));
-    setLngInput(String(lng));
+      // If this is a Google suggestion with a placeId, fetch complete Place Details
+      if (item.placeId) {
+        const details = await locationService.getGooglePlaceDetails(item.placeId);
+        if (details) {
+          if (details.latitude) finalLat = details.latitude;
+          if (details.longitude) finalLng = details.longitude;
+          if (details.formattedAddress) formattedAddr = details.formattedAddress;
+          if (details.city) city = details.city;
+          if (details.state) state = details.state;
+          if (details.pincode || details.postalCode) pincode = details.pincode || details.postalCode;
+          if (details.country) country = details.country;
+          if (details.district) district = details.district;
+          if (details.subLocality) subLocality = details.subLocality;
+          if (details.locality) locality = details.locality;
+          if (details.street) street = details.street;
+        }
+      }
 
-    const locationObj: AddressLocation = {
-      address: item.display_name,
-      formattedAddress: item.display_name,
-      latitude: lat,
-      longitude: lng,
-      city,
-      state,
-      pincode,
-      source: "search",
-      locationSource: "search"
-    };
+      setLatInput(String(finalLat));
+      setLngInput(String(finalLng));
 
-    setSelectedLocation(locationObj);
-    setQuery(item.display_name);
-    setIsOpen(false);
-    onChange(locationObj);
+      const locationObj: AddressLocation = {
+        address: formattedAddr,
+        formattedAddress: formattedAddr,
+        latitude: finalLat,
+        longitude: finalLng,
+        city,
+        state,
+        pincode,
+        country,
+        district,
+        subLocality,
+        locality,
+        street,
+        source: "search",
+        locationSource: "search"
+      };
+
+      setSelectedLocation(locationObj);
+      setQuery(formattedAddr);
+      setIsOpen(false);
+      onChange(locationObj);
+    } catch (err) {
+      console.error("[AddressSearch] Error fetching place details:", err);
+    } finally {
+      setIsDetailsLoading(false);
+    }
   };
 
   const fetchPosition = (highAccuracy: boolean): Promise<GeolocationPosition> => {
     return new Promise((resolve, reject) => {
-      navigator.geolocation.getCurrentPosition(
-        resolve,
-        reject,
-        {
-          enableHighAccuracy: highAccuracy,
-          maximumAge: 0,
-          timeout: highAccuracy ? 7000 : 12000
-        }
-      );
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: highAccuracy,
+        maximumAge: 0,
+        timeout: highAccuracy ? 7000 : 12000
+      });
     });
   };
 
@@ -169,7 +161,6 @@ export const AddressSearch: React.FC<AddressSearchProps> = ({
 
     if (typeof window === "undefined" || !navigator || !navigator.geolocation) {
       const msg = "Browser does not support Geolocation. Please use manual search.";
-      console.warn("[GPS] Error:", msg);
       setGpsError(msg);
       return;
     }
@@ -182,7 +173,6 @@ export const AddressSearch: React.FC<AddressSearchProps> = ({
         pos = await fetchPosition(true);
       } catch (highAccErr: any) {
         if (highAccErr && highAccErr.code === 3) {
-          console.warn("[GPS] High accuracy timed out, retrying with standard network accuracy...");
           pos = await fetchPosition(false);
         } else {
           throw highAccErr;
@@ -191,12 +181,6 @@ export const AddressSearch: React.FC<AddressSearchProps> = ({
 
       const lat = pos.coords.latitude;
       const lng = pos.coords.longitude;
-
-      console.log("[GPS]");
-      console.log("Permission granted");
-      console.log("Coordinates received");
-      console.log("Latitude:", lat);
-      console.log("Longitude:", lng);
 
       setLatInput(String(lat));
       setLngInput(String(lng));
@@ -225,7 +209,7 @@ export const AddressSearch: React.FC<AddressSearchProps> = ({
           { headers: { "Accept-Language": "en" } }
         );
         if (res.ok) {
-          const data: NominatimResult = await res.json();
+          const data = await res.json();
           const addr = data.address || {};
           const city = addr.city || addr.town || addr.village || addr.county || "";
           const state = addr.state || "";
@@ -249,16 +233,15 @@ export const AddressSearch: React.FC<AddressSearchProps> = ({
           onChange(freshLocation);
         }
       } catch (e) {
-        console.warn("[GPS] Reverse geocoding unavailable, raw coordinates retained:", e);
+        console.warn("[GPS] Reverse geocoding fallback error:", e);
       }
     } catch (err: any) {
-      console.warn("[GPS] Location permission status:", err?.code === 1 ? "Permission Denied by user/browser" : err?.message);
-
       let errorMsg = "Unable to retrieve GPS location.";
       if (err && typeof err.code === "number") {
         switch (err.code) {
           case 1:
-            errorMsg = "GPS permission denied by browser. Click the lock/tune icon near localhost in your browser address bar, set Location to 'Allow', then click 'Use Current Location' again.";
+            errorMsg =
+              "GPS permission denied by browser. Set location permission to 'Allow' in your browser settings, then try again.";
             break;
           case 2:
             errorMsg = "GPS position unavailable. Please check your device location settings.";
@@ -273,7 +256,6 @@ export const AddressSearch: React.FC<AddressSearchProps> = ({
       } else {
         errorMsg = err?.message || errorMsg;
       }
-
       setGpsError(errorMsg);
     } finally {
       setIsGpsLoading(false);
@@ -296,6 +278,9 @@ export const AddressSearch: React.FC<AddressSearchProps> = ({
       city: selectedLocation?.city || "",
       state: selectedLocation?.state || "",
       pincode: selectedLocation?.pincode || "",
+      country: selectedLocation?.country || "",
+      district: selectedLocation?.district || "",
+      subLocality: selectedLocation?.subLocality || "",
       source: selectedLocation?.source || "search",
       locationSource: selectedLocation?.locationSource || "search"
     };
@@ -320,6 +305,9 @@ export const AddressSearch: React.FC<AddressSearchProps> = ({
       city: selectedLocation?.city || "",
       state: selectedLocation?.state || "",
       pincode: selectedLocation?.pincode || "",
+      country: selectedLocation?.country || "",
+      district: selectedLocation?.district || "",
+      subLocality: selectedLocation?.subLocality || "",
       source: selectedLocation?.source || "search",
       locationSource: selectedLocation?.locationSource || "search"
     };
@@ -349,14 +337,14 @@ export const AddressSearch: React.FC<AddressSearchProps> = ({
         </div>
       )}
 
-      {/* Search Address Label & Main Controls */}
+      {/* Search Address Input & Controls */}
       <div className="space-y-1.5">
         <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
           Branch Location Setup {required && <span className="text-rose-500">*</span>}
         </label>
 
         <div className="flex flex-col sm:flex-row gap-2">
-          {/* Search Address Field */}
+          {/* Search Address Input Field */}
           <div className="relative flex-1">
             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-emerald-600">
               <MapPin className="w-4 h-4" />
@@ -372,7 +360,7 @@ export const AddressSearch: React.FC<AddressSearchProps> = ({
               placeholder={placeholder}
               className="w-full pl-10 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-sm transition-all"
             />
-            {isLoading && (
+            {(isLoading || isDetailsLoading) && (
               <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
                 <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
               </div>
@@ -384,22 +372,31 @@ export const AddressSearch: React.FC<AddressSearchProps> = ({
                 {isLoading && suggestions.length === 0 ? (
                   <div className="p-3 text-center text-xs text-slate-500 flex items-center justify-center gap-2">
                     <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
-                    Searching map database...
+                    Searching Google Maps...
                   </div>
                 ) : (
-                  suggestions.map((item) => (
+                  suggestions.map((item, idx) => (
                     <button
-                      key={item.place_id}
+                      key={item.placeId || `${item.formattedAddress}-${idx}`}
                       type="button"
-                      onClick={() => handleSelect(item)}
-                      className="w-full text-left p-2.5 hover:bg-emerald-50/80 transition-colors flex items-start gap-2.5 text-xs"
+                      onClick={() => handleSelectSuggestion(item)}
+                      className="w-full text-left p-2.5 hover:bg-emerald-50/80 transition-colors flex items-start gap-2.5 text-xs group"
                     >
-                      <MapPin className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
+                      <MapPin className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0 group-hover:scale-110 transition-transform" />
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-slate-800 line-clamp-1">
-                          {item.address?.road || item.address?.suburb || item.display_name.split(",")[0]}
+                        <div className="flex items-center justify-between gap-1">
+                          <p className="font-semibold text-slate-800 line-clamp-1">
+                            {item.primaryName}
+                          </p>
+                          {item.source === "google" && (
+                            <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded border border-blue-100 shrink-0">
+                              Google Maps
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-slate-500 line-clamp-1 text-[11px] mt-0.5">
+                          {item.formattedAddress || item.secondaryAddress}
                         </p>
-                        <p className="text-slate-500 line-clamp-1 text-[11px] mt-0.5">{item.display_name}</p>
                       </div>
                     </button>
                   ))
@@ -414,7 +411,7 @@ export const AddressSearch: React.FC<AddressSearchProps> = ({
             onClick={handleCurrentLocation}
             disabled={isGpsLoading}
             title="Fetch live location from browser GPS"
-            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-60 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all shrink-0"
+            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-60 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all shrink-0 cursor-pointer"
           >
             {isGpsLoading ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -456,12 +453,12 @@ export const AddressSearch: React.FC<AddressSearchProps> = ({
         </div>
       </div>
 
-      {/* Selected Location Preview */}
+      {/* Selected Location Details Preview Box */}
       {selectedLocation && (
         <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-2 text-xs animate-in fade-in duration-200">
           <div className="flex items-center justify-between font-bold text-slate-800 border-b border-slate-200/70 pb-2">
             <span className="flex items-center gap-1.5 text-slate-900">
-              <Check className="w-4 h-4 text-emerald-600" /> Selected Location Preview
+              <Check className="w-4 h-4 text-emerald-600" /> Selected Location Details
             </span>
             <span
               className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase flex items-center gap-1 ${
@@ -476,7 +473,7 @@ export const AddressSearch: React.FC<AddressSearchProps> = ({
                 </>
               ) : (
                 <>
-                  <Search className="w-3 h-3 text-blue-600" /> Searched Address
+                  <Globe className="w-3 h-3 text-blue-600" /> Google Address
                 </>
               )}
             </span>
@@ -484,13 +481,15 @@ export const AddressSearch: React.FC<AddressSearchProps> = ({
 
           <div className="space-y-1 text-slate-700">
             <p className="font-medium text-slate-900 line-clamp-2">
-              {selectedLocation.formattedAddress || selectedLocation.address || `Current Location (${selectedLocation.latitude.toFixed(4)}, ${selectedLocation.longitude.toFixed(4)})`}
+              {selectedLocation.formattedAddress ||
+                selectedLocation.address ||
+                `Location (${selectedLocation.latitude.toFixed(4)}, ${selectedLocation.longitude.toFixed(4)})`}
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] pt-1.5 text-slate-600 border-t border-slate-100">
               <div>
-                <span className="block text-[10px] uppercase font-bold text-slate-400">City</span>
+                <span className="block text-[10px] uppercase font-bold text-slate-400">City / Town</span>
                 <span className="font-semibold text-slate-800 truncate block">
-                  {selectedLocation.city || "N/A"}
+                  {selectedLocation.city || selectedLocation.district || "N/A"}
                 </span>
               </div>
               <div>
@@ -502,13 +501,14 @@ export const AddressSearch: React.FC<AddressSearchProps> = ({
               <div>
                 <span className="block text-[10px] uppercase font-bold text-slate-400">Pincode</span>
                 <span className="font-semibold text-slate-800 font-mono truncate block">
-                  {selectedLocation.pincode || "N/A"}
+                  {selectedLocation.pincode || selectedLocation.postalCode || "N/A"}
                 </span>
               </div>
               <div>
                 <span className="block text-[10px] uppercase font-bold text-slate-400">Lat, Lng</span>
                 <span className="font-semibold text-slate-800 font-mono truncate block">
-                  {selectedLocation.latitude.toFixed(4)}, {selectedLocation.longitude.toFixed(4)}
+                  {selectedLocation.latitude ? selectedLocation.latitude.toFixed(4) : "0.0000"},{" "}
+                  {selectedLocation.longitude ? selectedLocation.longitude.toFixed(4) : "0.0000"}
                 </span>
               </div>
             </div>

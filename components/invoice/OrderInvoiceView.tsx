@@ -179,8 +179,16 @@ export const OrderInvoiceView: React.FC<OrderInvoiceViewProps> = ({
           </div>
 
           <div className="flex flex-wrap items-center sm:justify-end gap-2 pt-1">
-            <span className="px-2.5 py-0.5 bg-slate-100 border border-slate-300 font-bold text-[10.5px] rounded-md text-slate-800 uppercase">
-              {order.orderType || "DELIVERY"}
+            <span
+              className={`px-2.5 py-0.5 font-bold text-[10.5px] rounded-md uppercase border ${
+                order.orderType === "TAKE_AWAY" || order.orderType === "TAKEAWAY"
+                  ? "bg-purple-100 text-purple-900 border-purple-300 font-extrabold"
+                  : "bg-slate-100 text-slate-800 border-slate-300"
+              }`}
+            >
+              {order.orderType === "TAKE_AWAY" || order.orderType === "TAKEAWAY"
+                ? "TAKE AWAY / SELF PICKUP"
+                : order.orderType || "DELIVERY"}
             </span>
 
             <span

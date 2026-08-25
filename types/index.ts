@@ -360,7 +360,7 @@ export type OrderStatus =
   | "REJECTED"
   | "CANCELLED";
 
-export type OrderType = "DELIVERY" | "TAKEAWAY" | "DINE_IN";
+export type OrderType = "DELIVERY" | "TAKE_AWAY" | "TAKEAWAY" | "DINE_IN";
 
 export interface OrderItem {
   productId: string;

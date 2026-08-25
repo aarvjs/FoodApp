@@ -8,7 +8,7 @@ export type OrderStatusType =
   | "REJECTED"
   | "CANCELLED";
 
-export type OrderTypeFormat = "DELIVERY" | "TAKEAWAY" | "DINE_IN";
+export type OrderTypeFormat = "DELIVERY" | "TAKE_AWAY" | "TAKEAWAY" | "DINE_IN";
 
 export interface OrderItemModel {
   itemType?: "product" | "combo" | string;

@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import { Settings, Store, Clock, Phone, Mail, Check, Truck } from "lucide-react";
+import { Settings, Store, Clock, Phone, Mail, Check, Truck, MapPin } from "lucide-react";
 import { useStore } from "@/lib/store/useStore";
-
+import { AddressSearch } from "@/components/location/AddressSearch";
+import { AddressLocation } from "@/types";
 
 export default function BranchManagerSettingsPage() {
   const user = useStore((state) => state.user);
@@ -21,6 +22,9 @@ export default function BranchManagerSettingsPage() {
   const [tableBookingEnabled, setTableBookingEnabled] = useState<boolean>(
     assignedBranch?.tableBookingEnabled ?? true
   );
+  const [location, setLocation] = useState<AddressLocation | null>(
+    assignedBranch?.location || null
+  );
   const [saved, setSaved] = useState(false);
 
   const handleSave = (e: React.FormEvent) => {
@@ -35,6 +39,15 @@ export default function BranchManagerSettingsPage() {
         fssaiNumber,
         fssai: fssaiNumber,
         tableBookingEnabled,
+        ...(location
+          ? {
+              location,
+              latitude: location.latitude,
+              longitude: location.longitude,
+              address: location.formattedAddress || location.address,
+              locationSource: location.locationSource || "search"
+            }
+          : {})
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -119,6 +132,15 @@ export default function BranchManagerSettingsPage() {
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl"
+            />
+          </div>
+
+          {/* Branch Location & Address Search */}
+          <div className="p-4 bg-emerald-50/40 border border-emerald-200/60 rounded-2xl space-y-2">
+            <AddressSearch
+              value={location || undefined}
+              onChange={(loc) => setLocation(loc)}
+              placeholder="Search branch address (e.g. Raniya Kanpur Dehat)..."
             />
           </div>
 

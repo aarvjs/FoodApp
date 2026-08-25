@@ -27,6 +27,7 @@ export default function SuperAdminOrdersPage() {
 
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
   const [filterBranch, setFilterBranch] = useState<string>("ALL");
+  const [filterOrderType, setFilterOrderType] = useState<string>("ALL");
 
   // Bulk Selection & Deletion State
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
@@ -49,7 +50,13 @@ export default function SuperAdminOrdersPage() {
   const filteredOrders = orders.filter((o) => {
     const matchStatus = filterStatus === "ALL" || o.status === filterStatus;
     const matchBranch = filterBranch === "ALL" || o.branchId === filterBranch;
-    return matchStatus && matchBranch;
+    const matchType =
+      filterOrderType === "ALL"
+        ? true
+        : filterOrderType === "TAKE_AWAY"
+        ? o.orderType === "TAKE_AWAY" || o.orderType === "TAKEAWAY"
+        : o.orderType !== "TAKE_AWAY" && o.orderType !== "TAKEAWAY";
+    return matchStatus && matchBranch && matchType;
   });
 
   // History orders eligible for bulk deletion ONLY
@@ -159,6 +166,16 @@ export default function SuperAdminOrdersPage() {
           </select>
 
           <select
+            value={filterOrderType}
+            onChange={(e) => setFilterOrderType(e.target.value)}
+            className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 shadow-sm max-w-full"
+          >
+            <option value="ALL">All Order Types</option>
+            <option value="DELIVERY">Delivery</option>
+            <option value="TAKE_AWAY">Take Away</option>
+          </select>
+
+          <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
             className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 shadow-sm max-w-full"
@@ -242,7 +259,15 @@ export default function SuperAdminOrdersPage() {
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-mono font-black text-slate-900 text-sm">{ord.orderNumber}</span>
-                      <span className="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md font-medium">{ord.orderType}</span>
+                      <span
+                        className={`text-xs px-2.5 py-0.5 rounded-md font-bold ${
+                          ord.orderType === "TAKE_AWAY" || ord.orderType === "TAKEAWAY"
+                            ? "bg-purple-100 text-purple-900 border border-purple-300 font-extrabold"
+                            : "bg-slate-100 text-slate-700 font-medium"
+                        }`}
+                      >
+                        {ord.orderType === "TAKE_AWAY" || ord.orderType === "TAKEAWAY" ? "🛍️ TAKE AWAY" : ord.orderType || "DELIVERY"}
+                      </span>
                       <span className="text-xs px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-md font-bold">{ord.branchName}</span>
                     </div>
                     <p className="text-xs text-slate-500 mt-1">

@@ -320,6 +320,15 @@ export default function BranchManagerOrdersPage() {
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-mono font-black text-slate-900 text-sm">{ord.orderNumber}</span>
+                        <span
+                          className={`px-2.5 py-0.5 text-[10px] font-extrabold rounded-full uppercase border ${
+                            ord.orderType === "TAKE_AWAY" || ord.orderType === "TAKEAWAY"
+                              ? "bg-purple-100 text-purple-900 border-purple-300"
+                              : "bg-slate-100 text-slate-700 border-slate-200"
+                          }`}
+                        >
+                          {ord.orderType === "TAKE_AWAY" || ord.orderType === "TAKEAWAY" ? "🛍️ TAKE AWAY" : ord.orderType || "DELIVERY"}
+                        </span>
                         <span className={`px-2.5 py-0.5 text-[10px] font-extrabold rounded-full uppercase ${
                           ord.status === "DELIVERED" ? "bg-emerald-100 text-emerald-800" :
                           ord.status === "REJECTED" || ord.status === "CANCELLED" ? "bg-rose-100 text-rose-800" :
