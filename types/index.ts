@@ -123,6 +123,8 @@ export interface Branch {
   maxRadiusConfigured?: boolean;
   taxPercentage?: number;
   gstPercentage?: number;
+  packagingCharge?: number;
+  packagingCharges?: number;
   tableBookingEnabled?: boolean;
   fssaiNumber?: string;
   fssai?: string;

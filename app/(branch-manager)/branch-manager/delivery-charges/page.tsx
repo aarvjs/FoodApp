@@ -31,6 +31,12 @@ export default function BranchManagerDeliveryChargesPage() {
   const [taxSavedToast, setTaxSavedToast] = useState<boolean>(false);
   const [taxError, setTaxError] = useState<string | null>(null);
 
+  // Packaging Charge Form State
+  const [packagingInput, setPackagingInput] = useState<string>("");
+  const [savingPackaging, setSavingPackaging] = useState<boolean>(false);
+  const [packagingSavedToast, setPackagingSavedToast] = useState<boolean>(false);
+  const [packagingError, setPackagingError] = useState<string | null>(null);
+
   // Modal state for Slabs
   const [showModal, setShowModal] = useState<boolean>(false);
   const [editingSlab, setEditingSlab] = useState<DeliveryChargeSlab | null>(null);
@@ -41,7 +47,7 @@ export default function BranchManagerDeliveryChargesPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [savingSlab, setSavingSlab] = useState<boolean>(false);
 
-  // Sync radius & tax inputs with assigned branch
+  // Sync radius, tax & packaging inputs with assigned branch
   useEffect(() => {
     if (assignedBranch) {
       if (assignedBranch.maxRadiusConfigured) {
@@ -50,12 +56,15 @@ export default function BranchManagerDeliveryChargesPage() {
         setRadiusInput("");
       }
       setTaxInput((assignedBranch.taxPercentage ?? assignedBranch.gstPercentage ?? 0).toString());
+      setPackagingInput((assignedBranch.packagingCharge ?? assignedBranch.packagingCharges ?? 0).toString());
     } else {
       setRadiusInput("");
       setTaxInput("0");
+      setPackagingInput("0");
     }
     setRadiusError(null);
     setTaxError(null);
+    setPackagingError(null);
   }, [assignedBranch]);
 
 
@@ -141,6 +150,36 @@ export default function BranchManagerDeliveryChargesPage() {
       setTaxError("Failed to save GST / Tax percentage: " + err.message);
     } finally {
       setSavingTax(false);
+    }
+  };
+
+  const handleSavePackagingCharge = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPackagingError(null);
+
+    if (!assignedBranch) {
+      setPackagingError("No assigned branch found.");
+      return;
+    }
+
+    const pkgVal = parseFloat(packagingInput);
+    if (isNaN(pkgVal) || pkgVal < 0) {
+      setPackagingError("Packaging charge must be a valid non-negative number (e.g., 20).");
+      return;
+    }
+
+    setSavingPackaging(true);
+    try {
+      await updateBranch(assignedBranch.id, {
+        packagingCharge: pkgVal,
+        packagingCharges: pkgVal,
+      });
+      setPackagingSavedToast(true);
+      setTimeout(() => setPackagingSavedToast(false), 3000);
+    } catch (err: any) {
+      setPackagingError("Failed to save packaging charge: " + err.message);
+    } finally {
+      setSavingPackaging(false);
     }
   };
 
@@ -417,6 +456,68 @@ export default function BranchManagerDeliveryChargesPage() {
           >
             {savingTax ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save GST / Tax
+          </button>
+        </form>
+      </div>
+
+      {/* Packaging / Handling Charges Configuration Card */}
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="font-bold text-slate-900 text-sm">Packaging / Handling Charges</h3>
+              <span className="px-2.5 py-0.5 bg-amber-100 text-amber-900 text-[10px] font-bold rounded-full flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3 text-amber-600" /> Configured: ₹{assignedBranch?.packagingCharge ?? assignedBranch?.packagingCharges ?? 0}
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 mt-1">
+              Set branch-wise packaging charge applied to orders for {assignedBranch?.name || "your branch"}. Set to 0 to disable packaging charge.
+            </p>
+          </div>
+        </div>
+
+        {packagingSavedToast && (
+          <div className="p-3 bg-amber-50 border border-amber-200 text-amber-900 rounded-xl text-xs font-bold flex items-center gap-2">
+            <Check className="w-4 h-4 text-amber-600" /> Packaging charge saved successfully for {assignedBranch?.name}!
+          </div>
+        )}
+
+        {packagingError && (
+          <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs font-semibold flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            <span>{packagingError}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSavePackagingCharge} className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3 max-w-lg">
+          <div className="flex-1">
+            <label className="block text-xs font-bold text-slate-700 mb-1">
+              Packaging Charge per Order (₹)
+            </label>
+            <div className="relative">
+              <input
+                type="number"
+                step="1"
+                min="0"
+                placeholder="Enter packaging charge (e.g. 20)"
+                value={packagingInput}
+                onChange={(e) => setPackagingInput(e.target.value)}
+                required
+                className="w-full p-2.5 pr-12 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+              />
+              <span className="absolute right-3 top-2.5 font-bold text-slate-400 text-xs">
+                ₹
+              </span>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={savingPackaging || !assignedBranch}
+            className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-slate-950 font-bold text-xs rounded-xl shadow transition-all flex items-center justify-center gap-2 shrink-0"
+          >
+            {savingPackaging ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            Save Packaging Charge
           </button>
         </form>
       </div>

@@ -15,6 +15,8 @@ export interface BranchModel {
   maxRadiusConfigured?: boolean;
   taxPercentage?: number;
   gstPercentage?: number;
+  packagingCharge?: number;
+  packagingCharges?: number;
   tableBookingEnabled?: boolean;
   openingTime: string;
 
