@@ -79,6 +79,8 @@ export const branchService = {
       locationSource: locSource
     };
 
+    const radVal = Number(data.deliveryRadiusKm ?? data.maximumDeliveryRadius ?? data.serviceRadiusKm ?? data.deliveryRadius ?? 5);
+
     const newBranch: Branch = {
       id: docRef.id,
       branchId: docRef.id,
@@ -91,8 +93,11 @@ export const branchService = {
       managerName: data.managerName || "Unassigned",
       managerEmail: data.managerEmail || "",
       managerId: data.managerId || "",
-      deliveryRadiusKm: data.deliveryRadiusKm || 5,
-      deliveryRadius: data.deliveryRadius || data.deliveryRadiusKm || 5,
+      deliveryRadiusKm: radVal,
+      maximumDeliveryRadius: radVal,
+      serviceRadiusKm: radVal,
+      deliveryRadius: radVal,
+      maxRadiusConfigured: true,
       openingTime: data.openingTime || "09:00 AM",
       closingTime: data.closingTime || "11:00 PM",
       status: data.status || "OPEN",
@@ -122,6 +127,18 @@ export const branchService = {
     const docRef = doc(db, COLLECTION_NAME, id);
     const now = new Date().toISOString();
     const payload: any = { ...updated, updatedAt: now };
+
+    if (updated.deliveryRadiusKm !== undefined || updated.maximumDeliveryRadius !== undefined || updated.serviceRadiusKm !== undefined || updated.deliveryRadius !== undefined) {
+      const radiusVal = Number(updated.deliveryRadiusKm ?? updated.maximumDeliveryRadius ?? updated.serviceRadiusKm ?? updated.deliveryRadius);
+      if (!isNaN(radiusVal) && radiusVal > 0) {
+        payload.deliveryRadiusKm = radiusVal;
+        payload.maximumDeliveryRadius = radiusVal;
+        payload.serviceRadiusKm = radiusVal;
+        payload.deliveryRadius = radiusVal;
+        payload.maxRadiusConfigured = true;
+      }
+    }
+
     const locSource = updated.locationSource || updated.location?.source || updated.location?.locationSource;
 
     if (updated.location) {

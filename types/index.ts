@@ -120,6 +120,7 @@ export interface Branch {
   deliveryRadiusKm: number;
   deliveryRadius?: number;
   maximumDeliveryRadius?: number;
+  serviceRadiusKm?: number;
   maxRadiusConfigured?: boolean;
   taxPercentage?: number;
   gstPercentage?: number;
@@ -199,6 +200,13 @@ export interface CustomizationGroup {
   updatedAt?: string;
 }
 
+export interface BranchProductAvailability {
+  isActive: boolean;
+  availableFrom?: string;
+  availableUntil?: string;
+  updatedAt?: string;
+}
+
 export interface Combo {
   id: string;
   name: string;
@@ -206,6 +214,9 @@ export interface Combo {
   description?: string;
   isAvailable?: boolean;
   isActive?: boolean;
+  availableFrom?: string;
+  availableUntil?: string;
+  branchAvailability?: Record<string, BranchProductAvailability>;
   restaurantId: string;
   branchId?: string;
   branchIds?: string[];
@@ -264,6 +275,11 @@ export interface ComboItem {
   isVeg: boolean;
   rating?: number;
   ratingCount?: number;
+  isActive?: boolean;
+  isAvailable?: boolean;
+  availableFrom?: string;
+  availableUntil?: string;
+  branchAvailability?: Record<string, BranchProductAvailability>;
   isCustomisable?: boolean;
   customizationGroups?: CustomizationGroup[];
   isVariantEnabled?: boolean;
@@ -290,6 +306,9 @@ export interface Product {
   images?: string[];
   isAvailable: boolean;
   available?: boolean;
+  availableFrom?: string;
+  availableUntil?: string;
+  branchAvailability?: Record<string, BranchProductAvailability>;
   stock: number;
   availableQuantity?: number;
   stockStatus?: "IN_STOCK" | "OUT_OF_STOCK" | "LOW_STOCK";

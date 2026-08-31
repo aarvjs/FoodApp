@@ -206,8 +206,17 @@ export const useStore = create<AppState>()(
       },
       updateBranch: async (id, updated) => {
         await branchService.updateBranch(id, updated);
+        const radVal = Number(updated.deliveryRadiusKm ?? (updated as any).maximumDeliveryRadius ?? (updated as any).serviceRadiusKm);
+        const extraRadiusFields = !isNaN(radVal) && radVal > 0 ? {
+          deliveryRadiusKm: radVal,
+          maximumDeliveryRadius: radVal,
+          serviceRadiusKm: radVal,
+          deliveryRadius: radVal,
+          maxRadiusConfigured: true
+        } : {};
+
         set((state) => ({
-          branches: state.branches.map((b) => (b.id === id ? { ...b, ...updated } : b))
+          branches: state.branches.map((b) => (b.id === id ? { ...b, ...updated, ...extraRadiusFields } : b))
         }));
       },
       deleteBranch: async (id) => {

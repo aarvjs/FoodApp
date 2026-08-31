@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { UtensilsCrossed, Plus, Trash2, Edit3, X, Upload, Loader2, Star, Flame, Check, Search, Eye } from "lucide-react";
 import { MenuItemModel, ProductCustomizationModel } from "@/models/menuItem";
 import { BranchModel } from "@/models/branch";
@@ -12,6 +12,7 @@ import { useStore } from "@/lib/store/useStore";
 import { ComboManagementTab } from "@/components/combos/ComboManagementTab";
 import { CustomizationTab } from "@/components/customization/CustomizationTab";
 import { Package, Sliders } from "lucide-react";
+import { isEffectiveAvailable } from "@/lib/utils/availability";
 
 interface MenuModuleProps {
   restaurantId: string;
@@ -69,7 +70,9 @@ export function MenuModule({ restaurantId, branches, categories, menuItems, onRe
     spicyLevel: "Medium" as "Mild" | "Medium" | "Hot" | "Extra Spicy",
     ingredients: "Spices, Olive Oil, Herbs",
     customTags: "Chef Special",
-    status: "ACTIVE" as "ACTIVE" | "INACTIVE"
+    status: "ACTIVE" as "ACTIVE" | "INACTIVE",
+    availableFrom: "10:00 AM",
+    availableUntil: "11:00 PM"
   });
 
   const [customizationsList, setCustomizationsList] = useState<ProductCustomizationModel[]>([
@@ -84,8 +87,11 @@ export function MenuModule({ restaurantId, branches, categories, menuItems, onRe
   const handleOpenModal = (item?: MenuItemModel) => {
     if (item) {
       setEditingItem(item);
+      const bId = item.branchId || branches[0]?.id || "";
+      const bOverride = item.branchAvailability?.[bId];
+
       setFormData({
-        branchId: item.branchId || branches[0]?.id || "",
+        branchId: bId,
         categoryId: item.categoryId || categories[0]?.id || "",
         categoryName: item.categoryName || categories[0]?.name || "Main Course",
         name: item.name || "",
@@ -103,7 +109,9 @@ export function MenuModule({ restaurantId, branches, categories, menuItems, onRe
         spicyLevel: item.spicyLevel || "Medium",
         ingredients: item.ingredients?.join(", ") || "",
         customTags: item.customTags?.join(", ") || "",
-        status: item.status || "ACTIVE"
+        status: bOverride ? (bOverride.isActive ? "ACTIVE" : "INACTIVE") : (item.status || "ACTIVE"),
+        availableFrom: bOverride?.availableFrom || item.availableFrom || "10:00 AM",
+        availableUntil: bOverride?.availableUntil || item.availableUntil || "11:00 PM"
       });
       setCustomizationsList(item.customizations || []);
     } else {
@@ -127,7 +135,9 @@ export function MenuModule({ restaurantId, branches, categories, menuItems, onRe
         spicyLevel: "Medium",
         ingredients: "Spices, Olive Oil, Herbs",
         customTags: "Chef Special",
-        status: "ACTIVE"
+        status: "ACTIVE",
+        availableFrom: "10:00 AM",
+        availableUntil: "11:00 PM"
       });
       setCustomizationsList([
         { id: "cust-1", name: "Extra Cheese", price: 30, isAvailable: true },
@@ -157,11 +167,13 @@ export function MenuModule({ restaurantId, branches, categories, menuItems, onRe
     try {
       const selectedCat = categories.find((c) => c.id === formData.categoryId);
       const catName = selectedCat ? selectedCat.name : formData.categoryName;
+      const targetBranchId = formData.branchId || branches[0]?.id || "";
+      const isActiveBool = formData.status === "ACTIVE";
 
       const payload: any = {
         restaurantId,
-        branchId: formData.branchId || branches[0]?.id || "", // STRICT MANDATORY OWNERSHIP
-        branchIds: [formData.branchId || branches[0]?.id || ""],
+        branchId: targetBranchId,
+        branchIds: [targetBranchId],
         categoryId: formData.categoryId,
         categoryName: catName,
         name: formData.name,
@@ -174,7 +186,7 @@ export function MenuModule({ restaurantId, branches, categories, menuItems, onRe
         isVeg: formData.foodType === "Veg",
         prepTimeMinutes: Number(formData.prepTimeMinutes),
         stock: Number(formData.stock),
-        stockStatus: formData.stockStatus,
+        stockStatus: isActiveBool ? "IN_STOCK" : "OUT_OF_STOCK",
         bestseller: formData.bestseller,
         recommended: formData.recommended,
         featured: formData.featured,
@@ -182,7 +194,11 @@ export function MenuModule({ restaurantId, branches, categories, menuItems, onRe
         ingredients: formData.ingredients.split(",").map((s) => s.trim()),
         customTags: formData.customTags.split(",").map((s) => s.trim()),
         customizations: customizationsList,
-        status: formData.status
+        status: formData.status,
+        isAvailable: isActiveBool,
+        available: isActiveBool,
+        availableFrom: formData.availableFrom || "10:00 AM",
+        availableUntil: formData.availableUntil || "11:00 PM"
       };
 
       if (mainImageFile) {
@@ -338,11 +354,16 @@ export function MenuModule({ restaurantId, branches, categories, menuItems, onRe
                 <td className="px-4 py-3 font-mono text-[11px] text-slate-500">{item.branchId}</td>
                 <td className="px-4 py-3 font-black text-slate-900">₹{item.offerPrice || item.price}</td>
                 <td className="px-4 py-3">
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                    item.isAvailable ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"
-                  }`}>
-                    {item.isAvailable ? "In Stock" : "Out of Stock"}
-                  </span>
+                  {(() => {
+                    const effective = isEffectiveAvailable(item, item.branchId || branches[0]?.id);
+                    return (
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                        effective ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"
+                      }`}>
+                        {effective ? "In Stock" : "Out of Stock"}
+                      </span>
+                    );
+                  })()}
                 </td>
                 <td className="px-4 py-3 text-right space-x-1">
                   <button onClick={() => handleOpenModal(item)} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg">
@@ -465,6 +486,52 @@ export function MenuModule({ restaurantId, branches, categories, menuItems, onRe
                     <option value={30}>30 Mins</option>
                     <option value={45}>45 Mins</option>
                   </select>
+                </div>
+              </div>
+
+              {/* Branch Status & Time Scheduling */}
+              <div className="p-3 bg-emerald-50/60 border border-emerald-200/80 rounded-2xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
+                    Branch Availability & Daily Schedule
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-bold text-slate-600">Status:</span>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, status: formData.status === "ACTIVE" ? "INACTIVE" : "ACTIVE" })}
+                      className={`px-3 py-1 rounded-xl font-black text-[10px] uppercase transition-all shadow-sm ${
+                        formData.status === "ACTIVE"
+                          ? "bg-emerald-600 text-white"
+                          : "bg-rose-600 text-white"
+                      }`}
+                    >
+                      {formData.status === "ACTIVE" ? "Active" : "Inactive"}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Available From (e.g. 10:00 AM)</label>
+                    <input
+                      type="text"
+                      value={formData.availableFrom}
+                      onChange={(e) => setFormData({ ...formData, availableFrom: e.target.value })}
+                      className="w-full p-2 bg-white border border-slate-300 rounded-xl font-bold text-slate-900"
+                      placeholder="10:00 AM"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Available Until (e.g. 05:00 PM)</label>
+                    <input
+                      type="text"
+                      value={formData.availableUntil}
+                      onChange={(e) => setFormData({ ...formData, availableUntil: e.target.value })}
+                      className="w-full p-2 bg-white border border-slate-300 rounded-xl font-bold text-slate-900"
+                      placeholder="05:00 PM"
+                    />
+                  </div>
                 </div>
               </div>
 

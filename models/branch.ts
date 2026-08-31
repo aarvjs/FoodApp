@@ -12,6 +12,8 @@ export interface BranchModel {
   managerId: string;
   deliveryRadiusKm: number;
   maximumDeliveryRadius?: number;
+  serviceRadiusKm?: number;
+  deliveryRadius?: number;
   maxRadiusConfigured?: boolean;
   taxPercentage?: number;
   gstPercentage?: number;

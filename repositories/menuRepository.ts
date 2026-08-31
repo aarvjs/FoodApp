@@ -156,7 +156,20 @@ export const menuRepository = {
       const uploaded = await uploadMultipleImages(updated.imageFiles, "menu_items");
       payload.images = uploaded;
     }
-    delete payload.imageFiles;
+    const targetBranchId = updated.branchId || ((updated as any).branchIds && (updated as any).branchIds[0]);
+
+    // Delete top-level branchAvailability object to avoid Firestore payload conflict
+    delete payload.branchAvailability;
+
+    if (targetBranchId) {
+      const isActiveState = (updated.status ? updated.status === "ACTIVE" : true) && (updated.isAvailable ?? true);
+      payload[`branchAvailability.${targetBranchId}`] = {
+        isActive: isActiveState,
+        availableFrom: updated.availableFrom || "10:00 AM",
+        availableUntil: updated.availableUntil || "11:00 PM",
+        updatedAt: payload.updatedAt
+      };
+    }
 
     // Sanitize payload for Firestore: remove any keys that evaluate to undefined
     Object.keys(payload).forEach((key) => {

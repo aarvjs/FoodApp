@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { UtensilsCrossed, Plus, Trash2, Edit3, X, Upload, Loader2, Star, Flame, Check, Search, Filter } from "lucide-react";
 import { useStore } from "@/lib/store/useStore";
 import { Product, ProductCustomization } from "@/types";
+import { isEffectiveAvailable } from "@/lib/utils/availability";
 
 import { ComboManagementTab } from "@/components/combos/ComboManagementTab";
 import { CustomizationTab } from "@/components/customization/CustomizationTab";
@@ -27,6 +28,13 @@ export default function SuperAdminMenusPage() {
   const addCustomizationGroup = useStore((state) => state.addCustomizationGroup);
   const updateCustomizationGroup = useStore((state) => state.updateCustomizationGroup);
   const deleteCustomizationGroup = useStore((state) => state.deleteCustomizationGroup);
+
+  // 15-second clock ticker for real-time schedule updates
+  const [, setTick] = useState(Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setTick(Date.now()), 15000);
+    return () => clearInterval(timer);
+  }, []);
 
   const [activeTab, setActiveTab] = useState<"products" | "combos" | "customization">("products");
 
@@ -61,7 +69,9 @@ export default function SuperAdminMenusPage() {
     spicyLevel: "Medium" as "Mild" | "Medium" | "Hot" | "Extra Spicy",
     ingredients: "Spices, Olive Oil, Herbs",
     customTags: "Chef Special, Popular",
-    status: "ACTIVE" as "ACTIVE" | "INACTIVE"
+    status: "ACTIVE" as "ACTIVE" | "INACTIVE",
+    availableFrom: "10:00 AM",
+    availableUntil: "11:00 PM"
   });
 
   // Customization Items Form
@@ -73,8 +83,11 @@ export default function SuperAdminMenusPage() {
   const handleOpenModal = (item?: Product) => {
     if (item) {
       setEditingItem(item);
+      const bId = item.branchId || (item.branchIds && item.branchIds[0]) || branches[0]?.id || "";
+      const bOverride = item.branchAvailability?.[bId];
+
       setFormData({
-        branchId: item.branchId || (item.branchIds && item.branchIds[0]) || branches[0]?.id || "",
+        branchId: bId,
         name: item.name || item.title || "",
         description: item.description || "",
         fullDescription: item.fullDescription || item.description || "",
@@ -92,7 +105,9 @@ export default function SuperAdminMenusPage() {
         spicyLevel: item.spicyLevel || "Medium",
         ingredients: item.ingredients?.join(", ") || "",
         customTags: item.customTags?.join(", ") || "",
-        status: item.status || "ACTIVE"
+        status: bOverride ? (bOverride.isActive ? "ACTIVE" : "INACTIVE") : (item.status || "ACTIVE"),
+        availableFrom: bOverride?.availableFrom || item.availableFrom || "10:00 AM",
+        availableUntil: bOverride?.availableUntil || item.availableUntil || "11:00 PM"
       });
       setCustomizationsList(item.customizations || []);
     } else {
@@ -116,7 +131,9 @@ export default function SuperAdminMenusPage() {
         spicyLevel: "Medium",
         ingredients: "Spices, Olive Oil, Herbs",
         customTags: "Chef Special, Popular",
-        status: "ACTIVE"
+        status: "ACTIVE",
+        availableFrom: "10:00 AM",
+        availableUntil: "11:00 PM"
       });
       setCustomizationsList([
         { id: "cust-1", name: "Extra Cheese", price: 30, isAvailable: true },
@@ -145,6 +162,8 @@ export default function SuperAdminMenusPage() {
 
     try {
       const selectedBranchId = formData.branchId || branches[0]?.id || "";
+      const isActiveBool = formData.status === "ACTIVE";
+
       const payload: Partial<Product> & { imageFile?: File | string; imageFiles?: File[] } = {
         name: formData.name,
         title: formData.name,
@@ -160,7 +179,7 @@ export default function SuperAdminMenusPage() {
         prepTimeMinutes: Number(formData.prepTimeMinutes),
         availableQuantity: Number(formData.availableQuantity),
         stock: Number(formData.availableQuantity),
-        stockStatus: formData.stockStatus,
+        stockStatus: isActiveBool ? "IN_STOCK" : "OUT_OF_STOCK",
         bestseller: formData.bestseller,
         recommended: formData.recommended,
         featured: formData.featured,
@@ -169,6 +188,10 @@ export default function SuperAdminMenusPage() {
         customTags: formData.customTags.split(",").map((s) => s.trim()),
         customizations: customizationsList,
         status: formData.status,
+        isAvailable: isActiveBool,
+        available: isActiveBool,
+        availableFrom: formData.availableFrom || "10:00 AM",
+        availableUntil: formData.availableUntil || "11:00 PM",
         branchId: selectedBranchId,
         branchIds: [selectedBranchId]
       };
@@ -349,6 +372,11 @@ export default function SuperAdminMenusPage() {
                   </span>
                   <span className="px-2 py-0.5 bg-slate-900/80 text-white rounded-md text-[10px] font-bold">
                     {p.category}
+                  </span>
+                  <span className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase text-white ${
+                    isEffectiveAvailable(p, p.branchId) ? "bg-emerald-600" : "bg-rose-600"
+                  }`}>
+                    {isEffectiveAvailable(p, p.branchId) ? "IN STOCK" : "OUT OF STOCK"}
                   </span>
                   {p.bestseller && (
                     <span className="px-2 py-0.5 bg-amber-500 text-slate-950 font-extrabold rounded-md text-[10px] flex items-center gap-1">
@@ -571,6 +599,52 @@ export default function SuperAdminMenusPage() {
                   className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl"
                   placeholder="Crispy fried patty with fresh lettuce and secret melted cheese sauce..."
                 />
+              </div>
+
+              {/* Branch Status & Time Scheduling */}
+              <div className="p-3 bg-emerald-50/60 border border-emerald-200/80 rounded-2xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
+                    Branch Availability & Daily Schedule
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-bold text-slate-600">Status:</span>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, status: formData.status === "ACTIVE" ? "INACTIVE" : "ACTIVE" })}
+                      className={`px-3 py-1 rounded-xl font-black text-[10px] uppercase transition-all shadow-sm ${
+                        formData.status === "ACTIVE"
+                          ? "bg-emerald-600 text-white"
+                          : "bg-rose-600 text-white"
+                      }`}
+                    >
+                      {formData.status === "ACTIVE" ? "Active" : "Inactive"}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Available From (e.g. 10:00 AM)</label>
+                    <input
+                      type="text"
+                      value={formData.availableFrom}
+                      onChange={(e) => setFormData({ ...formData, availableFrom: e.target.value })}
+                      className="w-full p-2 bg-white border border-slate-300 rounded-xl font-bold text-slate-900"
+                      placeholder="10:00 AM"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Available Until (e.g. 05:00 PM)</label>
+                    <input
+                      type="text"
+                      value={formData.availableUntil}
+                      onChange={(e) => setFormData({ ...formData, availableUntil: e.target.value })}
+                      className="w-full p-2 bg-white border border-slate-300 rounded-xl font-bold text-slate-900"
+                      placeholder="05:00 PM"
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Badges & Toggles */}

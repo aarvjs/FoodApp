@@ -12,6 +12,7 @@ import {
 } from "@/services/comboService";
 import { ComboItemModal } from "./ComboItemModal";
 import { ComboProductCustomizationModal } from "./ComboProductCustomizationModal";
+import { isEffectiveAvailable } from "@/lib/utils/availability";
 
 interface ComboDetailPageProps {
   combo: Combo;
@@ -38,6 +39,13 @@ export const ComboDetailPage: React.FC<ComboDetailPageProps> = ({
 
   // Customization modal state
   const [customizingItem, setCustomizingItem] = useState<ComboItem | null>(null);
+
+  // 15-second clock ticker for real-time schedule updates
+  const [, setTick] = useState(Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setTick(Date.now()), 15000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     setIsComboActive(combo.isActive ?? combo.isAvailable ?? true);
@@ -219,6 +227,8 @@ export const ComboDetailPage: React.FC<ComboDetailPageProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {items.map((item) => {
             const customGroupsCount = item.customizationGroups?.length || 0;
+            const isItemActive = item.isActive ?? item.isAvailable ?? true;
+            const effective = isEffectiveAvailable(item, branchId || combo.branchId);
 
             return (
               <div
@@ -233,7 +243,7 @@ export const ComboDetailPage: React.FC<ComboDetailPageProps> = ({
                       alt={item.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
-                    <div className="absolute top-2 left-2 flex gap-1.5">
+                    <div className="absolute top-2 left-2 flex flex-wrap gap-1.5">
                       <span
                         className={`px-2 py-0.5 text-[10px] font-black rounded-md shadow-sm ${
                           item.isVeg
@@ -243,12 +253,30 @@ export const ComboDetailPage: React.FC<ComboDetailPageProps> = ({
                       >
                         {item.isVeg ? "VEG" : "NON-VEG"}
                       </span>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const nextState = !isItemActive;
+                          await updateComboItem(item.id, { isActive: nextState, isAvailable: nextState });
+                        }}
+                        className={`px-2 py-0.5 text-[10px] font-black rounded-md shadow-sm text-white ${
+                          effective ? "bg-emerald-600" : "bg-rose-600"
+                        }`}
+                      >
+                        {effective ? "ACTIVE" : "OUT OF STOCK"}
+                      </button>
                       {item.isCustomisable || customGroupsCount > 0 ? (
                         <span className="px-2 py-0.5 text-[10px] font-black bg-blue-600 text-white rounded-md shadow-sm">
                           CUSTOMISABLE
                         </span>
                       ) : null}
                     </div>
+
+                    {(item.availableFrom || item.availableUntil) && (
+                      <div className="absolute bottom-2 left-2 bg-slate-900/85 text-white px-2 py-0.5 rounded text-[9.5px] font-bold">
+                        🕒 {item.availableFrom || "10:00 AM"} – {item.availableUntil || "11:00 PM"}
+                      </div>
+                    )}
                   </div>
 
                   {/* Item Details */}

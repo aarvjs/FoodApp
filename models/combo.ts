@@ -58,15 +58,24 @@ export function normalizeComboData(data: any): Combo {
   return sanitizeForFirestore(normalized);
 }
 
-export function validateComboItemData(data: Partial<ComboItem>): void {
-  if (!data.name || data.name.trim() === "") {
-    throw new Error("Combo Item Validation Error: Item name is required.");
-  }
-  if (!data.comboId || data.comboId.trim() === "") {
-    throw new Error("Combo Item Validation Error: comboId is required.");
-  }
-  if (data.price === undefined || isNaN(Number(data.price)) || Number(data.price) < 0) {
-    throw new Error("Combo Item Validation Error: Valid display price is required.");
+export function validateComboItemData(data: Partial<ComboItem>, isUpdate = false): void {
+  if (!isUpdate) {
+    if (!data.name || data.name.trim() === "") {
+      throw new Error("Combo Item Validation Error: Item name is required.");
+    }
+    if (!data.comboId || data.comboId.trim() === "") {
+      throw new Error("Combo Item Validation Error: comboId is required.");
+    }
+    if (data.price === undefined || isNaN(Number(data.price)) || Number(data.price) < 0) {
+      throw new Error("Combo Item Validation Error: Valid display price is required.");
+    }
+  } else {
+    if (data.name !== undefined && data.name.trim() === "") {
+      throw new Error("Combo Item Validation Error: Item name cannot be empty.");
+    }
+    if (data.price !== undefined && (isNaN(Number(data.price)) || Number(data.price) < 0)) {
+      throw new Error("Combo Item Validation Error: Valid display price is required.");
+    }
   }
 }
 
@@ -183,6 +192,7 @@ export function normalizeComboItemData(data: any): ComboItem {
   });
 
   const isVariantEnabled = Boolean(data.isVariantEnabled);
+  const isActiveState = (data.isActive !== false) && (data.isAvailable !== false) && (data.status === undefined || data.status === "ACTIVE");
 
   const normalized: ComboItem = {
     id: data.id || "",
@@ -201,6 +211,11 @@ export function normalizeComboItemData(data: any): ComboItem {
     isVeg: isVeg,
     rating: data.rating !== undefined ? Number(data.rating) : 4.2,
     ratingCount: data.ratingCount !== undefined ? Number(data.ratingCount) : 569,
+    isActive: isActiveState,
+    isAvailable: isActiveState,
+    availableFrom: data.availableFrom || "10:00 AM",
+    availableUntil: data.availableUntil || "11:00 PM",
+    branchAvailability: data.branchAvailability || {},
     isCustomisable: data.isCustomisable ?? (normalizedGroups.length > 0 || isVariantEnabled ? true : false),
     customizationGroups: normalizedGroups,
     isVariantEnabled: isVariantEnabled,

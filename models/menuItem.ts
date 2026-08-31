@@ -20,6 +20,9 @@ export interface MenuItemModel {
   image: string;
   images?: string[];
   isAvailable: boolean;
+  availableFrom?: string;
+  availableUntil?: string;
+  branchAvailability?: Record<string, { isActive: boolean; availableFrom?: string; availableUntil?: string; updatedAt?: string }>;
   stock: number;
   stockStatus: "IN_STOCK" | "OUT_OF_STOCK" | "LOW_STOCK";
   isVeg: boolean;

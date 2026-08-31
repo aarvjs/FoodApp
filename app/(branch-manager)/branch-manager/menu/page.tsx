@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
-import { UtensilsCrossed, Plus, Trash2, Edit3, X, Upload, Loader2, Star, Flame, Check, Search, Store, Package, Sliders } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { UtensilsCrossed, Plus, Trash2, Edit3, X, Upload, Loader2, Star, Flame, Check, Search, Store, Package, Sliders, Filter } from "lucide-react";
 import { useStore } from "@/lib/store/useStore";
 import { Product, ProductCustomization } from "@/types";
+import { isEffectiveAvailable } from "@/lib/utils/availability";
 import { ComboManagementTab } from "@/components/combos/ComboManagementTab";
 import { CustomizationTab } from "@/components/customization/CustomizationTab";
 
@@ -36,6 +37,13 @@ export default function BranchManagerMenuPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterFoodType, setFilterFoodType] = useState("ALL");
 
+  // 15-second clock ticker for real-time status updates
+  const [, setTick] = useState(Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setTick(Date.now()), 15000);
+    return () => clearInterval(timer);
+  }, []);
+
   // Form State
   const [formData, setFormData] = useState({
     name: "",
@@ -48,7 +56,10 @@ export default function BranchManagerMenuPage() {
     availableQuantity: 50,
     stockStatus: "IN_STOCK" as "IN_STOCK" | "OUT_OF_STOCK" | "LOW_STOCK",
     bestseller: false,
-    spicyLevel: "Medium" as "Mild" | "Medium" | "Hot" | "Extra Spicy"
+    spicyLevel: "Medium" as "Mild" | "Medium" | "Hot" | "Extra Spicy",
+    status: "ACTIVE" as "ACTIVE" | "INACTIVE",
+    availableFrom: "10:00 AM",
+    availableUntil: "11:00 PM"
   });
 
   const [customizationsList, setCustomizationsList] = useState<ProductCustomization[]>([
@@ -56,12 +67,12 @@ export default function BranchManagerMenuPage() {
     { id: "cust-2", name: "French Fries", price: 60, isAvailable: true }
   ]);
 
-  // Scoped to Manager's Assigned Branch
+  // Scoped strictly to Manager's Assigned Branch
   const branchProducts = products.filter((p) => {
     if (!user?.branchId) return true;
     if (p.branchId && p.branchId === user.branchId) return true;
     if (p.branchIds && p.branchIds.includes(user.branchId)) return true;
-    return true;
+    return false;
   });
 
   const branchCombos = combos.filter((c) => {
@@ -86,6 +97,9 @@ export default function BranchManagerMenuPage() {
   const handleOpenModal = (item?: Product) => {
     if (item) {
       setEditingItem(item);
+      const bId = user?.branchId || item.branchId || "";
+      const bOverride = item.branchAvailability?.[bId];
+
       setFormData({
         name: item.name || item.title || "",
         description: item.description || "",
@@ -97,7 +111,10 @@ export default function BranchManagerMenuPage() {
         availableQuantity: item.availableQuantity || item.stock || 50,
         stockStatus: item.stockStatus || "IN_STOCK",
         bestseller: item.bestseller || false,
-        spicyLevel: item.spicyLevel || "Medium"
+        spicyLevel: item.spicyLevel || "Medium",
+        status: bOverride ? (bOverride.isActive ? "ACTIVE" : "INACTIVE") : (item.status || "ACTIVE"),
+        availableFrom: bOverride?.availableFrom || item.availableFrom || "10:00 AM",
+        availableUntil: bOverride?.availableUntil || item.availableUntil || "11:00 PM"
       });
       setCustomizationsList(item.customizations || []);
     } else {
@@ -113,7 +130,10 @@ export default function BranchManagerMenuPage() {
         availableQuantity: 50,
         stockStatus: "IN_STOCK",
         bestseller: false,
-        spicyLevel: "Medium"
+        spicyLevel: "Medium",
+        status: "ACTIVE",
+        availableFrom: "10:00 AM",
+        availableUntil: "11:00 PM"
       });
       setCustomizationsList([
         { id: "cust-1", name: "Extra Cheese", price: 30, isAvailable: true },
@@ -129,6 +149,9 @@ export default function BranchManagerMenuPage() {
     setSubmitting(true);
 
     try {
+      const targetBranchId = user?.branchId || "";
+      const isActiveBool = formData.status === "ACTIVE";
+
       const payload: Partial<Product> & { imageFile?: File | string } = {
         name: formData.name,
         title: formData.name,
@@ -142,14 +165,18 @@ export default function BranchManagerMenuPage() {
         prepTimeMinutes: Number(formData.prepTimeMinutes),
         availableQuantity: Number(formData.availableQuantity),
         stock: Number(formData.availableQuantity),
-        stockStatus: formData.stockStatus,
+        stockStatus: isActiveBool ? "IN_STOCK" : "OUT_OF_STOCK",
         bestseller: formData.bestseller,
         spicyLevel: formData.spicyLevel,
         customizations: customizationsList,
-        branchId: user?.branchId || "",
-        branchIds: user?.branchId ? [user.branchId] : [],
+        branchId: targetBranchId,
+        branchIds: targetBranchId ? [targetBranchId] : [],
         restaurantId: user?.restaurantId || "",
-        status: "ACTIVE"
+        status: formData.status,
+        isAvailable: isActiveBool,
+        available: isActiveBool,
+        availableFrom: formData.availableFrom || "10:00 AM",
+        availableUntil: formData.availableUntil || "11:00 PM"
       };
 
       if (imageFile) {
@@ -297,7 +324,8 @@ export default function BranchManagerMenuPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredProducts.map((p, idx) => {
-                const isItemAvailable = p.isAvailable ?? p.available ?? true;
+                const effective = isEffectiveAvailable(p, user?.branchId || p.branchId);
+                const isManualAvailable = p.isAvailable ?? p.available ?? true;
                 return (
                   <div key={p.id || `bprod-${idx}`} className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                     <div className="h-44 bg-slate-100 relative">
@@ -319,11 +347,11 @@ export default function BranchManagerMenuPage() {
 
                       <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
                         <button
-                          onClick={() => updateProduct(p.id, { isAvailable: !isItemAvailable, available: !isItemAvailable })}
-                          className={`px-3 py-1 rounded-lg font-bold text-xs transition-colors ${isItemAvailable ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"
+                          onClick={() => updateProduct(p.id, { isAvailable: !isManualAvailable, available: !isManualAvailable, status: !isManualAvailable ? "ACTIVE" : "INACTIVE" })}
+                          className={`px-3 py-1 rounded-lg font-bold text-xs transition-colors ${effective ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"
                             }`}
                         >
-                          {isItemAvailable ? "In Stock" : "Out of Stock"}
+                          {effective ? "In Stock" : "Out of Stock"}
                         </button>
 
                         <div className="flex items-center gap-1">
@@ -436,6 +464,52 @@ export default function BranchManagerMenuPage() {
                     onChange={(e) => setFormData({ ...formData, offerPrice: Number(e.target.value) })}
                     className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-amber-600"
                   />
+                </div>
+              </div>
+
+              {/* Branch Status & Time Scheduling */}
+              <div className="p-3 bg-amber-50/70 border border-amber-200/80 rounded-2xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
+                    Branch Availability & Daily Schedule
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-bold text-slate-600">Status:</span>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, status: formData.status === "ACTIVE" ? "INACTIVE" : "ACTIVE" })}
+                      className={`px-3 py-1 rounded-xl font-black text-[10px] uppercase transition-all shadow-sm ${
+                        formData.status === "ACTIVE"
+                          ? "bg-amber-500 text-slate-950"
+                          : "bg-rose-600 text-white"
+                      }`}
+                    >
+                      {formData.status === "ACTIVE" ? "Active" : "Inactive"}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Available From (e.g. 10:00 AM)</label>
+                    <input
+                      type="text"
+                      value={formData.availableFrom}
+                      onChange={(e) => setFormData({ ...formData, availableFrom: e.target.value })}
+                      className="w-full p-2 bg-white border border-slate-300 rounded-xl font-bold text-slate-900"
+                      placeholder="10:00 AM"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Available Until (e.g. 05:00 PM)</label>
+                    <input
+                      type="text"
+                      value={formData.availableUntil}
+                      onChange={(e) => setFormData({ ...formData, availableUntil: e.target.value })}
+                      className="w-full p-2 bg-white border border-slate-300 rounded-xl font-bold text-slate-900"
+                      placeholder="05:00 PM"
+                    />
+                  </div>
                 </div>
               </div>
 

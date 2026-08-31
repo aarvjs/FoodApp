@@ -133,6 +133,8 @@ export default function AdminDeliveryChargesPage() {
       await updateBranch(selectedBranchId, {
         maximumDeliveryRadius: radVal,
         deliveryRadiusKm: radVal,
+        serviceRadiusKm: radVal,
+        deliveryRadius: radVal,
         maxRadiusConfigured: true
       });
       setRadiusSavedToast(true);

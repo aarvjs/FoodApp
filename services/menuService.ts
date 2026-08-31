@@ -88,6 +88,18 @@ export const menuService = {
     }
 
     const foodTypeVal = data.foodType || (data.isVeg ? "Veg" : "Non Veg");
+    const targetBranchId = data.branchId || (data.branchIds && data.branchIds[0]) || "";
+    const isActiveBool = (data.status ? data.status === "ACTIVE" : true) && (data.isAvailable ?? data.available ?? true);
+
+    const initialBranchAvailability: Record<string, any> = data.branchAvailability || {};
+    if (targetBranchId) {
+      initialBranchAvailability[targetBranchId] = {
+        isActive: isActiveBool,
+        availableFrom: data.availableFrom || "10:00 AM",
+        availableUntil: data.availableUntil || "11:00 PM",
+        updatedAt: now
+      };
+    }
 
     const newItem: Product = {
       id: docRef.id,
@@ -105,11 +117,14 @@ export const menuService = {
       veg: foodTypeVal.toLowerCase(),
       image: imageUrl,
       images: imagesList,
-      available: data.available ?? data.isAvailable ?? true,
-      isAvailable: data.isAvailable ?? data.available ?? true,
+      available: isActiveBool,
+      isAvailable: isActiveBool,
+      availableFrom: data.availableFrom || "10:00 AM",
+      availableUntil: data.availableUntil || "11:00 PM",
+      branchAvailability: initialBranchAvailability,
       stock: data.stock !== undefined ? Number(data.stock) : 50,
       availableQuantity: data.availableQuantity !== undefined ? Number(data.availableQuantity) : 50,
-      stockStatus: data.stockStatus || "IN_STOCK",
+      stockStatus: data.stockStatus || (isActiveBool ? "IN_STOCK" : "OUT_OF_STOCK"),
       bestseller: data.bestseller ?? false,
       recommended: data.recommended ?? false,
       featured: data.featured ?? false,
@@ -117,12 +132,12 @@ export const menuService = {
       ingredients: data.ingredients || [],
       customTags: data.customTags || [],
       customizations: data.customizations || [],
-      branchId: data.branchId || (data.branchIds && data.branchIds[0]) || "",
-      branchIds: data.branchIds || (data.branchId ? [data.branchId] : []),
+      branchId: targetBranchId,
+      branchIds: data.branchIds || (targetBranchId ? [targetBranchId] : []),
       restaurantId: data.restaurantId || "",
       prepTimeMinutes: Number(data.prepTimeMinutes) || 20,
       rating: data.rating || 4.5,
-      status: data.status || "ACTIVE",
+      status: isActiveBool ? "ACTIVE" : "INACTIVE",
       createdAt: now,
       updatedAt: now
     };
@@ -133,7 +148,8 @@ export const menuService = {
 
   updateMenuItem: async (id: string, updated: Partial<Product> & { imageFile?: File | string; imageFiles?: File[] }): Promise<void> => {
     const docRef = doc(db, COLLECTION_NAME, id);
-    let updatePayload: any = { ...updated, updatedAt: new Date().toISOString() };
+    const now = new Date().toISOString();
+    let updatePayload: any = { ...updated, updatedAt: now };
 
     if (updated.branchId) {
       updatePayload.branchId = updated.branchId;
@@ -152,6 +168,22 @@ export const menuService = {
     }
     delete updatePayload.imageFiles;
 
+    const targetBranchId = updated.branchId || (updated.branchIds && updated.branchIds[0]);
+
+    // Delete top-level branchAvailability object to avoid Firestore payload conflict
+    delete updatePayload.branchAvailability;
+
+    if (targetBranchId) {
+      const isActiveState = (updated.status ? updated.status === "ACTIVE" : true) && (updated.isAvailable ?? updated.available ?? true);
+      const branchAvailData = {
+        isActive: isActiveState,
+        availableFrom: updated.availableFrom || "10:00 AM",
+        availableUntil: updated.availableUntil || "11:00 PM",
+        updatedAt: now
+      };
+      updatePayload[`branchAvailability.${targetBranchId}`] = branchAvailData;
+    }
+
     // Sanitize updatePayload for Firestore: remove any keys that evaluate to undefined
     Object.keys(updatePayload).forEach((key) => {
       if (updatePayload[key] === undefined) {
@@ -162,14 +194,23 @@ export const menuService = {
     await updateDoc(docRef, updatePayload);
   },
 
-  toggleAvailability: async (id: string, isAvailable: boolean): Promise<void> => {
+  toggleAvailability: async (id: string, isAvailable: boolean, branchId?: string): Promise<void> => {
     const docRef = doc(db, COLLECTION_NAME, id);
-    await updateDoc(docRef, { 
+    const now = new Date().toISOString();
+    const payload: any = { 
       isAvailable, 
       available: isAvailable, 
+      status: isAvailable ? "ACTIVE" : "INACTIVE",
       stockStatus: isAvailable ? "IN_STOCK" : "OUT_OF_STOCK",
-      updatedAt: new Date().toISOString() 
-    });
+      updatedAt: now
+    };
+
+    if (branchId) {
+      payload[`branchAvailability.${branchId}.isActive`] = isAvailable;
+      payload[`branchAvailability.${branchId}.updatedAt`] = now;
+    }
+
+    await updateDoc(docRef, payload);
   },
 
   deleteMenuItem: async (id: string): Promise<void> => {

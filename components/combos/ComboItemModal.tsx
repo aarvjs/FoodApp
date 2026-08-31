@@ -34,6 +34,9 @@ export const ComboItemModal: React.FC<ComboItemModalProps> = ({
   const [rating, setRating] = useState<string>("4.2");
   const [ratingCount, setRatingCount] = useState<string>("569");
   const [isCustomisable, setIsCustomisable] = useState<boolean>(true);
+  const [isActive, setIsActive] = useState<boolean>(true);
+  const [availableFrom, setAvailableFrom] = useState<string>("10:00 AM");
+  const [availableUntil, setAvailableUntil] = useState<string>("11:00 PM");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
@@ -49,6 +52,14 @@ export const ComboItemModal: React.FC<ComboItemModalProps> = ({
       setRating(itemToEdit.rating !== undefined ? itemToEdit.rating.toString() : "4.2");
       setRatingCount(itemToEdit.ratingCount !== undefined ? itemToEdit.ratingCount.toString() : "569");
       setIsCustomisable(itemToEdit.isCustomisable ?? true);
+
+      const targetBId = branchId || (branchIds && branchIds[0]) || itemToEdit.branchId || (itemToEdit.branchIds && itemToEdit.branchIds[0]) || "";
+      const bOverride = targetBId ? itemToEdit.branchAvailability?.[targetBId] : null;
+
+      const activeState = bOverride ? Boolean(bOverride.isActive) : (itemToEdit.isActive ?? itemToEdit.isAvailable ?? true);
+      setIsActive(activeState);
+      setAvailableFrom(bOverride?.availableFrom || itemToEdit.availableFrom || "10:00 AM");
+      setAvailableUntil(bOverride?.availableUntil || itemToEdit.availableUntil || "11:00 PM");
       setImagePreview(itemToEdit.image || "");
     } else {
       setName("");
@@ -59,6 +70,9 @@ export const ComboItemModal: React.FC<ComboItemModalProps> = ({
       setRating("4.2");
       setRatingCount("569");
       setIsCustomisable(true);
+      setIsActive(true);
+      setAvailableFrom("10:00 AM");
+      setAvailableUntil("11:00 PM");
       setImagePreview("");
     }
     setImageFile(null);
@@ -115,6 +129,10 @@ export const ComboItemModal: React.FC<ComboItemModalProps> = ({
         rating: numRating,
         ratingCount: numRatingCount,
         isCustomisable,
+        isActive,
+        isAvailable: isActive,
+        availableFrom: availableFrom || "10:00 AM",
+        availableUntil: availableUntil || "11:00 PM",
         image: finalImageUrl,
         imageFile: imageFile || undefined
       });
@@ -289,6 +307,48 @@ export const ComboItemModal: React.FC<ComboItemModalProps> = ({
                 onChange={(e) => setRatingCount(e.target.value)}
                 className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
               />
+            </div>
+          </div>
+
+          {/* Item Availability & Time Scheduling */}
+          <div className="p-3.5 bg-amber-50/70 rounded-2xl border border-amber-200/80 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="block text-xs font-bold text-slate-900">Combo Product Status</span>
+                <span className="block text-[11px] text-slate-500">Active or Inactive inside this combo</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsActive(!isActive)}
+                className={`px-3 py-1 rounded-xl font-extrabold text-[10px] uppercase transition-all shadow-sm ${
+                  isActive ? "bg-emerald-600 text-white" : "bg-rose-600 text-white"
+                }`}
+              >
+                {isActive ? "Active" : "Inactive"}
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-1 border-t border-amber-200/60">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">Available From (e.g. 10:00 AM)</label>
+                <input
+                  type="text"
+                  value={availableFrom}
+                  onChange={(e) => setAvailableFrom(e.target.value)}
+                  className="w-full p-2 bg-white border border-slate-300 rounded-xl font-bold text-slate-900 text-xs"
+                  placeholder="10:00 AM"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">Available Until (e.g. 05:00 PM)</label>
+                <input
+                  type="text"
+                  value={availableUntil}
+                  onChange={(e) => setAvailableUntil(e.target.value)}
+                  className="w-full p-2 bg-white border border-slate-300 rounded-xl font-bold text-slate-900 text-xs"
+                  placeholder="05:00 PM"
+                />
+              </div>
             </div>
           </div>
 

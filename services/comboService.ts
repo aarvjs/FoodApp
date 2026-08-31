@@ -245,16 +245,30 @@ export const addComboItem = async (
   }
 
   const branchIds = data.branchIds || (data.branchId ? [data.branchId] : []);
+  const targetBranchId = data.branchId || branchIds[0] || "";
   const foodType = data.foodType === "Non Veg" || data.isVeg === false ? "Non Veg" : "Veg";
   const customGroups = data.customizationGroups || [];
   const isVariantEnabled = Boolean(data.isVariantEnabled);
   const variants = data.variants || [];
+  const isActiveState = data.isActive ?? data.isAvailable ?? true;
+  const availFrom = data.availableFrom || "10:00 AM";
+  const availUntil = data.availableUntil || "11:00 PM";
+
+  const initialBranchAvailability: Record<string, any> = data.branchAvailability || {};
+  if (targetBranchId) {
+    initialBranchAvailability[targetBranchId] = {
+      isActive: isActiveState,
+      availableFrom: availFrom,
+      availableUntil: availUntil,
+      updatedAt: now
+    };
+  }
 
   const newItemData: ComboItem = {
     id: docRef.id,
     comboId: (data.comboId || "").trim(),
     restaurantId: (data.restaurantId || "").trim(),
-    branchId: data.branchId || (branchIds[0] || ""),
+    branchId: targetBranchId,
     branchIds: branchIds,
     name: (data.name || "").trim(),
     image: imageUrl,
@@ -267,6 +281,11 @@ export const addComboItem = async (
     isVeg: foodType === "Veg",
     rating: data.rating !== undefined ? Number(data.rating) : 4.2,
     ratingCount: data.ratingCount !== undefined ? Number(data.ratingCount) : 569,
+    isActive: isActiveState,
+    isAvailable: isActiveState,
+    availableFrom: availFrom,
+    availableUntil: availUntil,
+    branchAvailability: initialBranchAvailability,
     isCustomisable: data.isCustomisable ?? (customGroups.length > 0 || isVariantEnabled ? true : false),
     customizationGroups: customGroups,
     isVariantEnabled: isVariantEnabled,
@@ -284,35 +303,59 @@ export const updateComboItem = async (
   id: string,
   updated: Partial<ComboItem> & { imageFile?: File | string }
 ): Promise<void> => {
-  validateComboItemData(updated);
+  validateComboItemData(updated, true);
   const docRef = doc(db, COMBO_ITEMS_COLLECTION, id);
+  const now = new Date().toISOString();
 
-  let updatePayload: any = {
-    name: (updated.name || "").trim(),
-    description: (updated.description || "").trim(),
-    price: Number(updated.price) || 0,
-    originalPrice: updated.originalPrice !== undefined && updated.originalPrice !== null && !isNaN(Number(updated.originalPrice))
+  let updatePayload: any = { updatedAt: now };
+
+  if (updated.name !== undefined) updatePayload.name = updated.name.trim();
+  if (updated.description !== undefined) updatePayload.description = updated.description.trim();
+  if (updated.price !== undefined) updatePayload.price = Number(updated.price) || 0;
+  if (updated.originalPrice !== undefined) {
+    updatePayload.originalPrice = updated.originalPrice !== null && !isNaN(Number(updated.originalPrice))
       ? Number(updated.originalPrice)
-      : undefined,
-    foodType: updated.foodType === "Non Veg" || updated.isVeg === false ? "Non Veg" : "Veg",
-    isVeg: updated.foodType !== "Non Veg" && updated.isVeg !== false,
-    rating: updated.rating !== undefined ? Number(updated.rating) : 4.2,
-    ratingCount: updated.ratingCount !== undefined ? Number(updated.ratingCount) : 569,
-    isCustomisable: updated.isCustomisable ?? true,
-    updatedAt: new Date().toISOString()
-  };
+      : undefined;
+  }
+  if (updated.foodType !== undefined) {
+    updatePayload.foodType = updated.foodType === "Non Veg" || updated.isVeg === false ? "Non Veg" : "Veg";
+    updatePayload.isVeg = updatePayload.foodType === "Veg";
+  } else if (updated.isVeg !== undefined) {
+    updatePayload.isVeg = updated.isVeg;
+    updatePayload.foodType = updated.isVeg ? "Veg" : "Non Veg";
+  }
+  if (updated.rating !== undefined) updatePayload.rating = Number(updated.rating);
+  if (updated.ratingCount !== undefined) updatePayload.ratingCount = Number(updated.ratingCount);
+  if (updated.isCustomisable !== undefined) updatePayload.isCustomisable = updated.isCustomisable;
 
-  if (updated.customizationGroups !== undefined) {
-    updatePayload.customizationGroups = updated.customizationGroups;
+  if (updated.isActive !== undefined || updated.isAvailable !== undefined) {
+    const activeState = updated.isActive ?? updated.isAvailable ?? true;
+    updatePayload.isActive = activeState;
+    updatePayload.isAvailable = activeState;
+    updatePayload.status = activeState ? "ACTIVE" : "INACTIVE";
   }
 
-  if (updated.isVariantEnabled !== undefined) {
-    updatePayload.isVariantEnabled = updated.isVariantEnabled;
+  if (updated.availableFrom !== undefined) updatePayload.availableFrom = updated.availableFrom;
+  if (updated.availableUntil !== undefined) updatePayload.availableUntil = updated.availableUntil;
+
+  const targetBranchId = updated.branchId || (updated.branchIds && updated.branchIds[0]);
+
+  // Delete top-level branchAvailability object to avoid Firestore payload conflict
+  delete updatePayload.branchAvailability;
+
+  if (targetBranchId) {
+    const isActiveState = updated.isActive ?? updated.isAvailable ?? true;
+    updatePayload[`branchAvailability.${targetBranchId}`] = {
+      isActive: isActiveState,
+      availableFrom: updated.availableFrom || "10:00 AM",
+      availableUntil: updated.availableUntil || "11:00 PM",
+      updatedAt: now
+    };
   }
 
-  if (updated.variants !== undefined) {
-    updatePayload.variants = updated.variants;
-  }
+  if (updated.customizationGroups !== undefined) updatePayload.customizationGroups = updated.customizationGroups;
+  if (updated.isVariantEnabled !== undefined) updatePayload.isVariantEnabled = updated.isVariantEnabled;
+  if (updated.variants !== undefined) updatePayload.variants = updated.variants;
 
   if (updated.imageFile && typeof updated.imageFile !== "string") {
     const imageUrl = await uploadImage(updated.imageFile, "comboItems");
@@ -321,8 +364,14 @@ export const updateComboItem = async (
     updatePayload.image = updated.image;
   }
 
-  const sanitized = sanitizeForFirestore(updatePayload);
-  await updateDoc(docRef, sanitized);
+  // Sanitize updatePayload for Firestore: remove any keys that evaluate to undefined
+  Object.keys(updatePayload).forEach((key) => {
+    if (updatePayload[key] === undefined) {
+      delete updatePayload[key];
+    }
+  });
+
+  await updateDoc(docRef, updatePayload);
 };
 
 export const deleteComboItem = async (id: string): Promise<void> => {
