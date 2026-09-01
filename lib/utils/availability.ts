@@ -23,9 +23,25 @@ export function parseTimeToMinutes(timeStr?: string): number | null {
   }
 }
 
+const SHORT_DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const FULL_DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+export function isTodayAvailable(days?: string[]): boolean {
+  if (!days || !Array.isArray(days) || days.length === 0) return true;
+  const now = new Date();
+  const dayIdx = now.getDay(); // 0 = Sun, 1 = Mon ...
+  const shortToday = SHORT_DAYS[dayIdx].toLowerCase();
+  const fullToday = FULL_DAYS[dayIdx].toLowerCase();
+
+  return days.some((d) => {
+    const s = String(d).trim().toLowerCase();
+    return s === shortToday || s === fullToday;
+  });
+}
+
 /**
  * Calculates effective product availability based on:
- * manualActive === true AND currentTime >= startTime AND currentTime < endTime
+ * manualActive === true AND isTodayAvailable === true AND currentTime >= startTime AND currentTime < endTime
  */
 export function isEffectiveAvailable(
   item: {
@@ -34,6 +50,7 @@ export function isEffectiveAvailable(
     status?: string;
     availableFrom?: string;
     availableUntil?: string;
+    availableDays?: string[];
     branchAvailability?: Record<string, any>;
   },
   targetBranchId?: string
@@ -41,6 +58,7 @@ export function isEffectiveAvailable(
   let manualActive = (item.status === undefined || item.status === "ACTIVE") && (item.isAvailable ?? item.available ?? true);
   let sFrom = item.availableFrom || "";
   let sUntil = item.availableUntil || "";
+  let days: string[] | undefined = item.availableDays;
 
   if (targetBranchId && item.branchAvailability?.[targetBranchId]) {
     const override = item.branchAvailability[targetBranchId];
@@ -50,10 +68,12 @@ export function isEffectiveAvailable(
 
       if (override.availableFrom) sFrom = override.availableFrom;
       if (override.availableUntil) sUntil = override.availableUntil;
+      if (Array.isArray(override.availableDays)) days = override.availableDays;
     }
   }
 
   if (!manualActive) return false;
+  if (!isTodayAvailable(days)) return false;
 
   const startMinutesParsed = parseTimeToMinutes(sFrom);
   const endMinutesParsed = parseTimeToMinutes(sUntil);

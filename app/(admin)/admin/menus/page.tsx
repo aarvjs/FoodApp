@@ -5,6 +5,7 @@ import { UtensilsCrossed, Plus, Trash2, Edit3, X, Upload, Loader2, Star, Flame, 
 import { useStore } from "@/lib/store/useStore";
 import { Product, ProductCustomization } from "@/types";
 import { isEffectiveAvailable } from "@/lib/utils/availability";
+import { DaySelector, ALL_DAYS } from "@/components/ui/DaySelector";
 
 import { ComboManagementTab } from "@/components/combos/ComboManagementTab";
 import { CustomizationTab } from "@/components/customization/CustomizationTab";
@@ -29,10 +30,10 @@ export default function SuperAdminMenusPage() {
   const updateCustomizationGroup = useStore((state) => state.updateCustomizationGroup);
   const deleteCustomizationGroup = useStore((state) => state.deleteCustomizationGroup);
 
-  // 15-second clock ticker for real-time schedule updates
-  const [, setTick] = useState(Date.now());
+  // Real-time clock ticker for availability calculations
+  const [nowTick, setNowTick] = useState(Date.now());
   useEffect(() => {
-    const timer = setInterval(() => setTick(Date.now()), 15000);
+    const timer = setInterval(() => setNowTick(Date.now()), 15000);
     return () => clearInterval(timer);
   }, []);
 
@@ -71,7 +72,8 @@ export default function SuperAdminMenusPage() {
     customTags: "Chef Special, Popular",
     status: "ACTIVE" as "ACTIVE" | "INACTIVE",
     availableFrom: "10:00 AM",
-    availableUntil: "11:00 PM"
+    availableUntil: "11:00 PM",
+    availableDays: ALL_DAYS
   });
 
   // Customization Items Form
@@ -107,7 +109,8 @@ export default function SuperAdminMenusPage() {
         customTags: item.customTags?.join(", ") || "",
         status: bOverride ? (bOverride.isActive ? "ACTIVE" : "INACTIVE") : (item.status || "ACTIVE"),
         availableFrom: bOverride?.availableFrom || item.availableFrom || "10:00 AM",
-        availableUntil: bOverride?.availableUntil || item.availableUntil || "11:00 PM"
+        availableUntil: bOverride?.availableUntil || item.availableUntil || "11:00 PM",
+        availableDays: bOverride?.availableDays || item.availableDays || ALL_DAYS
       });
       setCustomizationsList(item.customizations || []);
     } else {
@@ -133,7 +136,8 @@ export default function SuperAdminMenusPage() {
         customTags: "Chef Special, Popular",
         status: "ACTIVE",
         availableFrom: "10:00 AM",
-        availableUntil: "11:00 PM"
+        availableUntil: "11:00 PM",
+        availableDays: ALL_DAYS
       });
       setCustomizationsList([
         { id: "cust-1", name: "Extra Cheese", price: 30, isAvailable: true },
@@ -192,6 +196,7 @@ export default function SuperAdminMenusPage() {
         available: isActiveBool,
         availableFrom: formData.availableFrom || "10:00 AM",
         availableUntil: formData.availableUntil || "11:00 PM",
+        availableDays: formData.availableDays,
         branchId: selectedBranchId,
         branchIds: [selectedBranchId]
       };
@@ -622,6 +627,11 @@ export default function SuperAdminMenusPage() {
                     </button>
                   </div>
                 </div>
+
+                <DaySelector
+                  selectedDays={formData.availableDays}
+                  onChange={(days) => setFormData({ ...formData, availableDays: days })}
+                />
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>

@@ -204,6 +204,7 @@ export interface BranchProductAvailability {
   isActive: boolean;
   availableFrom?: string;
   availableUntil?: string;
+  availableDays?: string[];
   updatedAt?: string;
 }
 
@@ -216,6 +217,7 @@ export interface Combo {
   isActive?: boolean;
   availableFrom?: string;
   availableUntil?: string;
+  availableDays?: string[];
   branchAvailability?: Record<string, BranchProductAvailability>;
   restaurantId: string;
   branchId?: string;
@@ -279,6 +281,7 @@ export interface ComboItem {
   isAvailable?: boolean;
   availableFrom?: string;
   availableUntil?: string;
+  availableDays?: string[];
   branchAvailability?: Record<string, BranchProductAvailability>;
   isCustomisable?: boolean;
   customizationGroups?: CustomizationGroup[];
@@ -308,6 +311,7 @@ export interface Product {
   available?: boolean;
   availableFrom?: string;
   availableUntil?: string;
+  availableDays?: string[];
   branchAvailability?: Record<string, BranchProductAvailability>;
   stock: number;
   availableQuantity?: number;

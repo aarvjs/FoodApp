@@ -97,6 +97,7 @@ export const menuService = {
         isActive: isActiveBool,
         availableFrom: data.availableFrom || "10:00 AM",
         availableUntil: data.availableUntil || "11:00 PM",
+        availableDays: data.availableDays || ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
         updatedAt: now
       };
     }
@@ -121,6 +122,7 @@ export const menuService = {
       isAvailable: isActiveBool,
       availableFrom: data.availableFrom || "10:00 AM",
       availableUntil: data.availableUntil || "11:00 PM",
+      availableDays: data.availableDays || ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
       branchAvailability: initialBranchAvailability,
       stock: data.stock !== undefined ? Number(data.stock) : 50,
       availableQuantity: data.availableQuantity !== undefined ? Number(data.availableQuantity) : 50,
@@ -175,12 +177,15 @@ export const menuService = {
 
     if (targetBranchId) {
       const isActiveState = (updated.status ? updated.status === "ACTIVE" : true) && (updated.isAvailable ?? updated.available ?? true);
-      const branchAvailData = {
+      const branchAvailData: any = {
         isActive: isActiveState,
         availableFrom: updated.availableFrom || "10:00 AM",
         availableUntil: updated.availableUntil || "11:00 PM",
         updatedAt: now
       };
+      if (updated.availableDays) {
+        branchAvailData.availableDays = updated.availableDays;
+      }
       updatePayload[`branchAvailability.${targetBranchId}`] = branchAvailData;
     }
 

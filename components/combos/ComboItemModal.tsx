@@ -5,6 +5,8 @@ import { X, Upload, Sparkles, Loader2 } from "lucide-react";
 import { ComboItem } from "@/types";
 import { uploadImage } from "@/services/storageService";
 
+import { DaySelector, ALL_DAYS } from "@/components/ui/DaySelector";
+
 interface ComboItemModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -37,6 +39,7 @@ export const ComboItemModal: React.FC<ComboItemModalProps> = ({
   const [isActive, setIsActive] = useState<boolean>(true);
   const [availableFrom, setAvailableFrom] = useState<string>("10:00 AM");
   const [availableUntil, setAvailableUntil] = useState<string>("11:00 PM");
+  const [availableDays, setAvailableDays] = useState<string[]>(ALL_DAYS);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
@@ -60,6 +63,7 @@ export const ComboItemModal: React.FC<ComboItemModalProps> = ({
       setIsActive(activeState);
       setAvailableFrom(bOverride?.availableFrom || itemToEdit.availableFrom || "10:00 AM");
       setAvailableUntil(bOverride?.availableUntil || itemToEdit.availableUntil || "11:00 PM");
+      setAvailableDays(bOverride?.availableDays || itemToEdit.availableDays || ALL_DAYS);
       setImagePreview(itemToEdit.image || "");
     } else {
       setName("");
@@ -73,6 +77,7 @@ export const ComboItemModal: React.FC<ComboItemModalProps> = ({
       setIsActive(true);
       setAvailableFrom("10:00 AM");
       setAvailableUntil("11:00 PM");
+      setAvailableDays(ALL_DAYS);
       setImagePreview("");
     }
     setImageFile(null);
@@ -133,6 +138,7 @@ export const ComboItemModal: React.FC<ComboItemModalProps> = ({
         isAvailable: isActive,
         availableFrom: availableFrom || "10:00 AM",
         availableUntil: availableUntil || "11:00 PM",
+        availableDays: availableDays,
         image: finalImageUrl,
         imageFile: imageFile || undefined
       });
@@ -327,6 +333,11 @@ export const ComboItemModal: React.FC<ComboItemModalProps> = ({
                 {isActive ? "Active" : "Inactive"}
               </button>
             </div>
+
+            <DaySelector
+              selectedDays={availableDays}
+              onChange={(days) => setAvailableDays(days)}
+            />
 
             <div className="grid grid-cols-2 gap-3 pt-1 border-t border-amber-200/60">
               <div>

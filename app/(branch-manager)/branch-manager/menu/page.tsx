@@ -5,6 +5,7 @@ import { UtensilsCrossed, Plus, Trash2, Edit3, X, Upload, Loader2, Star, Flame, 
 import { useStore } from "@/lib/store/useStore";
 import { Product, ProductCustomization } from "@/types";
 import { isEffectiveAvailable } from "@/lib/utils/availability";
+import { DaySelector, ALL_DAYS } from "@/components/ui/DaySelector";
 import { ComboManagementTab } from "@/components/combos/ComboManagementTab";
 import { CustomizationTab } from "@/components/customization/CustomizationTab";
 
@@ -59,7 +60,8 @@ export default function BranchManagerMenuPage() {
     spicyLevel: "Medium" as "Mild" | "Medium" | "Hot" | "Extra Spicy",
     status: "ACTIVE" as "ACTIVE" | "INACTIVE",
     availableFrom: "10:00 AM",
-    availableUntil: "11:00 PM"
+    availableUntil: "11:00 PM",
+    availableDays: ALL_DAYS
   });
 
   const [customizationsList, setCustomizationsList] = useState<ProductCustomization[]>([
@@ -114,7 +116,8 @@ export default function BranchManagerMenuPage() {
         spicyLevel: item.spicyLevel || "Medium",
         status: bOverride ? (bOverride.isActive ? "ACTIVE" : "INACTIVE") : (item.status || "ACTIVE"),
         availableFrom: bOverride?.availableFrom || item.availableFrom || "10:00 AM",
-        availableUntil: bOverride?.availableUntil || item.availableUntil || "11:00 PM"
+        availableUntil: bOverride?.availableUntil || item.availableUntil || "11:00 PM",
+        availableDays: bOverride?.availableDays || item.availableDays || ALL_DAYS
       });
       setCustomizationsList(item.customizations || []);
     } else {
@@ -133,7 +136,8 @@ export default function BranchManagerMenuPage() {
         spicyLevel: "Medium",
         status: "ACTIVE",
         availableFrom: "10:00 AM",
-        availableUntil: "11:00 PM"
+        availableUntil: "11:00 PM",
+        availableDays: ALL_DAYS
       });
       setCustomizationsList([
         { id: "cust-1", name: "Extra Cheese", price: 30, isAvailable: true },
@@ -176,7 +180,8 @@ export default function BranchManagerMenuPage() {
         isAvailable: isActiveBool,
         available: isActiveBool,
         availableFrom: formData.availableFrom || "10:00 AM",
-        availableUntil: formData.availableUntil || "11:00 PM"
+        availableUntil: formData.availableUntil || "11:00 PM",
+        availableDays: formData.availableDays
       };
 
       if (imageFile) {
@@ -488,6 +493,11 @@ export default function BranchManagerMenuPage() {
                     </button>
                   </div>
                 </div>
+
+                <DaySelector
+                  selectedDays={formData.availableDays}
+                  onChange={(days) => setFormData({ ...formData, availableDays: days })}
+                />
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>

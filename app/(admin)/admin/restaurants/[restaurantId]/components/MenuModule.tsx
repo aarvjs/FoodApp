@@ -13,6 +13,7 @@ import { ComboManagementTab } from "@/components/combos/ComboManagementTab";
 import { CustomizationTab } from "@/components/customization/CustomizationTab";
 import { Package, Sliders } from "lucide-react";
 import { isEffectiveAvailable } from "@/lib/utils/availability";
+import { DaySelector, ALL_DAYS } from "@/components/ui/DaySelector";
 
 interface MenuModuleProps {
   restaurantId: string;
@@ -72,7 +73,8 @@ export function MenuModule({ restaurantId, branches, categories, menuItems, onRe
     customTags: "Chef Special",
     status: "ACTIVE" as "ACTIVE" | "INACTIVE",
     availableFrom: "10:00 AM",
-    availableUntil: "11:00 PM"
+    availableUntil: "11:00 PM",
+    availableDays: ALL_DAYS
   });
 
   const [customizationsList, setCustomizationsList] = useState<ProductCustomizationModel[]>([
@@ -111,7 +113,8 @@ export function MenuModule({ restaurantId, branches, categories, menuItems, onRe
         customTags: item.customTags?.join(", ") || "",
         status: bOverride ? (bOverride.isActive ? "ACTIVE" : "INACTIVE") : (item.status || "ACTIVE"),
         availableFrom: bOverride?.availableFrom || item.availableFrom || "10:00 AM",
-        availableUntil: bOverride?.availableUntil || item.availableUntil || "11:00 PM"
+        availableUntil: bOverride?.availableUntil || item.availableUntil || "11:00 PM",
+        availableDays: bOverride?.availableDays || item.availableDays || ALL_DAYS
       });
       setCustomizationsList(item.customizations || []);
     } else {
@@ -137,7 +140,8 @@ export function MenuModule({ restaurantId, branches, categories, menuItems, onRe
         customTags: "Chef Special",
         status: "ACTIVE",
         availableFrom: "10:00 AM",
-        availableUntil: "11:00 PM"
+        availableUntil: "11:00 PM",
+        availableDays: ALL_DAYS
       });
       setCustomizationsList([
         { id: "cust-1", name: "Extra Cheese", price: 30, isAvailable: true },
@@ -198,7 +202,8 @@ export function MenuModule({ restaurantId, branches, categories, menuItems, onRe
         isAvailable: isActiveBool,
         available: isActiveBool,
         availableFrom: formData.availableFrom || "10:00 AM",
-        availableUntil: formData.availableUntil || "11:00 PM"
+        availableUntil: formData.availableUntil || "11:00 PM",
+        availableDays: formData.availableDays
       };
 
       if (mainImageFile) {
@@ -219,7 +224,8 @@ export function MenuModule({ restaurantId, branches, categories, menuItems, onRe
       setIsModalOpen(false);
       onRefresh();
     } catch (err: any) {
-      alert("Failed to save menu item: " + err.message);
+      console.error(err);
+      setToastMessage(err.message || "Failed to save menu item");
     } finally {
       setSubmitting(false);
     }
@@ -250,7 +256,6 @@ export function MenuModule({ restaurantId, branches, categories, menuItems, onRe
         <Toast message={toastMessage} type="success" onClose={() => setToastMessage(null)} />
       )}
 
-      {/* Action Bar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
@@ -269,7 +274,6 @@ export function MenuModule({ restaurantId, branches, categories, menuItems, onRe
         )}
       </div>
 
-      {/* 3 Tabs Navigation Bar */}
       <div className="flex items-center gap-2 border-b border-slate-200/80 pb-3">
         <button
           onClick={() => setActiveTab("products")}
@@ -305,7 +309,6 @@ export function MenuModule({ restaurantId, branches, categories, menuItems, onRe
         </button>
       </div>
 
-      {/* Tab Content */}
       {activeTab === "combos" && (
         <ComboManagementTab
           combos={restCombos}
@@ -380,7 +383,6 @@ export function MenuModule({ restaurantId, branches, categories, menuItems, onRe
       </div>
       )}
 
-      {/* Large Food Item Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-2xl w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto shadow-2xl">
@@ -421,9 +423,6 @@ export function MenuModule({ restaurantId, branches, categories, menuItems, onRe
                         {c.name || "Category"}
                       </option>
                     ))}
-                    {categories.length === 0 && (
-                      <option value="cat-general" className="text-slate-900 bg-white font-bold">General Category</option>
-                    )}
                   </select>
                 </div>
               </div>
@@ -489,7 +488,6 @@ export function MenuModule({ restaurantId, branches, categories, menuItems, onRe
                 </div>
               </div>
 
-              {/* Branch Status & Time Scheduling */}
               <div className="p-3 bg-emerald-50/60 border border-emerald-200/80 rounded-2xl space-y-3">
                 <div className="flex items-center justify-between">
                   <label className="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
@@ -510,6 +508,11 @@ export function MenuModule({ restaurantId, branches, categories, menuItems, onRe
                     </button>
                   </div>
                 </div>
+
+                <DaySelector
+                  selectedDays={formData.availableDays}
+                  onChange={(days) => setFormData({ ...formData, availableDays: days })}
+                />
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>

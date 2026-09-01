@@ -285,6 +285,7 @@ export const addComboItem = async (
     isAvailable: isActiveState,
     availableFrom: availFrom,
     availableUntil: availUntil,
+    availableDays: data.availableDays || ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
     branchAvailability: initialBranchAvailability,
     isCustomisable: data.isCustomisable ?? (customGroups.length > 0 || isVariantEnabled ? true : false),
     customizationGroups: customGroups,
@@ -337,6 +338,7 @@ export const updateComboItem = async (
 
   if (updated.availableFrom !== undefined) updatePayload.availableFrom = updated.availableFrom;
   if (updated.availableUntil !== undefined) updatePayload.availableUntil = updated.availableUntil;
+  if (updated.availableDays !== undefined) updatePayload.availableDays = updated.availableDays;
 
   const targetBranchId = updated.branchId || (updated.branchIds && updated.branchIds[0]);
 
@@ -345,12 +347,16 @@ export const updateComboItem = async (
 
   if (targetBranchId) {
     const isActiveState = updated.isActive ?? updated.isAvailable ?? true;
-    updatePayload[`branchAvailability.${targetBranchId}`] = {
+    const branchAvailObj: any = {
       isActive: isActiveState,
       availableFrom: updated.availableFrom || "10:00 AM",
       availableUntil: updated.availableUntil || "11:00 PM",
       updatedAt: now
     };
+    if (updated.availableDays) {
+      branchAvailObj.availableDays = updated.availableDays;
+    }
+    updatePayload[`branchAvailability.${targetBranchId}`] = branchAvailObj;
   }
 
   if (updated.customizationGroups !== undefined) updatePayload.customizationGroups = updated.customizationGroups;

@@ -215,6 +215,9 @@ export function normalizeComboItemData(data: any): ComboItem {
     isAvailable: isActiveState,
     availableFrom: data.availableFrom || "10:00 AM",
     availableUntil: data.availableUntil || "11:00 PM",
+    availableDays: Array.isArray(data.availableDays) && data.availableDays.length > 0
+      ? data.availableDays
+      : ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
     branchAvailability: data.branchAvailability || {},
     isCustomisable: data.isCustomisable ?? (normalizedGroups.length > 0 || isVariantEnabled ? true : false),
     customizationGroups: normalizedGroups,
