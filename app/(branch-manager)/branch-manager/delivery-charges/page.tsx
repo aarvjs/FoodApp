@@ -43,6 +43,7 @@ export default function BranchManagerDeliveryChargesPage() {
   const [minDist, setMinDist] = useState<string>("");
   const [maxDist, setMaxDist] = useState<string>("");
   const [charge, setCharge] = useState<string>("");
+  const [freeDeliveryThreshold, setFreeDeliveryThreshold] = useState<string>("149");
   const [status, setStatus] = useState<"ACTIVE" | "INACTIVE">("ACTIVE");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [savingSlab, setSavingSlab] = useState<boolean>(false);
@@ -194,6 +195,7 @@ export default function BranchManagerDeliveryChargesPage() {
     setMinDist("");
     setMaxDist("");
     setCharge("");
+    setFreeDeliveryThreshold("149");
     setStatus("ACTIVE");
     setErrorMsg(null);
     setShowModal(true);
@@ -204,6 +206,7 @@ export default function BranchManagerDeliveryChargesPage() {
     setMinDist(slab.minDistanceKm.toString());
     setMaxDist(slab.maxDistanceKm.toString());
     setCharge(slab.deliveryCharge.toString());
+    setFreeDeliveryThreshold((slab.freeDeliveryThreshold ?? 149).toString());
     setStatus(slab.status);
     setErrorMsg(null);
     setShowModal(true);
@@ -221,6 +224,7 @@ export default function BranchManagerDeliveryChargesPage() {
     const minNum = parseFloat(minDist);
     const maxNum = parseFloat(maxDist);
     const chargeNum = parseFloat(charge);
+    const thresholdNum = parseFloat(freeDeliveryThreshold) || 0;
 
     const payload: Partial<DeliveryChargeSlab> = {
       restaurantId: assignedBranch.restaurantId,
@@ -228,6 +232,7 @@ export default function BranchManagerDeliveryChargesPage() {
       minDistanceKm: minNum,
       maxDistanceKm: maxNum,
       deliveryCharge: chargeNum,
+      freeDeliveryThreshold: thresholdNum,
       status: status
     };
 
@@ -566,6 +571,7 @@ export default function BranchManagerDeliveryChargesPage() {
                 <tr className="border-b border-slate-100 text-slate-400 font-bold uppercase text-[10px] tracking-wider">
                   <th className="py-3 px-4">Distance Range</th>
                   <th className="py-3 px-4">Delivery Charge</th>
+                  <th className="py-3 px-4">Free Delivery Above</th>
                   <th className="py-3 px-4">Status</th>
                   <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
@@ -578,6 +584,11 @@ export default function BranchManagerDeliveryChargesPage() {
                     </td>
                     <td className="py-3.5 px-4 font-bold text-amber-700 text-sm">
                       ₹{slab.deliveryCharge}
+                    </td>
+                    <td className="py-3.5 px-4 font-bold text-slate-700">
+                      {slab.freeDeliveryThreshold && slab.freeDeliveryThreshold > 0
+                        ? `Free above ₹${slab.freeDeliveryThreshold}`
+                        : "No Free Threshold"}
                     </td>
                     <td className="py-3.5 px-4">
                       <button
@@ -677,18 +688,32 @@ export default function BranchManagerDeliveryChargesPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Delivery Charge (₹)</label>
-                <input
-                  type="number"
-                  step="1"
-                  min="0"
-                  placeholder="e.g. 30"
-                  value={charge}
-                  onChange={(e) => setCharge(e.target.value)}
-                  required
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Delivery Charge (₹)</label>
+                  <input
+                    type="number"
+                    step="1"
+                    min="0"
+                    placeholder="e.g. 30"
+                    value={charge}
+                    onChange={(e) => setCharge(e.target.value)}
+                    required
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Free Delivery Above (₹)</label>
+                  <input
+                    type="number"
+                    step="1"
+                    min="0"
+                    placeholder="e.g. 199"
+                    value={freeDeliveryThreshold}
+                    onChange={(e) => setFreeDeliveryThreshold(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-emerald-700"
+                  />
+                </div>
               </div>
 
               <div>

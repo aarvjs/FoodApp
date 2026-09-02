@@ -71,9 +71,15 @@ export const orderService = {
     const now = new Date().toISOString();
     const orderNum = "ORD-" + Math.floor(100000 + Math.random() * 900000);
 
+    const isDelivery = (data.orderType || "DELIVERY").toUpperCase() === "DELIVERY";
     const subtotal = data.subtotal || data.items?.reduce((sum, item) => sum + item.price * item.quantity, 0) || 0;
+
+    if (isDelivery && subtotal < 149) {
+      throw new Error("Minimum order value for delivery is ₹149.");
+    }
+
     const tax = data.tax ?? Math.round(subtotal * 0.05);
-    const deliveryFee = data.deliveryFee ?? 40;
+    const deliveryFee = isDelivery ? (data.deliveryFee ?? 0) : 0;
     const totalAmount = data.totalAmount ?? (subtotal + tax + deliveryFee);
 
     const newOrder: Order = {

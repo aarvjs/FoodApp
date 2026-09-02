@@ -5,6 +5,7 @@ export interface DeliveryChargeSlab {
   minDistanceKm: number;
   maxDistanceKm: number;
   deliveryCharge: number;
+  freeDeliveryThreshold?: number;
   status: "ACTIVE" | "INACTIVE";
   createdAt: string;
   updatedAt?: string;
