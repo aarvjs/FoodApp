@@ -340,18 +340,27 @@ export default function SuperAdminOrdersPage() {
                     const totalItemP = unitP * (it.quantity || 1);
                     const addonsP = unitP > baseP ? unitP - baseP : 0;
 
+                    const pName = it.productName || it.name || it.comboName || 'Item';
+                    const qty = it.quantity || 1;
+
                     return (
-                      <div key={idx} className="space-y-1 mt-1.5 border-b border-slate-100 pb-1.5">
-                        <div className="flex justify-between font-semibold text-slate-800">
-                          <span className="flex items-center gap-1.5 flex-wrap">
-                            <span>{it.quantity}x {it.productName}</span>
-                            {(it.isCombo || it.comboName) && (
-                              <span className="px-1.5 py-0.5 bg-amber-100 text-amber-900 font-black text-[9px] rounded">
-                                COMBO{it.comboName ? `: ${it.comboName}` : ""}
-                              </span>
-                            )}
-                          </span>
-                          <span className="font-bold text-slate-900">₹{totalItemP}</span>
+                      <div key={idx} className="space-y-1 mt-1.5 border-b border-slate-100 pb-2 bg-slate-50/50 p-2.5 rounded-xl border">
+                        <div className="flex justify-between items-start font-semibold text-slate-800">
+                          <div>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-bold text-sm text-slate-900">{pName}</span>
+                              {(it.isCombo || it.comboName) && (
+                                <span className="px-1.5 py-0.5 bg-amber-100 text-amber-900 font-black text-[9px] rounded uppercase">
+                                  COMBO{it.comboName ? `: ${it.comboName}` : ""}
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-xs text-slate-600 space-y-0.5 mt-1">
+                              <p className="font-semibold text-slate-700">Quantity: <strong>{qty}</strong></p>
+                              <p className="text-slate-500">Price: <strong>₹{unitP} each</strong></p>
+                              <p className="font-extrabold text-emerald-700">Item Total: ₹{totalItemP}</p>
+                            </div>
+                          </div>
                         </div>
 
                         {(it.customizationSelections?.length > 0 || (it.customizations && it.customizations.length > 0)) && (

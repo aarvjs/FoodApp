@@ -27,6 +27,7 @@ export default function BranchManagerDeliveryChargesPage() {
 
   // GST / Tax Form State
   const [taxInput, setTaxInput] = useState<string>("");
+  const [gstNumberInput, setGstNumberInput] = useState<string>("");
   const [savingTax, setSavingTax] = useState<boolean>(false);
   const [taxSavedToast, setTaxSavedToast] = useState<boolean>(false);
   const [taxError, setTaxError] = useState<string | null>(null);
@@ -57,10 +58,12 @@ export default function BranchManagerDeliveryChargesPage() {
         setRadiusInput("");
       }
       setTaxInput((assignedBranch.taxPercentage ?? assignedBranch.gstPercentage ?? 0).toString());
+      setGstNumberInput(assignedBranch.gstNumber || "");
       setPackagingInput((assignedBranch.packagingCharge ?? assignedBranch.packagingCharges ?? 0).toString());
     } else {
       setRadiusInput("");
       setTaxInput("0");
+      setGstNumberInput("");
       setPackagingInput("0");
     }
     setRadiusError(null);
@@ -141,16 +144,23 @@ export default function BranchManagerDeliveryChargesPage() {
       return;
     }
 
+    const cleanGstNumber = gstNumberInput.trim().toUpperCase();
+    if (cleanGstNumber.length > 0 && cleanGstNumber.length < 10) {
+      setTaxError("Please enter a valid GST Number or leave it empty.");
+      return;
+    }
+
     setSavingTax(true);
     try {
       await updateBranch(assignedBranch.id, {
         taxPercentage: taxVal,
         gstPercentage: taxVal,
+        gstNumber: cleanGstNumber,
       });
       setTaxSavedToast(true);
       setTimeout(() => setTaxSavedToast(false), 3000);
     } catch (err: any) {
-      setTaxError("Failed to save GST / Tax percentage: " + err.message);
+      setTaxError("Failed to save GST / Tax settings: " + err.message);
     } finally {
       setSavingTax(false);
     }
@@ -433,37 +443,56 @@ export default function BranchManagerDeliveryChargesPage() {
           </div>
         )}
 
-        <form onSubmit={handleSaveTaxPercentage} className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3 max-w-lg">
-          <div className="flex-1">
-            <label className="block text-xs font-bold text-slate-700 mb-1">
-              GST / Tax Percentage (%)
-            </label>
-            <div className="relative">
-              <input
-                type="number"
-                step="0.1"
-                min="0"
-                max="100"
-                placeholder="Enter tax percentage (e.g. 0 or 5)"
-                value={taxInput}
-                onChange={(e) => setTaxInput(e.target.value)}
-                required
-                className="w-full p-2.5 pr-12 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
-              />
-              <span className="absolute right-3 top-2.5 font-bold text-slate-400 text-xs">
-                %
-              </span>
+        <form onSubmit={handleSaveTaxPercentage} className="space-y-4 max-w-xl">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3">
+            <div className="flex-1">
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                GST / Tax Percentage (%)
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  max="100"
+                  placeholder="Enter tax percentage (e.g. 0 or 5)"
+                  value={taxInput}
+                  onChange={(e) => setTaxInput(e.target.value)}
+                  required
+                  className="w-full p-2.5 pr-12 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                />
+                <span className="absolute right-3 top-2.5 font-bold text-slate-400 text-xs">
+                  %
+                </span>
+              </div>
             </div>
+
+            <button
+              type="submit"
+              disabled={savingTax || !assignedBranch}
+              className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-slate-950 font-bold text-xs rounded-xl shadow transition-all flex items-center justify-center gap-2 shrink-0"
+            >
+              {savingTax ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              Save GST / Tax
+            </button>
           </div>
 
-          <button
-            type="submit"
-            disabled={savingTax || !assignedBranch}
-            className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-slate-950 font-bold text-xs rounded-xl shadow transition-all flex items-center justify-center gap-2 shrink-0"
-          >
-            {savingTax ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            Save GST / Tax
-          </button>
+          <div className="pt-2 border-t border-slate-100">
+            <label className="block text-xs font-bold text-slate-700 mb-1">
+              GST Number
+            </label>
+            <input
+              type="text"
+              placeholder="Enter 15-character GSTIN (e.g. 22AAAAA0000A1Z5)"
+              value={gstNumberInput}
+              onChange={(e) => setGstNumberInput(e.target.value.toUpperCase())}
+              maxLength={15}
+              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500/20 uppercase font-mono"
+            />
+            <p className="text-[11px] text-slate-500 mt-1">
+              This branch GST number will be printed on customer bills, invoices, and order receipts.
+            </p>
+          </div>
         </form>
       </div>
 

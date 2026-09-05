@@ -50,21 +50,20 @@ export const OrderInvoiceView: React.FC<OrderInvoiceViewProps> = ({
     restaurant?.phone ||
     "+91 98765 43210";
 
-  const globalFssai = typeof window !== "undefined" ? localStorage.getItem("global_fssai_number") : "";
-
   const rawFssai =
+    order.branchFssaiNumber ||
     order.fssaiNumber ||
+    order.fssai ||
     branch?.fssaiNumber ||
     branch?.fssai ||
     restaurant?.fssaiNumber ||
-    globalFssai ||
+    restaurant?.fssai ||
     "";
-
 
   const fssaiNo = rawFssai
     ? rawFssai.toUpperCase().includes("FSSAI")
       ? rawFssai
-      : `FSSAI Lic. No. ${rawFssai}`
+      : `FSSAI Lic. No.: ${rawFssai}`
     : null;
 
   const isCancelled = order.status === "CANCELLED" || order.status === "REJECTED";
@@ -83,6 +82,22 @@ export const OrderInvoiceView: React.FC<OrderInvoiceViewProps> = ({
   const tax = Number(order.tax || 0);
   const taxPct = Number(order.taxPercentage || order.gstPercentage || 0);
   const grandTotal = Number(order.totalAmount || order.grandTotal || 0);
+
+  const rawGst =
+    order.branchGstNumber ||
+    order.gstNumber ||
+    order.gst ||
+    branch?.gstNumber ||
+    branch?.gst ||
+    restaurant?.gstNumber ||
+    restaurant?.gst ||
+    "";
+
+  const gstNo = rawGst
+    ? rawGst.toUpperCase().includes("GSTIN")
+      ? rawGst
+      : `GSTIN: ${rawGst}`
+    : null;
 
   return (
     <div
@@ -128,6 +143,11 @@ export const OrderInvoiceView: React.FC<OrderInvoiceViewProps> = ({
             </p>
           </div>
           <div className="sm:text-right">
+            {gstNo && (
+              <p className="font-mono text-[11px] font-bold text-slate-800">
+                {gstNo}
+              </p>
+            )}
             {fssaiNo && (
               <p className="font-mono text-[11px] font-bold text-slate-700">
                 {fssaiNo}
@@ -236,7 +256,7 @@ export const OrderInvoiceView: React.FC<OrderInvoiceViewProps> = ({
                   <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
                     <td className="px-3 py-3 space-y-1">
                       <div className="font-bold text-slate-900 text-xs flex items-center gap-1.5 flex-wrap">
-                        <span>{it.productName || it.name}</span>
+                        <span>{it.productName || it.name || it.comboName || 'Item'}</span>
                         {isComboItem && (
                           <span className="px-1.5 py-0.5 bg-amber-100 text-amber-900 font-black text-[9px] rounded uppercase">
                             COMBO{it.comboName ? `: ${it.comboName}` : ""}
@@ -247,6 +267,11 @@ export const OrderInvoiceView: React.FC<OrderInvoiceViewProps> = ({
                             Size: {variantSize}
                           </span>
                         )}
+                      </div>
+                      <div className="text-[11px] text-slate-600 font-medium space-y-0.5">
+                        <p>Quantity: <strong className="text-slate-900">{qty}</strong></p>
+                        <p>Price: <strong className="text-slate-900">{formatInvoiceCurrency(unitP)} each</strong></p>
+                        <p className="font-bold text-slate-900">Item Total: {formatInvoiceCurrency(totalItemP)}</p>
                       </div>
 
                       {/* Detailed Customizations & Add-ons breakdown */}

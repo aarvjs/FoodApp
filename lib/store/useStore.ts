@@ -329,7 +329,11 @@ export const useStore = create<AppState>()(
         return result;
       },
       deleteOrder: async (id) => {
-        const result = await orderService.deleteOrder(id);
+        const role = get().user?.role;
+        if (role === "branch_manager" || role === "branchManager") {
+          throw new Error("Permission denied: Branch Managers cannot delete orders.");
+        }
+        const result = await orderService.deleteOrder(id, role);
         if (result.success) {
           set((state) => ({
             orders: state.orders.filter((o) => o.id !== id)
@@ -339,7 +343,11 @@ export const useStore = create<AppState>()(
         }
       },
       bulkDeleteOrders: async (ids) => {
-        const result = await orderService.bulkDeleteOrders(ids);
+        const role = get().user?.role;
+        if (role === "branch_manager" || role === "branchManager") {
+          throw new Error("Permission denied: Branch Managers cannot delete orders.");
+        }
+        const result = await orderService.bulkDeleteOrders(ids, role);
         if (result.success && result.count > 0) {
           set((state) => ({
             orders: state.orders.filter((o) => !ids.includes(o.id))

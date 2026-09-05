@@ -243,49 +243,6 @@ export default function BranchManagerOrdersPage() {
         })}
       </div>
 
-      {/* Bulk History Deletion Action Bar */}
-      {eligibleHistoryOrders.length > 0 && (
-        <div className="bg-white border border-slate-200/90 rounded-2xl p-3.5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <label className="flex items-center gap-2 cursor-pointer select-none text-xs font-bold text-slate-700">
-              <input
-                type="checkbox"
-                checked={isAllHistorySelected}
-                onChange={toggleSelectAllHistory}
-                className="w-4 h-4 rounded border-slate-300 text-amber-600 focus:ring-amber-500"
-              />
-              Select All History Records ({eligibleHistoryOrders.length})
-            </label>
-            <span className="text-xs text-slate-400">|</span>
-            <span className="text-xs font-bold text-slate-500">
-              {selectedOrderIds.length} Selected
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {selectedOrderIds.length > 0 && (
-              <button
-                onClick={() => setShowBulkDeleteModal(true)}
-                className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow flex items-center gap-1.5 transition-all"
-              >
-                <Trash2 className="w-3.5 h-3.5" /> Delete Selected ({selectedOrderIds.length})
-              </button>
-            )}
-
-            <button
-              onClick={() => {
-                setSelectedOrderIds(eligibleHistoryOrders.map((o) => o.id));
-                setShowBulkDeleteModal(true);
-              }}
-              className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 flex items-center gap-1.5 transition-all"
-            >
-              <Trash2 className="w-3.5 h-3.5 text-slate-500" /> Delete All Branch History
-            </button>
-          </div>
-        </div>
-      )}
-
-
       {/* Order Cards List */}
       <div className="space-y-4">
         {filteredOrders.length === 0 ? (
@@ -405,15 +362,6 @@ export default function BranchManagerOrdersPage() {
                         <XCircle className="w-4 h-4" /> Cancel Order
                       </button>
                     )}
-
-                    {isCancelled && (
-                      <button
-                        onClick={() => setDeletingOrderId(ord.id)}
-                        className="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow flex items-center gap-1 transition-all"
-                      >
-                        <Trash2 className="w-4 h-4" /> Delete / Remove
-                      </button>
-                    )}
                   </div>
                 </div>
 
@@ -432,14 +380,16 @@ export default function BranchManagerOrdersPage() {
                           ? it.selectedVariant 
                           : it.selectedVariant?.name || it.size || null;
 
+                        const pName = it.productName || it.name || it.comboName || 'Item';
+
                         return (
-                          <div key={idx} className="space-y-1.5 mt-2 border-b border-slate-100 pb-2">
+                          <div key={idx} className="space-y-1.5 mt-2 border-b border-slate-100 pb-2 bg-slate-50/50 p-2.5 rounded-xl border">
                             <div className="flex justify-between items-start font-semibold text-slate-800">
                               <div>
                                 <div className="flex items-center gap-1.5 flex-wrap">
-                                  <span>{qty}x {it.productName || it.name || it.comboName || 'Item'}</span>
+                                  <span className="font-bold text-sm text-slate-900">{pName}</span>
                                   {(it.isCombo || it.comboName || it.itemType === 'combo') && (
-                                    <span className="px-1.5 py-0.5 bg-amber-100 text-amber-900 font-black text-[9px] rounded">
+                                    <span className="px-1.5 py-0.5 bg-amber-100 text-amber-900 font-black text-[9px] rounded uppercase">
                                       COMBO{it.comboName ? `: ${it.comboName}` : ""}
                                     </span>
                                   )}
@@ -449,9 +399,12 @@ export default function BranchManagerOrdersPage() {
                                     Variant: <span className="text-slate-900 font-bold">{variantStr}</span>
                                   </p>
                                 )}
-                                <p className="text-[10px] text-slate-400">Base: ₹{baseP} | Unit: ₹{unitP} x {qty}</p>
+                                <div className="text-xs text-slate-600 space-y-0.5 mt-1">
+                                  <p className="font-semibold text-slate-700">Quantity: <strong>{qty}</strong></p>
+                                  <p className="text-slate-500">Price: <strong>₹{unitP} each</strong></p>
+                                  <p className="font-extrabold text-amber-900">Item Total: ₹{totalItemP}</p>
+                                </div>
                               </div>
-                              <span className="font-extrabold text-slate-900 text-sm">₹{totalItemP}</span>
                             </div>
 
                             {/* Combo Options */}
@@ -722,87 +675,6 @@ export default function BranchManagerOrdersPage() {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* Branch Manager Delete Confirmation Modal */}
-      {deletingOrderId && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-sm w-full p-6 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Trash2 className="w-5 h-5 text-rose-600" /> Delete this cancelled order?
-              </h2>
-              <button onClick={() => setDeletingOrderId(null)} className="p-1 text-slate-400 hover:text-slate-600">
-                <XCircle className="w-5 h-5" />
-              </button>
-            </div>
-
-            <p className="text-xs text-slate-600">
-              This will remove the cancelled order from this panel. This action cannot be undone.
-            </p>
-
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => setDeletingOrderId(null)}
-                className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-200"
-              >
-                Keep Order
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmDelete}
-                disabled={submitting}
-                className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow flex items-center gap-1.5 disabled:opacity-50"
-              >
-                {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Bulk Delete Confirmation Modal */}
-      {showBulkDeleteModal && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-100 space-y-4">
-            <div className="flex items-center gap-3 text-rose-600">
-              <div className="w-10 h-10 rounded-full bg-rose-50 flex items-center justify-center">
-                <Trash2 className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="font-bold text-slate-900">Delete Branch Order History</h3>
-                <p className="text-xs text-slate-500 font-mono">
-                  {selectedOrderIds.length} Order History Records Selected
-                </p>
-              </div>
-            </div>
-
-            <p className="text-xs text-slate-600">
-              Are you sure you want to permanently delete these <strong>{selectedOrderIds.length}</strong> history records for {assignedBranch?.name || "your branch"}? This action cannot be undone. Active/ongoing orders will remain untouched.
-            </p>
-
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => setShowBulkDeleteModal(false)}
-                className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-200"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmBulkDelete}
-                disabled={submitting}
-                className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow flex items-center gap-1.5 disabled:opacity-50"
-              >
-                {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                Delete {selectedOrderIds.length} Records
-              </button>
-            </div>
           </div>
         </div>
       )}

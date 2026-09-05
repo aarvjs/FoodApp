@@ -16,6 +16,7 @@ import {
   Truck,
   Coins,
   Palette,
+  Bike,
   X
 } from "lucide-react";
 import { useStore } from "@/lib/store/useStore";
@@ -28,6 +29,7 @@ const adminNavItems = [
   { name: "Theme Settings", href: "/admin/theme-settings", icon: Palette },
   { name: "Orders", href: "/admin/orders", icon: ShoppingBag },
   { name: "Delivery Charges", href: "/admin/delivery-charges", icon: Truck },
+  { name: "Delivery Partners", href: "/admin/delivery-partners", icon: Bike },
   { name: "Reward Points", href: "/admin/reward-points", icon: Coins },
   { name: "Customers", href: "/admin/customers", icon: Users },
   { name: "Analytics", href: "/admin/analytics", icon: BarChart3 },

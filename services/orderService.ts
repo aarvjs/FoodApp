@@ -78,6 +78,20 @@ export const orderService = {
       throw new Error("Minimum order value for delivery is ₹149.");
     }
 
+    // Server-side Reward Points Validation:
+    // Reward eligibility MUST be calculated ONLY from the actual eligible MENU/PRODUCT subtotal.
+    const eligibleProductSubtotal = data.items?.reduce(
+      (sum: number, item: any) => sum + (item.price || item.unitPrice || 0) * (item.quantity || 1),
+      0
+    ) || subtotal;
+
+    if ((data as any).rewardPointsUsed && (data as any).rewardPointsUsed > 0) {
+      const rewardMinAmount = (data as any).rewardMinOrderAmount || 150;
+      if (eligibleProductSubtotal < rewardMinAmount) {
+        throw new Error(`Reward eligibility requires a minimum product subtotal of ₹${rewardMinAmount}. Current product subtotal is ₹${eligibleProductSubtotal}.`);
+      }
+    }
+
     const tax = data.tax ?? Math.round(subtotal * 0.05);
     const deliveryFee = isDelivery ? (data.deliveryFee ?? 0) : 0;
     const totalAmount = data.totalAmount ?? (subtotal + tax + deliveryFee);
@@ -253,7 +267,10 @@ export const orderService = {
     return { success: true };
   },
 
-  deleteOrder: async (id: string): Promise<{ success: boolean; message?: string }> => {
+  deleteOrder: async (id: string, role?: string): Promise<{ success: boolean; message?: string }> => {
+    if (role === "branch_manager" || role === "branchManager" || role === "customer") {
+      return { success: false, message: "Permission denied: Only Admin/Super Admin can delete orders." };
+    }
     const docRef = doc(db, COLLECTION_NAME, id);
     const snap = await getDoc(docRef);
     if (!snap.exists()) {
@@ -268,7 +285,10 @@ export const orderService = {
     return { success: true };
   },
 
-  bulkDeleteOrders: async (ids: string[]): Promise<{ success: boolean; count: number }> => {
+  bulkDeleteOrders: async (ids: string[], role?: string): Promise<{ success: boolean; count: number; message?: string }> => {
+    if (role === "branch_manager" || role === "branchManager" || role === "customer") {
+      return { success: false, count: 0, message: "Permission denied: Only Admin/Super Admin can delete orders." };
+    }
     if (!ids || ids.length === 0) return { success: true, count: 0 };
     let deletedCount = 0;
     for (const id of ids) {

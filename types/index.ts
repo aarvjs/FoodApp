@@ -124,6 +124,7 @@ export interface Branch {
   maxRadiusConfigured?: boolean;
   taxPercentage?: number;
   gstPercentage?: number;
+  gstNumber?: string;
   packagingCharge?: number;
   packagingCharges?: number;
   tableBookingEnabled?: boolean;
@@ -552,4 +553,41 @@ export interface AppNotification {
   type: "ORDER_UPDATE" | "TABLE_BOOKING" | "SYSTEM";
   read: boolean;
   createdAt: string;
+}
+
+export type RiderAccountStatus = "ACTIVE" | "PENDING_APPROVAL" | "BLOCKED" | "SUSPENDED";
+
+export interface Rider {
+  id: string;
+  name: string;
+  fullName?: string;
+  riderName?: string;
+  phone?: string;
+  phoneNumber?: string;
+  mobile?: string;
+  email?: string;
+  city?: string;
+  location?: string;
+  address?: string;
+  branchId?: string;
+  branchName?: string;
+  assignedBranchId?: string;
+  assignedBranchName?: string;
+  status: RiderAccountStatus;
+  accountStatus?: RiderAccountStatus;
+  riderStatus?: RiderAccountStatus;
+  isOnline?: boolean;
+  onlineStatus?: boolean;
+  availabilityStatus?: string;
+  kycStatus?: string;
+  kycVerified?: boolean;
+  isKycVerified?: boolean;
+  createdAt?: string;
+  registeredAt?: string;
+  joinedAt?: string;
+  vehicleType?: string;
+  vehicleNumber?: string;
+  profileImage?: string;
+  avatar?: string;
+  [key: string]: any;
 }
