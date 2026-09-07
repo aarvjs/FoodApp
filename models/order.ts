@@ -74,6 +74,11 @@ export interface OrderModel {
   cancellationReason?: string;
   cancellationNote?: string;
   cancelledAt?: string;
+  instructions?: string;
+  deliveryInstructions?: string;
+  customInstructions?: string;
+  branchFssaiNumber?: string;
+  branchGstNumber?: string;
   createdAt: string;
   updatedAt?: string;
 }

@@ -27,6 +27,7 @@ import { authService } from "@/services/authService";
 const branchManagerNavItems = [
   { name: "Dashboard", href: "/branch-manager/dashboard", icon: LayoutDashboard },
   { name: "Branch Orders", href: "/branch-manager/orders", icon: ShoppingBag },
+  { name: "Kitchen Orders", href: "/branch-manager/kitchen-orders", icon: UtensilsCrossed },
   { name: "Branch Menu", href: "/branch-manager/menu", icon: UtensilsCrossed },
   { name: "Categories", href: "/branch-manager/categories", icon: Layers },
   { name: "Tables Layout", href: "/branch-manager/tables", icon: Grid3X3 },
