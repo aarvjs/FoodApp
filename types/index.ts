@@ -182,6 +182,12 @@ export interface CustomizationOption {
   id: string;
   name: string;
   price: number;
+  basePrice?: number;
+  extraPrice?: number;
+  minQuantity?: number;
+  maxQuantity?: number;
+  quantityStep?: number;
+  allowQuantity?: boolean;
   isAvailable: boolean;
 }
 
@@ -231,6 +237,12 @@ export interface ComboVariantOption {
   id: string;
   name: string;
   additionalPrice: number;
+  basePrice?: number;
+  extraPrice?: number;
+  minQuantity?: number;
+  maxQuantity?: number;
+  quantityStep?: number;
+  allowQuantity?: boolean;
   isActive: boolean;
   displayOrder?: number;
 }

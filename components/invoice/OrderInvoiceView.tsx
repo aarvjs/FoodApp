@@ -284,14 +284,27 @@ export const OrderInvoiceView: React.FC<OrderInvoiceViewProps> = ({
                           </div>
 
                           {it.customizationSelections && it.customizationSelections.length > 0 ? (
-                            it.customizationSelections.map((c: any, cIdx: number) => (
-                              <div key={cIdx} className="flex justify-between">
-                                <span>• {c.groupName || "Option"}: <strong>{c.optionName || c.name}</strong></span>
-                                <span className="font-semibold text-amber-800">
-                                  {Number(c.additionalPrice) > 0 ? `+₹${c.additionalPrice}` : "Included"}
-                                </span>
-                              </div>
-                            ))
+                            it.customizationSelections.map((c: any, cIdx: number) => {
+                              const optQty = Number(c.quantity || 1);
+                              const uPrice = Number(c.unitPrice || c.extraPrice || c.basePrice || c.additionalPrice || c.price || 0);
+                              const subtotal = Number(c.subtotal || uPrice * optQty);
+
+                              return (
+                                <div key={cIdx} className="flex justify-between items-center text-[10px]">
+                                  <span>
+                                    • {c.groupName || "Option"}: <strong>{c.optionName || c.name}</strong>
+                                    {optQty > 1 || uPrice > 0 ? (
+                                      <span className="ml-1 text-slate-700 font-semibold">
+                                        × {optQty} @ {formatInvoiceCurrency(uPrice)}
+                                      </span>
+                                    ) : ""}
+                                  </span>
+                                  <span className="font-semibold text-amber-900">
+                                    {subtotal > 0 ? `= ${formatInvoiceCurrency(subtotal)}` : "Included"}
+                                  </span>
+                                </div>
+                              );
+                            })
                           ) : (
                             it.customizations.map((cStr: string, cIdx: number) => (
                               <div key={cIdx}>• {cStr}</div>

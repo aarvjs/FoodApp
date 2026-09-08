@@ -61,12 +61,6 @@ export const KitchenOrderTicketView: React.FC<KitchenOrderTicketViewProps> = ({
           <span>Customer:</span>
           <span className="uppercase">{customerName}</span>
         </div>
-        {customerPhone && (
-          <div className="flex justify-between items-center text-slate-700">
-            <span>Phone:</span>
-            <span>{customerPhone}</span>
-          </div>
-        )}
         <div className="pt-1 flex justify-between items-center">
           <span className="font-bold">ORDER TYPE:</span>
           <span
@@ -158,12 +152,16 @@ export const KitchenOrderTicketView: React.FC<KitchenOrderTicketViewProps> = ({
                     <p className="font-black uppercase text-[10.5px] text-slate-800">
                       Customizations:
                     </p>
-                    {customizations.map((c: any, cIdx: number) => (
-                      <p key={cIdx} className="font-bold">
-                        - {c.groupName || "Option"}:{" "}
-                        <span className="font-black">{c.optionName || c.name}</span>
-                      </p>
-                    ))}
+                    {customizations.map((c: any, cIdx: number) => {
+                      const optQty = Number(c.quantity || 1);
+                      return (
+                        <p key={cIdx} className="font-bold">
+                          - {c.groupName || "Option"}:{" "}
+                          <span className="font-black">{c.optionName || c.name}</span>
+                          <span className="ml-1 text-slate-900 font-black">× {optQty}</span>
+                        </p>
+                      );
+                    })}
                   </div>
                 )}
 
