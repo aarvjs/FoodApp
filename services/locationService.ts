@@ -56,7 +56,7 @@ export const locationService = {
         }
       }));
     } catch (e) {
-      console.warn("locationService.searchGooglePlaces error:", e);
+      console.warn("locationService.searchGooglePlaces API route error:", e);
       return [];
     }
   },
@@ -73,7 +73,7 @@ export const locationService = {
 
       const data = await res.json();
       if (data.error) {
-        console.warn("getGooglePlaceDetails error:", data.error);
+        console.warn("getGooglePlaceDetails API route error:", data.error);
         return null;
       }
       return data;
@@ -84,80 +84,10 @@ export const locationService = {
   },
 
   /**
-   * Primary location search: Uses Google Places first, with fallback to OpenStreetMap Nominatim
+   * Primary location search: Exclusively uses Google Places Autocomplete API
    */
   searchLocations: async (query: string): Promise<LocationSuggestion[]> => {
     if (!query || query.trim().length < 2) return [];
-
-    // 1. Try Google Places Autocomplete
-    const googleResults = await locationService.searchGooglePlaces(query);
-    if (googleResults.length > 0) {
-      return googleResults;
-    }
-
-    // 2. Fallback to OpenStreetMap Nominatim if Google Places has no results or fails
-    try {
-      const encodedQuery = encodeURIComponent(query.trim());
-      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodedQuery}&addressdetails=1&limit=10&countrycodes=in`;
-
-      const response = await fetch(url, {
-        headers: {
-          "Accept-Language": "en",
-          "User-Agent": "FoodOrderingAdmin/1.0"
-        }
-      });
-
-      if (!response.ok) return [];
-
-      const data = await response.json();
-      if (!Array.isArray(data)) return [];
-
-      return data.map((item: any) => {
-        const addr = item.address || {};
-
-        const primaryName =
-          addr.suburb ||
-          addr.neighbourhood ||
-          addr.quarter ||
-          addr.residential ||
-          addr.road ||
-          addr.village ||
-          addr.town ||
-          addr.city ||
-          item.name ||
-          query;
-
-        const secondaryParts = [
-          addr.city || addr.town || addr.municipality || addr.county || addr.state_district,
-          addr.state,
-          addr.country
-        ].filter((val, index, self) => Boolean(val) && self.indexOf(val) === index && val !== primaryName);
-
-        const secondaryAddress = secondaryParts.join(", ");
-
-        return {
-          primaryName,
-          secondaryAddress: secondaryAddress || primaryName,
-          formattedAddress: item.display_name || `${primaryName}, ${secondaryAddress}`,
-          latitude: parseFloat(item.lat),
-          longitude: parseFloat(item.lon),
-          source: "osm" as const,
-          locationComponents: {
-            country: addr.country || "",
-            state: addr.state || "",
-            district: addr.county || addr.state_district || addr.district || "",
-            city: addr.city || addr.town || addr.municipality || addr.city_district || "",
-            subLocality: addr.suburb || addr.neighbourhood || addr.quarter || addr.residential || "",
-            locality: addr.locality || addr.suburb || addr.village || "",
-            village: addr.village || addr.hamlet || "",
-            street: addr.road || addr.pedestrian || "",
-            postalCode: addr.postcode || ""
-          }
-        };
-      });
-    } catch (error) {
-      console.warn("locationService OSM fallback error:", error);
-      return [];
-    }
+    return await locationService.searchGooglePlaces(query);
   }
 };

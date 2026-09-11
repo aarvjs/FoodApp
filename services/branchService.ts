@@ -65,8 +65,13 @@ export const branchService = {
     const docRef = doc(collection(db, COLLECTION_NAME));
     const now = new Date().toISOString();
     const locSource = data.locationSource || data.location?.source || data.location?.locationSource || "search";
-    const lat = Number(data.latitude !== undefined ? data.latitude : (data.location?.latitude || 0));
-    const lng = Number(data.longitude !== undefined ? data.longitude : (data.location?.longitude || 0));
+    const latFromData = data.latitude !== undefined && data.latitude !== null && !isNaN(Number(data.latitude)) ? Number(data.latitude) : 0;
+    const lngFromData = data.longitude !== undefined && data.longitude !== null && !isNaN(Number(data.longitude)) ? Number(data.longitude) : 0;
+    const latFromLoc = data.location?.latitude !== undefined && data.location?.latitude !== null && !isNaN(Number(data.location.latitude)) ? Number(data.location.latitude) : 0;
+    const lngFromLoc = data.location?.longitude !== undefined && data.location?.longitude !== null && !isNaN(Number(data.location.longitude)) ? Number(data.location.longitude) : 0;
+
+    const lat = latFromData !== 0 ? latFromData : (latFromLoc !== 0 ? latFromLoc : 0);
+    const lng = lngFromData !== 0 ? lngFromData : (lngFromLoc !== 0 ? lngFromLoc : 0);
     const addrStr = data.location?.address || data.location?.formattedAddress || data.address || "Main Street";
 
     const locationObj = {
@@ -143,8 +148,13 @@ export const branchService = {
 
     if (updated.location) {
       const addrStr = updated.location.address || updated.location.formattedAddress || "Branch Address";
-      const latVal = Number(updated.location.latitude);
-      const lngVal = Number(updated.location.longitude);
+      const latFromData = updated.latitude !== undefined && updated.latitude !== null && !isNaN(Number(updated.latitude)) ? Number(updated.latitude) : 0;
+      const lngFromData = updated.longitude !== undefined && updated.longitude !== null && !isNaN(Number(updated.longitude)) ? Number(updated.longitude) : 0;
+      const latFromLoc = updated.location?.latitude !== undefined && updated.location?.latitude !== null && !isNaN(Number(updated.location.latitude)) ? Number(updated.location.latitude) : 0;
+      const lngFromLoc = updated.location?.longitude !== undefined && updated.location?.longitude !== null && !isNaN(Number(updated.location.longitude)) ? Number(updated.location.longitude) : 0;
+
+      const latVal = latFromData !== 0 ? latFromData : (latFromLoc !== 0 ? latFromLoc : 0);
+      const lngVal = lngFromData !== 0 ? lngFromData : (lngFromLoc !== 0 ? lngFromLoc : 0);
 
       payload.address = addrStr;
       payload.formattedAddress = addrStr;

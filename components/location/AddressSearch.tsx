@@ -27,6 +27,10 @@ export const AddressSearch: React.FC<AddressSearchProps> = ({
   const [selectedLocation, setSelectedLocation] = useState<AddressLocation | null>(value || null);
   const [gpsError, setGpsError] = useState<string | null>(null);
 
+
+
+
+
   // Dedicated string inputs for Latitude and Longitude for manual coordinate editing
   const [latInput, setLatInput] = useState<string>(
     value?.latitude !== undefined ? String(value.latitude) : ""
@@ -101,9 +105,14 @@ export const AddressSearch: React.FC<AddressSearchProps> = ({
       if (item.placeId) {
         const details = await locationService.getGooglePlaceDetails(item.placeId);
         if (details) {
-          if (details.latitude) finalLat = details.latitude;
-          if (details.longitude) finalLng = details.longitude;
+          if (details.latitude !== undefined && details.latitude !== null && !isNaN(Number(details.latitude))) {
+            finalLat = Number(details.latitude);
+          }
+          if (details.longitude !== undefined && details.longitude !== null && !isNaN(Number(details.longitude))) {
+            finalLng = Number(details.longitude);
+          }
           if (details.formattedAddress) formattedAddr = details.formattedAddress;
+
           if (details.city) city = details.city;
           if (details.state) state = details.state;
           if (details.pincode || details.postalCode) pincode = details.pincode || details.postalCode;
@@ -353,8 +362,25 @@ export const AddressSearch: React.FC<AddressSearchProps> = ({
               type="text"
               value={query}
               onChange={(e) => {
-                setQuery(e.target.value);
+                const text = e.target.value;
+                setQuery(text);
                 setIsOpen(true);
+                const updatedLoc: AddressLocation = {
+                  address: text,
+                  formattedAddress: text,
+                  latitude: selectedLocation?.latitude ?? value?.latitude ?? 0,
+                  longitude: selectedLocation?.longitude ?? value?.longitude ?? 0,
+                  city: selectedLocation?.city || value?.city || "",
+                  state: selectedLocation?.state || value?.state || "",
+                  pincode: selectedLocation?.pincode || value?.pincode || "",
+                  country: selectedLocation?.country || value?.country || "",
+                  district: selectedLocation?.district || value?.district || "",
+                  subLocality: selectedLocation?.subLocality || value?.subLocality || "",
+                  source: "search",
+                  locationSource: "search"
+                };
+                setSelectedLocation(updatedLoc);
+                onChange(updatedLoc);
               }}
               onFocus={() => setIsOpen(true)}
               placeholder={placeholder}
@@ -368,38 +394,42 @@ export const AddressSearch: React.FC<AddressSearchProps> = ({
 
             {/* Suggestion Dropdown */}
             {isOpen && (suggestions.length > 0 || isLoading) && (
-              <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-64 overflow-y-auto divide-y divide-slate-100 animate-in fade-in duration-150">
+              <div className="absolute z-[9999] w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-64 overflow-y-auto divide-y divide-slate-100 animate-in fade-in duration-150">
                 {isLoading && suggestions.length === 0 ? (
                   <div className="p-3 text-center text-xs text-slate-500 flex items-center justify-center gap-2">
                     <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
                     Searching Google Maps...
                   </div>
                 ) : (
-                  suggestions.map((item, idx) => (
-                    <button
-                      key={item.placeId || `${item.formattedAddress}-${idx}`}
-                      type="button"
-                      onClick={() => handleSelectSuggestion(item)}
-                      className="w-full text-left p-2.5 hover:bg-emerald-50/80 transition-colors flex items-start gap-2.5 text-xs group"
-                    >
-                      <MapPin className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0 group-hover:scale-110 transition-transform" />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-1">
-                          <p className="font-semibold text-slate-800 line-clamp-1">
-                            {item.primaryName}
-                          </p>
-                          {item.source === "google" && (
+                  <>
+                    {suggestions.map((item, idx) => (
+                      <button
+                        key={item.placeId || `${item.formattedAddress}-${idx}`}
+                        type="button"
+                        onClick={() => handleSelectSuggestion(item)}
+                        className="w-full text-left p-2.5 hover:bg-emerald-50/80 transition-colors flex items-start gap-2.5 text-xs group"
+                      >
+                        <MapPin className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0 group-hover:scale-110 transition-transform" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-1">
+                            <p className="font-semibold text-slate-800 line-clamp-1">
+                              {item.primaryName}
+                            </p>
                             <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded border border-blue-100 shrink-0">
                               Google Maps
                             </span>
-                          )}
+                          </div>
+                          <p className="text-slate-500 line-clamp-1 text-[11px] mt-0.5">
+                            {item.formattedAddress || item.secondaryAddress}
+                          </p>
                         </div>
-                        <p className="text-slate-500 line-clamp-1 text-[11px] mt-0.5">
-                          {item.formattedAddress || item.secondaryAddress}
-                        </p>
-                      </div>
-                    </button>
-                  ))
+                      </button>
+                    ))}
+                    <div className="p-2 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-1 text-[10px] text-slate-400 font-medium select-none">
+                      <span>Powered by</span>
+                      <span className="font-bold text-slate-600">Google</span>
+                    </div>
+                  </>
                 )}
               </div>
             )}
