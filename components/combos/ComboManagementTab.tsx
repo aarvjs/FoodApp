@@ -92,11 +92,8 @@ export const ComboManagementTab: React.FC<ComboManagementTabProps> = ({
   };
 
   const handleCardClick = (combo: Combo) => {
-    const targetRestId = restaurantId || combo.restaurantId;
     if (isBranchManager) {
       router.push(`/branch-manager/combos/${combo.id}`);
-    } else if (targetRestId && targetRestId !== "all") {
-      router.push(`/admin/restaurants/${targetRestId}/combos/${combo.id}`);
     } else {
       router.push(`/admin/combos/${combo.id}`);
     }

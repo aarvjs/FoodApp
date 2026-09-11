@@ -64,11 +64,10 @@ export const KitchenOrderTicketView: React.FC<KitchenOrderTicketViewProps> = ({
         <div className="pt-1 flex justify-between items-center">
           <span className="font-bold">ORDER TYPE:</span>
           <span
-            className={`px-2.5 py-1 text-xs font-black rounded uppercase border-2 ${
-              isTakeAway
+            className={`px-2.5 py-1 text-xs font-black rounded uppercase border-2 ${isTakeAway
                 ? "bg-purple-100 text-purple-950 border-purple-950"
                 : "bg-blue-100 text-blue-950 border-blue-950"
-            }`}
+              }`}
           >
             {isTakeAway ? "🛍️ TAKE AWAY / SELF PICKUP" : "🛵 DELIVERY ORDER"}
           </span>
@@ -94,9 +93,9 @@ export const KitchenOrderTicketView: React.FC<KitchenOrderTicketViewProps> = ({
               typeof it.selectedVariant === "string"
                 ? it.selectedVariant
                 : it.selectedVariant?.name ||
-                  it.selectedSize ||
-                  it.size ||
-                  null;
+                it.selectedSize ||
+                it.size ||
+                null;
 
             const customizations = it.customizationSelections || [];
             const customStrings = it.customizations || [];
