@@ -1,13 +1,15 @@
 "use client";
 
 import React, { useState } from "react";
-import { ShoppingBag, Eye, Clock, CheckCircle2, XCircle, ChevronRight, Check, Trash2, Loader2 } from "lucide-react";
+import { ShoppingBag, Eye, Clock, CheckCircle2, XCircle, ChevronRight, Check, Trash2, Loader2, Printer } from "lucide-react";
 import { OrderModel, OrderStatusType } from "@/models/order";
 import { orderRepository } from "@/repositories/orderRepository";
 import { SlideDrawer } from "@/components/ui/SlideDrawer";
 import { Toast } from "@/components/ui/Toast";
 import { useStore } from "@/lib/store/useStore";
 import { OrderStatus } from "@/types";
+import { KitchenTicketModal } from "@/components/kitchen/KitchenTicketModal";
+import { formatOrderRelativeDate } from "@/lib/utils/invoiceUtils";
 
 interface OrdersModuleProps {
   orders: OrderModel[];
@@ -26,6 +28,10 @@ export function OrdersModule({ orders: initialOrders, onRefresh, restaurantId }:
   const [activeFilter, setActiveFilter] = useState<string>("ALL");
   const [submitting, setSubmitting] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // KOT Modal State
+  const [kotModalOrder, setKotModalOrder] = useState<any | null>(null);
+  const [autoPrintKot, setAutoPrintKot] = useState<boolean>(false);
 
   // Accept Order Modal state
   const [acceptingOrderId, setAcceptingOrderId] = useState<string | null>(null);
@@ -269,10 +275,16 @@ export function OrdersModule({ orders: initialOrders, onRefresh, restaurantId }:
                 const nextSt = ord.status === "CANCELLED" ? null : getNextStatus(ord.status);
                 const isCancellable = ord.status !== "DELIVERED" && ord.status !== "CANCELLED" && ord.status !== "REJECTED";
                 const isCancelled = ord.status === "CANCELLED";
+                const relativeDate = formatOrderRelativeDate(ord.createdAt);
 
                 return (
                   <tr key={ord.id} className="hover:bg-slate-50">
-                    <td className="px-4 py-3 font-mono font-bold text-slate-900">{ord.orderNumber || ord.id}</td>
+                    <td className="px-4 py-3 font-mono font-bold text-slate-900">
+                      <div>{ord.orderNumber || ord.id}</div>
+                      <div className="text-[10px] text-slate-500 font-semibold flex items-center gap-1 mt-0.5">
+                        <Clock className="w-3 h-3 text-amber-600" /> {relativeDate.label}, {relativeDate.time}
+                      </div>
+                    </td>
                     <td className="px-4 py-3 font-bold text-slate-800">
                       <div>{ord.customerName}</div>
                       <div className="text-[10px] text-slate-400 font-normal">{ord.customerPhone}</div>
@@ -287,6 +299,18 @@ export function OrdersModule({ orders: initialOrders, onRefresh, restaurantId }:
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-1.5">
+                        {/* Direct KOT Print Button */}
+                        <button
+                          onClick={() => {
+                            setKotModalOrder(ord);
+                            setAutoPrintKot(true);
+                          }}
+                          className="px-2.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-[11px] rounded-xl shadow flex items-center gap-1 transition-all"
+                          title="Direct Print Kitchen Order Ticket (KOT)"
+                        >
+                          <Printer className="w-3.5 h-3.5" /> KOT
+                        </button>
+
                         {/* PENDING: Accept vs Reject buttons */}
                         {ord.status === "PENDING" && (
                           <>
@@ -760,6 +784,19 @@ export function OrdersModule({ orders: initialOrders, onRefresh, restaurantId }:
           </div>
         )}
       </SlideDrawer>
+
+      {/* Kitchen Ticket Modal */}
+      {kotModalOrder && (
+        <KitchenTicketModal
+          order={kotModalOrder}
+          branch={branches.find((b) => b.id === kotModalOrder.branchId)}
+          autoPrint={autoPrintKot}
+          onClose={() => {
+            setKotModalOrder(null);
+            setAutoPrintKot(false);
+          }}
+        />
+      )}
     </div>
   );
 }

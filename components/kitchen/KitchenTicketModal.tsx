@@ -9,12 +9,14 @@ interface KitchenTicketModalProps {
   order: any;
   branch?: any;
   onClose: () => void;
+  autoPrint?: boolean;
 }
 
 export const KitchenTicketModal: React.FC<KitchenTicketModalProps> = ({
   order,
   branch,
   onClose,
+  autoPrint = false,
 }) => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -22,6 +24,15 @@ export const KitchenTicketModal: React.FC<KitchenTicketModalProps> = ({
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (mounted && autoPrint && order) {
+      const timer = setTimeout(() => {
+        handlePrint();
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [mounted, autoPrint, order]);
 
   if (!order || !mounted) return null;
 

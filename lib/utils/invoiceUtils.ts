@@ -82,3 +82,37 @@ export const formatInvoiceTime = (dateString?: string | number | Date): string =
 export const formatInvoiceDateTime = (dateString?: string | number | Date): string => {
   return `${formatInvoiceDate(dateString)}, ${formatInvoiceTime(dateString)}`;
 };
+
+/**
+ * Format relative date & time for orders (e.g., "Today, 08:42 PM", "Yesterday, 02:15 PM", "18 Sep 2026, 11:30 AM")
+ */
+export const formatOrderRelativeDate = (
+  dateInput?: string | number | Date
+): { label: string; time: string; fullDateTime: string } => {
+  if (!dateInput) return { label: "N/A", time: "", fullDateTime: "N/A" };
+  const d = new Date(dateInput);
+  if (isNaN(d.getTime())) return { label: "N/A", time: "", fullDateTime: "N/A" };
+
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const orderDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
+  const diffDays = Math.round((today.getTime() - orderDay.getTime()) / (1000 * 3600 * 24));
+
+  let label = "";
+  if (diffDays === 0) {
+    label = "Today";
+  } else if (diffDays === 1) {
+    label = "Yesterday";
+  } else {
+    label = d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  }
+
+  const time = d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
+
+  return {
+    label,
+    time,
+    fullDateTime: `${label}, ${time}`,
+  };
+};

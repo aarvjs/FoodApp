@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import { ShoppingBag, Search, Filter, Clock, CheckCircle2, ChevronRight, Truck, PackageCheck, AlertCircle, XCircle, Trash2, Loader2, FileText, Printer } from "lucide-react";
+import { ShoppingBag, Search, Filter, Clock, CheckCircle2, ChevronRight, Truck, PackageCheck, AlertCircle, XCircle, Trash2, Loader2, FileText, Printer, UtensilsCrossed } from "lucide-react";
 import { useStore } from "@/lib/store/useStore";
 import { OrderStatus } from "@/types";
 import { OrderInvoiceModal } from "@/components/invoice/OrderInvoiceModal";
+import { KitchenTicketModal } from "@/components/kitchen/KitchenTicketModal";
+import { formatOrderRelativeDate } from "@/lib/utils/invoiceUtils";
 
 const statusSteps: OrderStatus[] = ["PENDING", "ACCEPTED", "PREPARING", "READY", "OUT_FOR_DELIVERY", "DELIVERED", "REJECTED", "CANCELLED"];
 
@@ -35,6 +37,10 @@ export default function SuperAdminOrdersPage() {
 
   // Invoice Modal State
   const [invoiceModalOrder, setInvoiceModalOrder] = useState<any | null>(null);
+
+  // KOT Modal State
+  const [kotModalOrder, setKotModalOrder] = useState<any | null>(null);
+  const [autoPrintKot, setAutoPrintKot] = useState<boolean>(false);
 
   // Admin Cancel Modal State
   const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(null);
@@ -238,6 +244,7 @@ export default function SuperAdminOrdersPage() {
           const isCancellable = ord.status !== "DELIVERED" && ord.status !== "CANCELLED" && ord.status !== "REJECTED";
           const isHistoryOrder = ord.status === "DELIVERED" || ord.status === "CANCELLED" || ord.status === "REJECTED";
           const isSelected = selectedOrderIds.includes(ord.id);
+          const relativeDate = formatOrderRelativeDate(ord.createdAt);
 
           return (
             <div
@@ -278,9 +285,28 @@ export default function SuperAdminOrdersPage() {
 
 
                 <div className="flex flex-wrap items-center gap-2">
+                  {/* Order Date/Time on Right Side */}
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 text-slate-800 rounded-xl text-xs font-bold border border-slate-200 mr-1">
+                    <Clock className="w-3.5 h-3.5 text-amber-600" />
+                    <span>{relativeDate.label}</span>
+                    <span className="text-[11px] font-mono text-slate-500">@ {relativeDate.time}</span>
+                  </span>
+
+                  {/* Direct KOT Print Button */}
+                  <button
+                    onClick={() => {
+                      setKotModalOrder(ord);
+                      setAutoPrintKot(true);
+                    }}
+                    className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl flex items-center gap-1 transition-all shadow-xs"
+                    title="Direct Print Kitchen Order Ticket (KOT)"
+                  >
+                    <Printer className="w-3.5 h-3.5" /> Print KOT
+                  </button>
+
                   <button
                     onClick={() => setInvoiceModalOrder(ord)}
-                    className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl flex items-center gap-1 transition-all shadow-xs"
+                    className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl flex items-center gap-1 transition-all shadow-xs border border-slate-200"
                   >
                     <FileText className="w-3.5 h-3.5" /> View Bill
                   </button>
@@ -594,6 +620,19 @@ export default function SuperAdminOrdersPage() {
           order={invoiceModalOrder}
           branch={branches.find((b) => b.id === invoiceModalOrder.branchId)}
           onClose={() => setInvoiceModalOrder(null)}
+        />
+      )}
+
+      {/* Kitchen Ticket Modal */}
+      {kotModalOrder && (
+        <KitchenTicketModal
+          order={kotModalOrder}
+          branch={branches.find((b) => b.id === kotModalOrder.branchId)}
+          autoPrint={autoPrintKot}
+          onClose={() => {
+            setKotModalOrder(null);
+            setAutoPrintKot(false);
+          }}
         />
       )}
     </div>

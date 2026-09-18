@@ -17,7 +17,7 @@ import {
 import { useStore } from "@/lib/store/useStore";
 import { KitchenTicketModal } from "@/components/kitchen/KitchenTicketModal";
 import { OrderInvoiceModal } from "@/components/invoice/OrderInvoiceModal";
-import { formatInvoiceDate, formatInvoiceTime } from "@/lib/utils/invoiceUtils";
+import { formatInvoiceDate, formatInvoiceTime, formatOrderRelativeDate } from "@/lib/utils/invoiceUtils";
 
 export default function BranchManagerKitchenOrdersPage() {
   const user = useStore((state) => state.user);
@@ -176,8 +176,7 @@ export default function BranchManagerKitchenOrdersPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {finalOrders.map((ord) => {
             const orderNum = ord.orderNumber || ord.id;
-            const orderDate = formatInvoiceDate(ord.createdAt);
-            const orderTime = formatInvoiceTime(ord.createdAt);
+            const relativeDate = formatOrderRelativeDate(ord.createdAt);
             const isTakeAway = (ord.orderType || "").toUpperCase().includes("TAKE");
             const nextAction = getNextStatus(ord.status);
             const isCancelled = ord.status === "CANCELLED" || ord.status === "REJECTED";
@@ -214,7 +213,7 @@ export default function BranchManagerKitchenOrdersPage() {
                       {ord.branchName || assignedBranch?.name || "Branch"}
                     </span>
                     <span className="font-mono text-[11px] text-slate-400">
-                      {orderDate} @ {orderTime}
+                      {relativeDate.label} @ {relativeDate.time}
                     </span>
                   </div>
 

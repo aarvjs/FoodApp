@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import { ShoppingBag, Clock, CheckCircle2, Truck, PackageCheck, AlertCircle, ChevronRight, XCircle, Check, Trash2, Loader2, MessageSquare, FileText, Printer } from "lucide-react";
+import { ShoppingBag, Clock, CheckCircle2, Truck, PackageCheck, AlertCircle, ChevronRight, XCircle, Check, Trash2, Loader2, MessageSquare, FileText, Printer, UtensilsCrossed } from "lucide-react";
 import { useStore } from "@/lib/store/useStore";
 import { OrderStatus } from "@/types";
 import { OrderInvoiceModal } from "@/components/invoice/OrderInvoiceModal";
+import { KitchenTicketModal } from "@/components/kitchen/KitchenTicketModal";
+import { formatOrderRelativeDate } from "@/lib/utils/invoiceUtils";
 
 const tabs: { label: string; value: string }[] = [
   { label: "All Orders", value: "ALL" },
@@ -50,6 +52,10 @@ export default function BranchManagerOrdersPage() {
 
   // Invoice Modal State
   const [invoiceModalOrder, setInvoiceModalOrder] = useState<any | null>(null);
+
+  // KOT Modal State
+  const [kotModalOrder, setKotModalOrder] = useState<any | null>(null);
+  const [autoPrintKot, setAutoPrintKot] = useState<boolean>(false);
 
   // Accept Order Modal
   const [acceptingOrderId, setAcceptingOrderId] = useState<string | null>(null);
@@ -256,6 +262,7 @@ export default function BranchManagerOrdersPage() {
             const isCancellable = ord.status !== "DELIVERED" && ord.status !== "CANCELLED" && ord.status !== "REJECTED";
             const isHistoryOrder = ord.status === "DELIVERED" || ord.status === "CANCELLED" || ord.status === "REJECTED";
             const isSelected = selectedOrderIds.includes(ord.id);
+            const relativeDate = formatOrderRelativeDate(ord.createdAt);
 
             return (
               <div
@@ -306,9 +313,28 @@ export default function BranchManagerOrdersPage() {
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
+                    {/* Order Date/Time on Right Side */}
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 text-slate-800 rounded-xl text-xs font-bold border border-slate-200 mr-1">
+                      <Clock className="w-3.5 h-3.5 text-amber-600" />
+                      <span>{relativeDate.label}</span>
+                      <span className="text-[11px] font-mono text-slate-500">@ {relativeDate.time}</span>
+                    </span>
+
+                    {/* Direct KOT Print Button */}
+                    <button
+                      onClick={() => {
+                        setKotModalOrder(ord);
+                        setAutoPrintKot(true);
+                      }}
+                      className="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl flex items-center gap-1.5 transition-all shadow-xs"
+                      title="Direct Print Kitchen Order Ticket (KOT)"
+                    >
+                      <Printer className="w-4 h-4" /> Print KOT
+                    </button>
+
                     <button
                       onClick={() => setInvoiceModalOrder(ord)}
-                      className="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl flex items-center gap-1.5 transition-all shadow-xs"
+                      className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl flex items-center gap-1.5 transition-all shadow-xs border border-slate-200"
                     >
                       <FileText className="w-4 h-4" /> View Bill
                     </button>
@@ -685,6 +711,19 @@ export default function BranchManagerOrdersPage() {
           order={invoiceModalOrder}
           branch={assignedBranch || branches.find((b) => b.id === invoiceModalOrder.branchId)}
           onClose={() => setInvoiceModalOrder(null)}
+        />
+      )}
+
+      {/* Kitchen Ticket Modal */}
+      {kotModalOrder && (
+        <KitchenTicketModal
+          order={kotModalOrder}
+          branch={assignedBranch || branches.find((b) => b.id === kotModalOrder.branchId)}
+          autoPrint={autoPrintKot}
+          onClose={() => {
+            setKotModalOrder(null);
+            setAutoPrintKot(false);
+          }}
         />
       )}
     </div>
