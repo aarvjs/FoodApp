@@ -36,6 +36,7 @@ export default function BranchManagerOffersPage() {
     startTime: "09:00",
     endTime: "22:00",
     usageLimit: 20,
+    maxUsesPerUser: 0,
     applicableDays: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"] as string[],
     excludedCategoryIds: [] as string[],
     status: "ACTIVE" as "ACTIVE" | "EXPIRED" | "DRAFT"
@@ -69,6 +70,7 @@ export default function BranchManagerOffersPage() {
       startTime: "09:00",
       endTime: "22:00",
       usageLimit: 20,
+      maxUsesPerUser: 0,
       applicableDays: [...ALL_DAYS],
       excludedCategoryIds: [],
       status: "ACTIVE"
@@ -94,6 +96,7 @@ export default function BranchManagerOffersPage() {
       startTime: off.startTime || "09:00",
       endTime: off.endTime || "22:00",
       usageLimit: off.usageLimit || 0,
+      maxUsesPerUser: off.maxUsesPerUser || 0,
       applicableDays: off.applicableDays && off.applicableDays.length > 0 ? off.applicableDays : [...ALL_DAYS],
       excludedCategoryIds: off.excludedCategoryIds || [],
       status: (off.status as any) || "ACTIVE"
@@ -143,6 +146,7 @@ export default function BranchManagerOffersPage() {
         startTime: formData.validityType === "SCHEDULED_TIME" ? formData.startTime : "",
         endTime: formData.validityType === "SCHEDULED_TIME" ? formData.endTime : "",
         usageLimit: Number(formData.usageLimit || 0),
+        maxUsesPerUser: Number(formData.maxUsesPerUser || 0),
         applicableDays: formData.applicableDays,
         excludedCategoryIds: formData.excludedCategoryIds,
         branchId: activeBranchId,
@@ -282,6 +286,13 @@ export default function BranchManagerOffersPage() {
                     {limit > 0 ? `${count} / ${limit}` : `${count} (No Limit)`}
                   </strong>
                 </div>
+
+                {(off.maxUsesPerUser || 0) > 0 && (
+                  <div className="flex justify-between">
+                    <span>Max Uses Per User:</span>
+                    <strong className="text-slate-900 font-mono">{off.maxUsesPerUser}</strong>
+                  </div>
+                )}
 
                 {limit > 0 && (
                   <div className="flex justify-between text-amber-800">
@@ -423,7 +434,7 @@ export default function BranchManagerOffersPage() {
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Minimum Order Subtotal (₹)</label>
                   <input
@@ -446,6 +457,19 @@ export default function BranchManagerOffersPage() {
                     onChange={(e) => setFormData({ ...formData, usageLimit: Number(e.target.value) })}
                     className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold"
                     placeholder="e.g. 20"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Maximum Uses Per User <span className="font-normal text-slate-500">(0 = Unlimited)</span>
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={formData.maxUsesPerUser}
+                    onChange={(e) => setFormData({ ...formData, maxUsesPerUser: Number(e.target.value) })}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold"
+                    placeholder="e.g. 1"
                   />
                 </div>
               </div>

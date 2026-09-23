@@ -136,6 +136,12 @@ export const addCombo = async (data: Partial<Combo> & { imageFile?: File | strin
     image: imageUrl,
     isActive: isActive,
     isAvailable: isActive,
+    availableFrom: data.availableFrom || undefined,
+    availableUntil: data.availableUntil || undefined,
+    availableDays: data.availableDays || undefined,
+    startDate: data.startDate || undefined,
+    endDate: data.endDate || undefined,
+    branchAvailability: data.branchAvailability || {},
     restaurantId: data.restaurantId || "",
     branchId: data.branchId || (branchIds[0] || ""),
     branchIds: branchIds,
@@ -163,6 +169,12 @@ export const updateCombo = async (id: string, updated: Partial<Combo> & { imageF
     updatePayload.isActive = activeState;
     updatePayload.isAvailable = activeState;
   }
+
+  if (updated.availableFrom !== undefined) updatePayload.availableFrom = updated.availableFrom;
+  if (updated.availableUntil !== undefined) updatePayload.availableUntil = updated.availableUntil;
+  if (updated.availableDays !== undefined) updatePayload.availableDays = updated.availableDays;
+  if (updated.startDate !== undefined) updatePayload.startDate = updated.startDate;
+  if (updated.endDate !== undefined) updatePayload.endDate = updated.endDate;
 
   if (updated.imageFile && typeof updated.imageFile !== "string") {
     const imageUrl = await uploadImage(updated.imageFile, "combos");

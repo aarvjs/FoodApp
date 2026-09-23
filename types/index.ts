@@ -212,6 +212,8 @@ export interface BranchProductAvailability {
   availableFrom?: string;
   availableUntil?: string;
   availableDays?: string[];
+  startDate?: string;
+  endDate?: string;
   updatedAt?: string;
 }
 
@@ -225,6 +227,8 @@ export interface Combo {
   availableFrom?: string;
   availableUntil?: string;
   availableDays?: string[];
+  startDate?: string;
+  endDate?: string;
   branchAvailability?: Record<string, BranchProductAvailability>;
   restaurantId: string;
   branchId?: string;
@@ -503,6 +507,7 @@ export interface Offer {
   endTime?: string;
   applicableDays?: string[];
   usageLimit?: number;
+  maxUsesPerUser?: number;
   usageCount?: number;
   remainingUses?: number;
   minimumOrderAmount?: number;

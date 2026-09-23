@@ -21,6 +21,7 @@ export interface OfferModel {
   endTime?: string;
   applicableDays?: string[];
   usageLimit?: number;
+  maxUsesPerUser?: number;
   usageCount?: number;
   remainingUses?: number;
   minimumOrderAmount?: number;

@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, Upload, Sparkles, Loader2, Check } from "lucide-react";
+import { X, Upload, Sparkles, Loader2, Clock, Calendar } from "lucide-react";
 import { Combo } from "@/types";
 import { uploadImage } from "@/services/storageService";
 import { useStore } from "@/lib/store/useStore";
+import { DaySelector, ALL_DAYS } from "@/components/ui/DaySelector";
 
 interface ComboModalProps {
   isOpen: boolean;
@@ -26,6 +27,11 @@ export const ComboModal: React.FC<ComboModalProps> = ({
   const [description, setDescription] = useState("");
   const [targetBranchId, setTargetBranchId] = useState<string>("all");
   const [isActive, setIsActive] = useState(true);
+  const [availableFrom, setAvailableFrom] = useState<string>("10:00 AM");
+  const [availableUntil, setAvailableUntil] = useState<string>("11:00 PM");
+  const [availableDays, setAvailableDays] = useState<string[]>(ALL_DAYS);
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
@@ -37,18 +43,30 @@ export const ComboModal: React.FC<ComboModalProps> = ({
       setDescription(comboToEdit.description || "");
       setIsActive(comboToEdit.isActive ?? comboToEdit.isAvailable ?? true);
       setImagePreview(comboToEdit.image || "");
-      setTargetBranchId(comboToEdit.branchId || (comboToEdit.branchIds && comboToEdit.branchIds[0]) || currentBranchId || "all");
+      const bId = comboToEdit.branchId || (comboToEdit.branchIds && comboToEdit.branchIds[0]) || currentBranchId || "all";
+      setTargetBranchId(bId);
+
+      const bOverride = bId !== "all" && comboToEdit.branchAvailability?.[bId] ? comboToEdit.branchAvailability[bId] : null;
+      setAvailableFrom(bOverride?.availableFrom || comboToEdit.availableFrom || "10:00 AM");
+      setAvailableUntil(bOverride?.availableUntil || comboToEdit.availableUntil || "11:00 PM");
+      setAvailableDays(bOverride?.availableDays || comboToEdit.availableDays || ALL_DAYS);
+      setStartDate(bOverride?.startDate || comboToEdit.startDate || "");
+      setEndDate(bOverride?.endDate || comboToEdit.endDate || "");
     } else {
       setName("");
       setDescription("");
       setIsActive(true);
       setImagePreview("");
       setTargetBranchId(currentBranchId || "all");
+      setAvailableFrom("10:00 AM");
+      setAvailableUntil("11:00 PM");
+      setAvailableDays(ALL_DAYS);
+      setStartDate("");
+      setEndDate("");
     }
     setImageFile(null);
     setErrorMessage(null);
   }, [comboToEdit, isOpen, currentBranchId]);
-
 
   if (!isOpen) return null;
 
@@ -86,6 +104,11 @@ export const ComboModal: React.FC<ComboModalProps> = ({
         description: description.trim(),
         isActive: isActive,
         isAvailable: isActive,
+        availableFrom: availableFrom || "10:00 AM",
+        availableUntil: availableUntil || "11:00 PM",
+        availableDays: availableDays,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
         image: finalImageUrl,
         branchId: targetBranchId,
         branchIds: targetBranchId === "all" ? ["all"] : [targetBranchId],
@@ -127,7 +150,7 @@ export const ComboModal: React.FC<ComboModalProps> = ({
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+        <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
           {errorMessage && (
             <div className="p-3 bg-red-50 text-red-700 text-xs font-bold rounded-xl border border-red-200">
               {errorMessage}
@@ -165,7 +188,6 @@ export const ComboModal: React.FC<ComboModalProps> = ({
                   <option key={b.id} value={b.id}>
                     📍 {b.name} ({b.location?.city || b.address || b.restaurantName || "Branch Outlet"})
                   </option>
-
                 ))}
             </select>
             <p className="text-[11px] text-slate-500">
@@ -176,7 +198,6 @@ export const ComboModal: React.FC<ComboModalProps> = ({
           </div>
 
           {/* 3. Combo Image / Banner */}
-
           <div className="space-y-2">
             <label className="block text-xs font-bold text-slate-700">
               Combo Image / Banner <span className="text-red-500">*</span>
@@ -218,7 +239,7 @@ export const ComboModal: React.FC<ComboModalProps> = ({
             )}
           </div>
 
-          {/* 3. Optional Description */}
+          {/* 4. Optional Description */}
           <div className="space-y-1.5">
             <label className="block text-xs font-bold text-slate-700">
               Description <span className="text-slate-400 font-normal">(Optional)</span>
@@ -232,7 +253,7 @@ export const ComboModal: React.FC<ComboModalProps> = ({
             />
           </div>
 
-          {/* 4. Active / Inactive Status Toggle */}
+          {/* 5. Active / Inactive Status Toggle */}
           <div className="flex items-center justify-between p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80">
             <div>
               <span className="block text-xs font-bold text-slate-800">Active Status</span>
@@ -253,7 +274,81 @@ export const ComboModal: React.FC<ComboModalProps> = ({
             </button>
           </div>
 
-          {/* 5. Footer Actions */}
+          {/* 6. Main Combo Schedule (Time, Days & Date Range) */}
+          <div className="p-4 bg-amber-50/70 rounded-2xl border border-amber-200/80 space-y-3.5">
+            <div className="flex items-center justify-between border-b border-amber-200/60 pb-2">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-amber-600" />
+                <span className="text-xs font-extrabold text-slate-900">Main Combo Schedule</span>
+              </div>
+              <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                Combo Level Control
+              </span>
+            </div>
+
+            {/* Days of Week Selector */}
+            <DaySelector
+              selectedDays={availableDays}
+              onChange={(days) => setAvailableDays(days)}
+              label="Applicable Days of Week *"
+            />
+
+            {/* Time Window (Available From - Available Until) */}
+            <div className="grid grid-cols-2 gap-3 pt-1 border-t border-amber-200/60">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Start Time (e.g. 10:00 AM)
+                </label>
+                <input
+                  type="text"
+                  value={availableFrom}
+                  onChange={(e) => setAvailableFrom(e.target.value)}
+                  className="w-full p-2 bg-white border border-slate-300 rounded-xl font-bold text-slate-900 text-xs focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                  placeholder="10:00 AM"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  End Time (e.g. 11:00 PM)
+                </label>
+                <input
+                  type="text"
+                  value={availableUntil}
+                  onChange={(e) => setAvailableUntil(e.target.value)}
+                  className="w-full p-2 bg-white border border-slate-300 rounded-xl font-bold text-slate-900 text-xs focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                  placeholder="11:00 PM"
+                />
+              </div>
+            </div>
+
+            {/* Date Range (Start Date - End Date) */}
+            <div className="grid grid-cols-2 gap-3 pt-1 border-t border-amber-200/60">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1 flex items-center gap-1">
+                  <Calendar className="w-3 h-3 text-amber-600" /> Start Date <span className="text-slate-400 font-normal">(Optional)</span>
+                </label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full p-2 bg-white border border-slate-300 rounded-xl font-bold text-slate-900 text-xs focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1 flex items-center gap-1">
+                  <Calendar className="w-3 h-3 text-amber-600" /> End Date <span className="text-slate-400 font-normal">(Optional)</span>
+                </label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full p-2 bg-white border border-slate-300 rounded-xl font-bold text-slate-900 text-xs focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Footer Actions */}
           <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-3">
             <button
               type="button"

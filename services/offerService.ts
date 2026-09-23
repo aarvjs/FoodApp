@@ -94,6 +94,7 @@ export const offerService = {
       endTime: data.endTime || "",
       applicableDays: data.applicableDays || [],
       usageLimit: usageLimitVal,
+      maxUsesPerUser: data.maxUsesPerUser !== undefined ? Number(data.maxUsesPerUser) : 0,
       usageCount: usageCountVal,
       remainingUses: remainingUsesVal,
       minimumOrderAmount: data.minimumOrderAmount !== undefined ? Number(data.minimumOrderAmount) : Number(data.minimumOrder || 0),
