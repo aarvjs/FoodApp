@@ -159,9 +159,10 @@ export function OfferExclusionSelector({
   const filteredMenuItems = menuItems.filter((item) => {
     if (!searchTerm.trim()) return true;
     const term = searchTerm.toLowerCase().trim();
+    const catName = item.categoryName || (item as any).category || "";
     return (
       item.name.toLowerCase().includes(term) ||
-      (item.category && item.category.toLowerCase().includes(term))
+      catName.toLowerCase().includes(term)
     );
   });
 
@@ -274,7 +275,9 @@ export function OfferExclusionSelector({
                       </div>
                       <div className="text-[10px] text-slate-500 flex items-center gap-1.5">
                         <span>₹{item.price}</span>
-                        {item.category && <span>• {item.category}</span>}
+                        {(item.categoryName || (item as any).category) && (
+                          <span>• {item.categoryName || (item as any).category}</span>
+                        )}
                       </div>
                     </div>
                   </div>
