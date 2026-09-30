@@ -8,6 +8,7 @@ import { categoryRepository } from "@/repositories/categoryRepository";
 import { Offer } from "@/types";
 import { CategoryModel } from "@/models/category";
 import { Toast } from "@/components/ui/Toast";
+import { OfferExclusionSelector } from "@/components/offers/OfferExclusionSelector";
 
 const ALL_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
@@ -39,6 +40,9 @@ export default function BranchManagerOffersPage() {
     maxUsesPerUser: 0,
     applicableDays: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"] as string[],
     excludedCategoryIds: [] as string[],
+    excludedProductIds: [] as string[],
+    excludedComboIds: [] as string[],
+    excludedComboProductIds: {} as Record<string, string[]>,
     status: "ACTIVE" as "ACTIVE" | "EXPIRED" | "DRAFT"
   });
 
@@ -73,6 +77,9 @@ export default function BranchManagerOffersPage() {
       maxUsesPerUser: 0,
       applicableDays: [...ALL_DAYS],
       excludedCategoryIds: [],
+      excludedProductIds: [],
+      excludedComboIds: [],
+      excludedComboProductIds: {},
       status: "ACTIVE"
     });
     setIsModalOpen(true);
@@ -99,6 +106,9 @@ export default function BranchManagerOffersPage() {
       maxUsesPerUser: off.maxUsesPerUser || 0,
       applicableDays: off.applicableDays && off.applicableDays.length > 0 ? off.applicableDays : [...ALL_DAYS],
       excludedCategoryIds: off.excludedCategoryIds || [],
+      excludedProductIds: off.excludedProductIds || [],
+      excludedComboIds: off.excludedComboIds || [],
+      excludedComboProductIds: off.excludedComboProductIds || {},
       status: (off.status as any) || "ACTIVE"
     });
     setIsModalOpen(true);
@@ -149,6 +159,9 @@ export default function BranchManagerOffersPage() {
         maxUsesPerUser: Number(formData.maxUsesPerUser || 0),
         applicableDays: formData.applicableDays,
         excludedCategoryIds: formData.excludedCategoryIds,
+        excludedProductIds: formData.excludedProductIds,
+        excludedComboIds: formData.excludedComboIds,
+        excludedComboProductIds: formData.excludedComboProductIds,
         branchId: activeBranchId,
         branchIds: [activeBranchId],
         branchName: user?.branchName || user?.assignedBranchName || "Assigned Branch",
@@ -579,6 +592,22 @@ export default function BranchManagerOffersPage() {
                   </div>
                 </div>
               )}
+
+              {/* Offer Exclusion Selector (Menu Products + Combos) */}
+              <OfferExclusionSelector
+                branchId={activeBranchId}
+                excludedProductIds={formData.excludedProductIds}
+                excludedComboIds={formData.excludedComboIds}
+                excludedComboProductIds={formData.excludedComboProductIds}
+                onChange={({ excludedProductIds, excludedComboIds, excludedComboProductIds }) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    excludedProductIds,
+                    excludedComboIds,
+                    excludedComboProductIds
+                  }))
+                }
+              />
 
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Offer Status</label>

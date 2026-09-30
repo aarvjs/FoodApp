@@ -515,6 +515,9 @@ export interface Offer {
   discountValue?: number;
   maximumDiscountAmount?: number;
   excludedCategoryIds?: string[];
+  excludedProductIds?: string[];
+  excludedComboIds?: string[];
+  excludedComboProductIds?: Record<string, string[]>;
   isActive?: boolean;
   updatedAt?: string;
 }

@@ -75,6 +75,9 @@ export const offerRepository = {
       discountValue: data.discountValue !== undefined ? Number(data.discountValue) : Number(data.discountPercentage || 0),
       maximumDiscountAmount: data.maximumDiscountAmount !== undefined ? Number(data.maximumDiscountAmount) : 0,
       excludedCategoryIds: data.excludedCategoryIds || [],
+      excludedProductIds: data.excludedProductIds || [],
+      excludedComboIds: data.excludedComboIds || [],
+      excludedComboProductIds: data.excludedComboProductIds || {},
       isActive: data.isActive !== false && data.status !== "EXPIRED"
     };
 

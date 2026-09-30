@@ -9,6 +9,7 @@ import { offerRepository } from "@/repositories/offerRepository";
 import { categoryRepository } from "@/repositories/categoryRepository";
 import { Toast } from "@/components/ui/Toast";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
+import { OfferExclusionSelector } from "@/components/offers/OfferExclusionSelector";
 
 interface OffersModuleProps {
   restaurantId: string;
@@ -45,6 +46,9 @@ export function OffersModule({ restaurantId, branches, offers, onRefresh }: Offe
     maxUsesPerUser: 0,
     applicableDays: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"] as string[],
     excludedCategoryIds: [] as string[],
+    excludedProductIds: [] as string[],
+    excludedComboIds: [] as string[],
+    excludedComboProductIds: {} as Record<string, string[]>,
     status: "ACTIVE" as "ACTIVE" | "EXPIRED" | "DRAFT"
   });
 
@@ -73,6 +77,9 @@ export function OffersModule({ restaurantId, branches, offers, onRefresh }: Offe
       maxUsesPerUser: 0,
       applicableDays: [...ALL_DAYS],
       excludedCategoryIds: [],
+      excludedProductIds: [],
+      excludedComboIds: [],
+      excludedComboProductIds: {},
       status: "ACTIVE"
     });
     setIsModalOpen(true);
@@ -100,6 +107,9 @@ export function OffersModule({ restaurantId, branches, offers, onRefresh }: Offe
       maxUsesPerUser: off.maxUsesPerUser || 0,
       applicableDays: off.applicableDays && off.applicableDays.length > 0 ? off.applicableDays : [...ALL_DAYS],
       excludedCategoryIds: off.excludedCategoryIds || [],
+      excludedProductIds: off.excludedProductIds || [],
+      excludedComboIds: off.excludedComboIds || [],
+      excludedComboProductIds: off.excludedComboProductIds || {},
       status: (off.status as any) || "ACTIVE"
     });
     setIsModalOpen(true);
@@ -161,6 +171,9 @@ export function OffersModule({ restaurantId, branches, offers, onRefresh }: Offe
         maxUsesPerUser: Number(formData.maxUsesPerUser || 0),
         applicableDays: formData.applicableDays,
         excludedCategoryIds: formData.excludedCategoryIds,
+        excludedProductIds: formData.excludedProductIds,
+        excludedComboIds: formData.excludedComboIds,
+        excludedComboProductIds: formData.excludedComboProductIds,
         status: formData.status,
         isActive: formData.status === "ACTIVE"
       };
@@ -614,6 +627,22 @@ export function OffersModule({ restaurantId, branches, offers, onRefresh }: Offe
                   </div>
                 </div>
               )}
+
+              {/* Offer Exclusion Selector (Menu Products + Combos) */}
+              <OfferExclusionSelector
+                branchId={formData.branchId || defaultBranchId}
+                excludedProductIds={formData.excludedProductIds}
+                excludedComboIds={formData.excludedComboIds}
+                excludedComboProductIds={formData.excludedComboProductIds}
+                onChange={({ excludedProductIds, excludedComboIds, excludedComboProductIds }) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    excludedProductIds,
+                    excludedComboIds,
+                    excludedComboProductIds
+                  }))
+                }
+              />
 
               {/* Status */}
               <div>
