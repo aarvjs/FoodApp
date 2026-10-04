@@ -210,6 +210,25 @@ export function OffersModule({ restaurantId, branches, offers, onRefresh }: Offe
     }
   };
 
+  const handleToggleStatus = async (off: OfferModel) => {
+    const isCurrentlyActive = off.status === "ACTIVE" && off.isActive !== false;
+    const nextStatus = isCurrentlyActive ? "INACTIVE" : "ACTIVE";
+    try {
+      await offerRepository.update(off.id, {
+        status: nextStatus,
+        isActive: !isCurrentlyActive
+      });
+      setToastMessage(
+        !isCurrentlyActive
+          ? `Offer reactivated! Usage count & slots reset.`
+          : `Offer deactivated! Usage count & slots reset.`
+      );
+      onRefresh();
+    } catch (err: any) {
+      alert("Failed to toggle offer status: " + err.message);
+    }
+  };
+
   const getStatusBadge = (off: OfferModel) => {
     const limit = off.usageLimit || 0;
     const count = off.usageCount || 0;
@@ -346,6 +365,16 @@ export function OffersModule({ restaurantId, branches, offers, onRefresh }: Offe
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-1 border-t border-slate-100">
+                <button
+                  onClick={() => handleToggleStatus(off)}
+                  className={`px-2.5 py-1 text-[11px] font-bold rounded-lg flex items-center gap-1 ${
+                    off.status === "ACTIVE" && off.isActive !== false
+                      ? "bg-rose-100 hover:bg-rose-200 text-rose-800"
+                      : "bg-emerald-100 hover:bg-emerald-200 text-emerald-800"
+                  }`}
+                >
+                  {off.status === "ACTIVE" && off.isActive !== false ? "Deactivate" : "Activate"}
+                </button>
                 <button
                   onClick={() => openEditModal(off)}
                   className="p-1.5 text-slate-600 hover:bg-slate-100 rounded-lg flex items-center gap-1 font-bold"

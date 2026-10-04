@@ -14,7 +14,7 @@ export interface OfferModel {
   minimumOrder?: number;
   startDate?: string;
   endDate?: string;
-  status: "ACTIVE" | "DRAFT" | "EXPIRED";
+  status: "ACTIVE" | "INACTIVE" | "DRAFT" | "EXPIRED";
   createdAt: string;
   validityType?: "FULL_DAY" | "SCHEDULED_TIME";
   startTime?: string;
@@ -33,6 +33,7 @@ export interface OfferModel {
   excludedComboIds?: string[];
   excludedComboProductIds?: Record<string, string[]>;
   isActive?: boolean;
+  lastActivatedAt?: string;
   updatedAt?: string;
 }
 

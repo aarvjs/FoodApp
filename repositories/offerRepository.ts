@@ -1,5 +1,5 @@
 import { db } from "@/firebase/config";
-import { collection, getDocs, doc, setDoc, updateDoc, deleteDoc, query, where } from "firebase/firestore";
+import { collection, getDocs, getDoc, doc, setDoc, updateDoc, deleteDoc, query, where } from "firebase/firestore";
 import { OfferModel } from "@/models/offer";
 
 const COLLECTION_NAME = "offers";
@@ -68,8 +68,10 @@ export const offerRepository = {
       endTime: data.endTime || "",
       applicableDays: data.applicableDays || [],
       usageLimit: usageLimitVal,
+      maxUsesPerUser: data.maxUsesPerUser !== undefined ? Number(data.maxUsesPerUser) : 0,
       usageCount: usageCountVal,
       remainingUses: remainingUsesVal,
+      lastActivatedAt: new Date().toISOString(),
       minimumOrderAmount: data.minimumOrderAmount !== undefined ? Number(data.minimumOrderAmount) : Number(data.minimumOrder || 0),
       discountType: data.discountType || (data.discountPercentage ? "PERCENTAGE" : "FIXED_AMOUNT"),
       discountValue: data.discountValue !== undefined ? Number(data.discountValue) : Number(data.discountPercentage || 0),
@@ -87,15 +89,47 @@ export const offerRepository = {
 
   async update(id: string, data: Partial<OfferModel>): Promise<void> {
     const docRef = doc(db, COLLECTION_NAME, id);
+    const nowIso = new Date().toISOString();
+
+    let existing: OfferModel | null = null;
+    try {
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        existing = { id: snap.id, ...snap.data() } as OfferModel;
+      }
+    } catch (_) {}
+
     const updatePayload: Record<string, any> = {
       ...data,
-      updatedAt: new Date().toISOString()
+      updatedAt: nowIso
     };
-    if (data.usageLimit !== undefined || data.usageCount !== undefined) {
-      const limit = data.usageLimit !== undefined ? Number(data.usageLimit) : 0;
-      const count = data.usageCount !== undefined ? Number(data.usageCount) : 0;
+
+    const isStatusBecomingInactive = data.status === "INACTIVE" || data.isActive === false;
+    const wasInactive = existing && (existing.status === "INACTIVE" || existing.isActive === false);
+    const isStatusReactivating = wasInactive && (data.status === "ACTIVE" || data.isActive === true);
+
+    if (isStatusBecomingInactive || isStatusReactivating) {
+      const limit = data.usageLimit !== undefined 
+        ? Number(data.usageLimit) 
+        : (existing?.usageLimit ? Number(existing.usageLimit) : 0);
+
+      updatePayload.usageCount = 0;
+      updatePayload.remainingUses = limit > 0 ? limit : 0;
+      updatePayload.lastActivatedAt = nowIso;
+
+      if (data.status === "ACTIVE" || isStatusReactivating) {
+        updatePayload.isActive = true;
+        updatePayload.status = "ACTIVE";
+      } else if (isStatusBecomingInactive) {
+        updatePayload.isActive = false;
+        updatePayload.status = "INACTIVE";
+      }
+    } else if (data.usageLimit !== undefined || data.usageCount !== undefined) {
+      const limit = data.usageLimit !== undefined ? Number(data.usageLimit) : (existing?.usageLimit || 0);
+      const count = data.usageCount !== undefined ? Number(data.usageCount) : (existing?.usageCount || 0);
       updatePayload.remainingUses = limit > 0 ? Math.max(0, limit - count) : 0;
     }
+
     await updateDoc(docRef, updatePayload);
   },
 

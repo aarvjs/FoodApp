@@ -2,6 +2,7 @@ import { db } from "@/firebase/config";
 import { 
   collection, 
   getDocs, 
+  getDoc,
   doc, 
   setDoc, 
   updateDoc, 
@@ -113,17 +114,49 @@ export const offerService = {
     return newOffer;
   },
 
-  updateOffer: async (id: string, updated: Partial<Offer>): Promise<void> => {
+  updateOffer: async (id: string, updated: Partial<Offer> & { resetUsageOnStatusChange?: boolean }): Promise<void> => {
     const docRef = doc(db, COLLECTION_NAME, id);
+    const nowIso = new Date().toISOString();
+
+    let existing: Offer | null = null;
+    try {
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        existing = { id: snap.id, ...snap.data() } as Offer;
+      }
+    } catch (_) {}
+
     const updatePayload: Record<string, any> = {
       ...updated,
-      updatedAt: new Date().toISOString()
+      updatedAt: nowIso
     };
-    if (updated.usageLimit !== undefined || updated.usageCount !== undefined) {
-      const limit = updated.usageLimit !== undefined ? Number(updated.usageLimit) : 0;
-      const count = updated.usageCount !== undefined ? Number(updated.usageCount) : 0;
+
+    const isStatusBecomingInactive = updated.status === "INACTIVE" || updated.isActive === false;
+    const wasInactive = existing && (existing.status === "INACTIVE" || existing.isActive === false);
+    const isStatusReactivating = wasInactive && (updated.status === "ACTIVE" || updated.isActive === true);
+
+    if (isStatusBecomingInactive || isStatusReactivating || updated.resetUsageOnStatusChange) {
+      const limit = updated.usageLimit !== undefined 
+        ? Number(updated.usageLimit) 
+        : (existing?.usageLimit ? Number(existing.usageLimit) : 0);
+
+      updatePayload.usageCount = 0;
+      updatePayload.remainingUses = limit > 0 ? limit : 0;
+      updatePayload.lastActivatedAt = nowIso;
+
+      if (updated.status === "ACTIVE" || isStatusReactivating) {
+        updatePayload.isActive = true;
+        updatePayload.status = "ACTIVE";
+      } else if (isStatusBecomingInactive) {
+        updatePayload.isActive = false;
+        updatePayload.status = "INACTIVE";
+      }
+    } else if (updated.usageLimit !== undefined || updated.usageCount !== undefined) {
+      const limit = updated.usageLimit !== undefined ? Number(updated.usageLimit) : (existing?.usageLimit || 0);
+      const count = updated.usageCount !== undefined ? Number(updated.usageCount) : (existing?.usageCount || 0);
       updatePayload.remainingUses = limit > 0 ? Math.max(0, limit - count) : 0;
     }
+
     await updateDoc(docRef, updatePayload);
   },
 

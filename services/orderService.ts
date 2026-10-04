@@ -154,6 +154,60 @@ export const orderService = {
       payload.rejectionReason = rejectionReason;
     }
 
+    // Handle Offer Consumption based on status transition:
+    // Offer is ONLY consumed when reaching OUT_FOR_DELIVERY or DELIVERED.
+    const targetOfferId = (currentData.appliedOfferId || "").toString().trim();
+    const targetCoupon = (currentData.appliedCoupon || "").toString().trim().toUpperCase();
+
+    if (targetOfferId || targetCoupon) {
+      const isReachingDeliveryPhase = status === "OUT_FOR_DELIVERY" || status === "DELIVERED";
+      const isCancelledBeforeDelivery = (status === "CANCELLED" || status === "REJECTED") && currentData.offerConsumed !== true;
+
+      if (isReachingDeliveryPhase && currentData.offerConsumed !== true) {
+        payload.offerConsumed = true;
+        payload.offerConsumedAt = new Date().toISOString();
+
+        try {
+          let offerDocRef = targetOfferId ? doc(db, "offers", targetOfferId) : null;
+          let offerSnap = offerDocRef ? await getDoc(offerDocRef) : null;
+
+          if ((!offerSnap || !offerSnap.exists()) && targetCoupon) {
+            const q = query(collection(db, "offers"), where("coupon", "==", targetCoupon));
+            const qSnap = await getDocs(q);
+            if (!qSnap.empty) {
+              offerSnap = qSnap.docs[0];
+              offerDocRef = offerSnap.ref;
+            }
+          }
+
+          if (offerDocRef && offerSnap && offerSnap.exists()) {
+            const oData = offerSnap.data();
+            const uLimit = Number(oData.usageLimit || 0);
+            const uCount = Number(oData.usageCount || 0);
+            const newCount = uCount + 1;
+            const newRem = uLimit > 0 ? Math.max(0, uLimit - newCount) : 0;
+
+            const offerUpdate: Record<string, any> = {
+              usageCount: newCount,
+              remainingUses: newRem,
+              updatedAt: new Date().toISOString()
+            };
+
+            if (uLimit > 0 && newCount >= uLimit) {
+              offerUpdate.status = "EXPIRED";
+              offerUpdate.isActive = false;
+            }
+
+            await updateDoc(offerDocRef, offerUpdate);
+          }
+        } catch (e) {
+          console.warn("[orderService] Error marking offer consumed on OUT_FOR_DELIVERY:", e);
+        }
+      } else if (isCancelledBeforeDelivery) {
+        payload.offerConsumed = false;
+      }
+    }
+
     await updateDoc(docRef, payload);
 
     try {

@@ -501,7 +501,7 @@ export interface Offer {
   branchIds?: string[];
   branchName?: string;
   branchNames?: string[];
-  status: "ACTIVE" | "DRAFT" | "EXPIRED";
+  status: "ACTIVE" | "INACTIVE" | "DRAFT" | "EXPIRED";
   validityType?: "FULL_DAY" | "SCHEDULED_TIME";
   startTime?: string;
   endTime?: string;
@@ -519,6 +519,7 @@ export interface Offer {
   excludedComboIds?: string[];
   excludedComboProductIds?: Record<string, string[]>;
   isActive?: boolean;
+  lastActivatedAt?: string;
   updatedAt?: string;
 }
 

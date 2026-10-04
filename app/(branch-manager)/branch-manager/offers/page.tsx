@@ -198,6 +198,25 @@ export default function BranchManagerOffersPage() {
     }
   };
 
+  const handleToggleStatus = async (off: Offer) => {
+    const isCurrentlyActive = off.status === "ACTIVE" && off.isActive !== false;
+    const nextStatus = isCurrentlyActive ? "INACTIVE" : "ACTIVE";
+    try {
+      await offerService.updateOffer(off.id, {
+        status: nextStatus,
+        isActive: !isCurrentlyActive,
+        resetUsageOnStatusChange: true
+      });
+      setToastMessage(
+        !isCurrentlyActive
+          ? `Offer reactivated! Usage count & slots reset.`
+          : `Offer deactivated! Usage count & slots reset.`
+      );
+    } catch (err: any) {
+      alert("Failed to toggle offer status: " + err.message);
+    }
+  };
+
   const getStatusBadge = (off: Offer) => {
     const limit = off.usageLimit || 0;
     const count = off.usageCount || 0;
@@ -336,6 +355,16 @@ export default function BranchManagerOffersPage() {
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 text-xs">
+                <button
+                  onClick={() => handleToggleStatus(off)}
+                  className={`px-3 py-1.5 font-bold rounded-lg flex items-center gap-1 text-xs ${
+                    off.status === "ACTIVE" && off.isActive !== false
+                      ? "bg-rose-100 hover:bg-rose-200 text-rose-800"
+                      : "bg-emerald-100 hover:bg-emerald-200 text-emerald-800"
+                  }`}
+                >
+                  {off.status === "ACTIVE" && off.isActive !== false ? "Deactivate" : "Activate"}
+                </button>
                 <button
                   onClick={() => openEditModal(off)}
                   className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg flex items-center gap-1"
