@@ -1,0 +1,54 @@
+# Firebase App Hosting Configuration
+runConfig:
+  minInstances: 0
+  maxInstances: 10
+  concurrency: 80
+  cpu: 1
+  memoryMiB: 1024
+
+env:
+  - variable: NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+    value: AIzaSyC4zEkcRePCJWM0WMtZs1IIGEbxnvKMjJM
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: GOOGLE_MAPS_API_KEY
+    value: AIzaSyC4zEkcRePCJWM0WMtZs1IIGEbxnvKMjJM
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: AIzaSyCvMgI5zTZEKhX0H9yh8-9wDLWhwS6sGJE
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: food-app-bf79a.firebaseapp.com
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: food-app-bf79a
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: food-app-bf79a.firebasestorage.app
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    value: "385778712226"
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: "1:385778712226:web:bacdae9f406d822772e1fb"
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+    value: G-W4403C97QJ
+    availability:
+      - BUILD
+      - RUNTIME
