@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { RewardConfig, RewardSlab } from "@/models/rewardConfig";
 import { rewardConfigService } from "@/services/rewardConfigService";
 import { DEFAULT_REWARD_SLABS } from "@/repositories/rewardConfigRepository";
+import { formatDateTime } from "@/lib/utils/dateUtils";
 import {
   Coins,
   CheckCircle2,
@@ -209,13 +210,7 @@ export const RewardConfigForm: React.FC<RewardConfigFormProps> = ({
           <div className="text-right text-[11px] text-slate-400">
             <span>Last Updated: </span>
             <span className="font-medium text-slate-600">
-              {new Date(existingConfig.updatedAt).toLocaleDateString("en-IN", {
-                day: "numeric",
-                month: "short",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit"
-              })}
+              {formatDateTime(existingConfig.updatedAt)}
             </span>
           </div>
         )}

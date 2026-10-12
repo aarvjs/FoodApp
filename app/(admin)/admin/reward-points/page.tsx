@@ -20,6 +20,7 @@ import {
 import { useStore } from "@/lib/store/useStore";
 import { RewardConfigForm } from "@/components/reward/RewardConfigForm";
 import { rewardConfigRepository } from "@/repositories/rewardConfigRepository";
+import { formatDateTime } from "@/lib/utils/dateUtils";
 
 export default function AdminRewardPointsPage() {
   const restaurants = useStore((state) => state.restaurants);
@@ -300,7 +301,7 @@ export default function AdminRewardPointsPage() {
                   return (
                     <tr key={tx.id} className="hover:bg-slate-50/80 transition-colors">
                       <td className="px-4 py-3 text-slate-500 font-mono text-[11px]">
-                        {new Date(tx.createdAt || tx.timestamp || Date.now()).toLocaleString()}
+                        {formatDateTime(tx.createdAt || tx.timestamp)}
                       </td>
 
                       <td className="px-4 py-3 font-bold text-slate-900">

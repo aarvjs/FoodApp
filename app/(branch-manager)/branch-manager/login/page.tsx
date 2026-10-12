@@ -38,7 +38,7 @@ export default function BranchManagerLoginPage() {
       if (userObj.role !== "branch_manager" && userObj.role !== "branchManager") {
         const msg = "Account authorized as Admin. Please log in through Super Admin Portal.";
         setError(msg);
-        setShowErrorPopup(true);
+        setShowErrorPopup(false);
         setIsLoading(false);
         return;
       }
@@ -47,10 +47,10 @@ export default function BranchManagerLoginPage() {
       setBranchManagerUser(userObj);
       router.push("/branch-manager/dashboard");
     } catch (err: any) {
-      console.error("[Auth] Branch Manager login failed:", err);
-      const msg = err.message || "Invalid credentials or user record not found.";
+      const msg = err?.message || "Invalid credentials or user record not found.";
+      console.warn("[Auth] Branch Manager login notice:", msg);
       setError(msg);
-      setShowErrorPopup(true);
+      setShowErrorPopup(false);
       setIsLoading(false);
     }
   };

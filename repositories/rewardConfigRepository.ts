@@ -13,6 +13,7 @@ import {
   orderBy
 } from "firebase/firestore";
 import { RewardConfig, RewardSlab } from "@/models/rewardConfig";
+import { parseDateValue } from "@/lib/utils/dateUtils";
 
 const COLLECTION_NAME = "reward_points_config";
 
@@ -512,11 +513,24 @@ export const rewardConfigRepository = {
       }
 
       const snap = await getDocs(q);
-      const list = snap.docs.map((docSnap: any) => ({ id: docSnap.id, ...(docSnap.data() as object) }));
+      const list = snap.docs.map((docSnap: any) => {
+        const raw = docSnap.data() as any;
+        const rawDate = raw.createdAt || raw.timestamp;
+        const validDate = parseDateValue(rawDate);
+        const isoString = validDate.toISOString();
+        return {
+          id: docSnap.id,
+          ...raw,
+          createdAt: raw.createdAt ? isoString : undefined,
+          timestamp: raw.timestamp ? isoString : (raw.createdAt ? isoString : undefined)
+        };
+      });
 
-
-
-      list.sort((a: any, b: any) => new Date(b.createdAt || b.timestamp || 0).getTime() - new Date(a.createdAt || a.timestamp || 0).getTime());
+      list.sort((a: any, b: any) => {
+        const timeB = parseDateValue(b.createdAt || b.timestamp).getTime();
+        const timeA = parseDateValue(a.createdAt || a.timestamp).getTime();
+        return timeB - timeA;
+      });
       return list;
     } catch (e) {
       console.warn("rewardConfigRepository.getRewardTransactions error:", e);

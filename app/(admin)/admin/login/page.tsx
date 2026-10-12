@@ -59,7 +59,7 @@ export default function AdminLoginPage() {
         if (userObj.role !== "admin") {
           const msg = "This account is not authorized as a Super Admin.";
           setError(msg);
-          setShowErrorPopup(true);
+          setShowErrorPopup(false);
           setIsLoading(false);
           return;
         }
@@ -69,10 +69,10 @@ export default function AdminLoginPage() {
         router.push("/admin/dashboard");
       }
     } catch (err: any) {
-      console.error("[Auth] Super Admin authentication failed:", err);
-      const msg = err.message || "Authentication failed. User not found in database or invalid credentials.";
+      const msg = err?.message || "Authentication failed. User not found in database or invalid credentials.";
+      console.warn("[Auth] Super Admin authentication notice:", msg);
       setError(msg);
-      setShowErrorPopup(true);
+      setShowErrorPopup(false);
       setIsLoading(false);
     }
   };
