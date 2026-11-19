@@ -59,6 +59,8 @@ export const offerRepository = {
       discountPercentage: data.discountPercentage || 15,
       coupon: data.coupon || "SPECIAL15",
       minimumOrder: data.minimumOrder !== undefined ? Number(data.minimumOrder) : 299,
+      startDate: data.startDate || new Date().toISOString().split("T")[0],
+      endDate: data.endDate || "",
       status: data.status || "ACTIVE",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),

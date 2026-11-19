@@ -190,11 +190,10 @@ export const RewardConfigForm: React.FC<RewardConfigFormProps> = ({
                 Reward Points & Slabs Configuration
               </h2>
               <span
-                className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
-                  status === "ACTIVE"
+                className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${status === "ACTIVE"
                     ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
                     : "bg-slate-100 text-slate-600 border border-slate-300"
-                }`}
+                  }`}
               >
                 {status}
               </span>
@@ -355,11 +354,10 @@ export const RewardConfigForm: React.FC<RewardConfigFormProps> = ({
                         <button
                           type="button"
                           onClick={() => handleUpdateSlab(slab.id, "enabled", !slab.enabled)}
-                          className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase transition-all ${
-                            slab.enabled
+                          className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase transition-all ${slab.enabled
                               ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
                               : "bg-slate-100 text-slate-600 border border-slate-300"
-                          }`}
+                            }`}
                         >
                           {slab.enabled ? "ENABLED" : "DISABLED"}
                         </button>
@@ -394,11 +392,10 @@ export const RewardConfigForm: React.FC<RewardConfigFormProps> = ({
               <button
                 type="button"
                 onClick={() => setStatus("ACTIVE")}
-                className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition-all border flex items-center justify-center gap-2 ${
-                  status === "ACTIVE"
+                className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition-all border flex items-center justify-center gap-2 ${status === "ACTIVE"
                     ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
                     : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
-                }`}
+                  }`}
               >
                 <CheckCircle2 className="w-4 h-4" />
                 ACTIVE
@@ -406,11 +403,10 @@ export const RewardConfigForm: React.FC<RewardConfigFormProps> = ({
               <button
                 type="button"
                 onClick={() => setStatus("INACTIVE")}
-                className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition-all border flex items-center justify-center gap-2 ${
-                  status === "INACTIVE"
+                className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition-all border flex items-center justify-center gap-2 ${status === "INACTIVE"
                     ? "bg-slate-700 text-white border-slate-700 shadow-sm"
                     : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
-                }`}
+                  }`}
               >
                 INACTIVE
               </button>

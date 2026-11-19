@@ -9,6 +9,7 @@ import { Offer } from "@/types";
 import { CategoryModel } from "@/models/category";
 import { Toast } from "@/components/ui/Toast";
 import { OfferExclusionSelector } from "@/components/offers/OfferExclusionSelector";
+import { formatDateOnly, isOfferExpired } from "@/lib/utils/dateUtils";
 
 const ALL_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
@@ -43,7 +44,8 @@ export default function BranchManagerOffersPage() {
     excludedProductIds: [] as string[],
     excludedComboIds: [] as string[],
     excludedComboProductIds: {} as Record<string, string[]>,
-    status: "ACTIVE" as "ACTIVE" | "EXPIRED" | "DRAFT"
+    status: "ACTIVE" as "ACTIVE" | "EXPIRED" | "DRAFT",
+    endDate: ""
   });
 
   useEffect(() => {
@@ -80,7 +82,8 @@ export default function BranchManagerOffersPage() {
       excludedProductIds: [],
       excludedComboIds: [],
       excludedComboProductIds: {},
-      status: "ACTIVE"
+      status: "ACTIVE",
+      endDate: new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0]
     });
     setIsModalOpen(true);
   };
@@ -109,7 +112,8 @@ export default function BranchManagerOffersPage() {
       excludedProductIds: off.excludedProductIds || [],
       excludedComboIds: off.excludedComboIds || [],
       excludedComboProductIds: off.excludedComboProductIds || {},
-      status: (off.status as any) || "ACTIVE"
+      status: (off.status as any) || "ACTIVE",
+      endDate: off.endDate ? (off.endDate.includes("T") ? off.endDate.split("T")[0] : off.endDate) : ""
     });
     setIsModalOpen(true);
   };
@@ -136,6 +140,15 @@ export default function BranchManagerOffersPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.endDate) {
+      alert("Offer Expiry Date is required.");
+      return;
+    }
+    const todayStr = new Date().toISOString().split("T")[0];
+    if (formData.status === "ACTIVE" && formData.endDate < todayStr) {
+      alert("Expiry date cannot be in the past for an active offer. Please select today or a future date.");
+      return;
+    }
     setSubmitting(true);
 
     try {
@@ -144,6 +157,7 @@ export default function BranchManagerOffersPage() {
         title: formData.title,
         coupon: formData.coupon.toUpperCase().trim(),
         description: formData.description,
+        endDate: formData.endDate,
         type: isPct ? "FLAT_DISCOUNT" : "FLAT_DISCOUNT",
         discountPercentage: isPct ? Number(formData.discountValue) : 0,
         discount: Number(formData.discountValue),
@@ -200,6 +214,12 @@ export default function BranchManagerOffersPage() {
 
   const handleToggleStatus = async (off: Offer) => {
     const isCurrentlyActive = off.status === "ACTIVE" && off.isActive !== false;
+    if (!isCurrentlyActive && isOfferExpired(off)) {
+      alert("This offer has expired. Please edit the offer and set a future expiry date before activating.");
+      openEditModal(off);
+      return;
+    }
+
     const nextStatus = isCurrentlyActive ? "INACTIVE" : "ACTIVE";
     try {
       await offerService.updateOffer(off.id, {
@@ -223,11 +243,11 @@ export default function BranchManagerOffersPage() {
     if (limit > 0 && count >= limit) {
       return { text: "LIMIT REACHED", cls: "bg-rose-100 text-rose-800 border-rose-200" };
     }
-    if (off.status === "EXPIRED" || off.isActive === false) {
-      return { text: "EXPIRED", cls: "bg-slate-200 text-slate-700 border-slate-300" };
+    if (isOfferExpired(off) || off.status === "EXPIRED") {
+      return { text: "EXPIRED", cls: "bg-rose-100 text-rose-800 border-rose-200" };
     }
-    if (off.status === "DRAFT") {
-      return { text: "DRAFT", cls: "bg-amber-100 text-amber-800 border-amber-200" };
+    if (off.status === "DRAFT" || off.isActive === false || (off.status as any) === "INACTIVE") {
+      return { text: "INACTIVE", cls: "bg-slate-200 text-slate-700 border-slate-300" };
     }
     return { text: "ACTIVE", cls: "bg-emerald-100 text-emerald-800 border-emerald-200" };
   };
@@ -291,6 +311,14 @@ export default function BranchManagerOffersPage() {
                 <div className="flex justify-between items-center text-xs pb-1 border-b border-amber-200/60">
                   <span className="font-bold text-slate-500">Branch:</span>
                   <strong className="text-amber-900 font-extrabold">{matchedBranchName}</strong>
+                </div>
+
+                <div className="flex justify-between items-center text-xs pb-1 border-b border-amber-200/60">
+                  <span className="font-bold text-slate-500">Expiry Date:</span>
+                  <span className="font-bold text-slate-800">
+                    {off.endDate ? formatDateOnly(off.endDate) : "No Expiry"}
+                    {isOfferExpired(off) && <span className="text-rose-600 ml-1.5 font-extrabold text-[10px]">(Expired)</span>}
+                  </span>
                 </div>
 
                 <div className="flex justify-between">
@@ -428,6 +456,23 @@ export default function BranchManagerOffersPage() {
                   className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl"
                   placeholder="e.g. Save flat ₹50 on all combos"
                 />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Offer Expiry Date * <span className="text-slate-400 font-normal">(Required)</span>
+                </label>
+                <input
+                  type="date"
+                  required
+                  min={new Date().toISOString().split("T")[0]}
+                  value={formData.endDate}
+                  onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900"
+                />
+                <p className="text-[11px] text-slate-500 mt-1">
+                  Offer remains valid through 11:59 PM of the selected date.
+                </p>
               </div>
 
               <div className="p-3 bg-amber-50/50 border border-amber-200/80 rounded-2xl space-y-3">

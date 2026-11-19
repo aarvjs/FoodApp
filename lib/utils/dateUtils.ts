@@ -88,3 +88,28 @@ export function formatDateOnly(val: any): string {
     return "N/A";
   }
 }
+
+/**
+ * Check if an offer has expired based on its endDate or status.
+ * Offers remain valid through 11:59:59.999 PM on their endDate.
+ * Older offers without an endDate are considered non-expired.
+ */
+export function isOfferExpired(offer: { endDate?: string; status?: string; isActive?: boolean }): boolean {
+  if (offer.status === "EXPIRED") return true;
+  if (!offer.endDate || !offer.endDate.trim()) return false;
+  try {
+    const trimmed = offer.endDate.trim();
+    const parts = trimmed.split("-").map(Number);
+    if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
+      const endOfDay = new Date(parts[0], parts[1] - 1, parts[2], 23, 59, 59, 999);
+      return Date.now() > endOfDay.getTime();
+    }
+    const d = new Date(trimmed);
+    if (!isNaN(d.getTime())) {
+      const endOfDay = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+      return Date.now() > endOfDay.getTime();
+    }
+  } catch {}
+  return false;
+}
+
